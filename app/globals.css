@@ -1,26 +1,143 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ===============================
+   1. Mapeo para Tailwind v4
+   =============================== */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-accent: hsl(var(--accent));
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-danger: hsl(var(--danger));
+  --color-danger-foreground: hsl(var(--danger-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-border: hsl(var(--border));
 }
 
+/* ===============================
+   2. TEMA BASE (MAYA - default)
+   =============================== */
+:root {
+  /* Brand */
+  --primary: 222 84% 56%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 222 47% 40%;
+  --secondary-foreground: 255 255 255;
+
+  --accent: 38 92% 50%;
+
+  /* Background / text */
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+
+  /* Botones / roles */
+  --danger: 0 84% 60%;
+  --danger-foreground: 0 0% 100%;
+
+  --success: 145 63% 49%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 42 100% 50%;
+  --warning-foreground: 222 47% 11%;
+
+  --info: 200 85% 60%;
+  --info-foreground: 0 0% 100%;
+
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 20% 40%;
+
+  --border: 214 32% 91%;
+}
+
+/* ===============================
+   3. TEMA DISBOL
+   =============================== */
+html[data-theme="disbol"] {
+  --primary: 347 77% 50%;           /* rojo */
+  --primary-foreground: 0 0% 100%;  /* texto blanco */
+  /* --secondary: 38 92% 50%;
+  --secondary-foreground: 0 0% 100%; */
+  --accent: 160 84% 39%;
+
+  --background: 0 0% 98%;
+  --foreground: 24 10% 10%;
+
+  --danger: 0 72% 45%;
+  --danger-foreground: 0 0% 100%;
+
+  --success: 145 63% 40%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 42 90% 50%;
+  --warning-foreground: 0 0% 100%;
+
+  --info: 200 85% 50%;
+  --info-foreground: 0 0% 100%;
+
+  --muted: 210 40% 90%;
+  --muted-foreground: 215 20% 35%;
+
+  --border: 210 30% 85%;
+}
+
+/* ===============================
+   4. Dark mode (opcional)
+   =============================== */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 222 47% 11%;
+    --foreground: 0 0% 100%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 40% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 38 92% 50%;
+
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+
+    --success: 145 63% 49%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 42 100% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --info: 200 85% 60%;
+    --info-foreground: 0 0% 100%;
+
+    --muted: 210 40% 80%;
+    --muted-foreground: 215 20% 35%;
+
+    --border: 214 32% 60%;
   }
 }
 
+/* ===============================
+   5. Base styles
+   =============================== */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
