@@ -4,7 +4,7 @@ interface IconProps extends React.SVGProps<SVGSVGElement> {
   size?: number;
 }
 
-export const AsignacionesIcon = ({
+export const CarOutlineIcon = ({
   size = 20,
   className,
   ...props

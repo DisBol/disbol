@@ -4,7 +4,7 @@ interface IconProps extends React.SVGProps<SVGSVGElement> {
   size?: number;
 }
 
-export const DashboardIcon = ({
+export const DashboardOutlineRoundedIcon = ({
   size = 20,
   className,
   ...props

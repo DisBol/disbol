@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { valibotResolver } from "@hookform/resolvers/valibot";
 
 import { Button } from "@/components/ui/Button";
-import { InputField } from "@/components/ui/Input-field";
+import { InputField } from "@/components/ui/InputField";
 
 import { loginSchema, type LoginSchema } from "../schemas/login.schema";
 

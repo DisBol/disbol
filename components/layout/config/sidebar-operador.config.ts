@@ -1,9 +1,9 @@
-import { AsignacionesIcon } from "@/components/icons/AsignacionesIcon";
-import { CanastoIcon } from "@/components/icons/CanastoIcon";
-import { ConfigIcon } from "@/components/icons/ConfigIcon";
-import { DashboardIcon } from "@/components/icons/DashboardIcon";
+import { CarOutlineIcon } from "@/components/icons/CarOutlineIcon";
+import { BoxIcon } from "@/components/icons/BoxIcon";
+import { SettingIcon } from "@/components/icons/SettingIcon";
+import { DashboardOutlineRoundedIcon } from "@/components/icons/DashboardOutlineRoundedIcon";
 import { LogoutRoundedIcon } from "@/components/icons/LogoutRounded";
-import { SeguimientoIcon } from "@/components/icons/SeguimientoIcon";
+import { PinOutlineIcon } from "@/components/icons/PinOutlineIcon";
 import { ShoppingCartIcon } from "@/components/icons/ShoppingCart";
 
 export const sidebarOperadorMenu = {
@@ -11,7 +11,7 @@ export const sidebarOperadorMenu = {
     {
       label: "Dashboard",
       href: "/dashboard",
-      icon: DashboardIcon,
+      icon: DashboardOutlineRoundedIcon,
     },
     {
       label: "Solicitudes",
@@ -21,24 +21,24 @@ export const sidebarOperadorMenu = {
     {
       label: "Asignaciones",
       href: "/asignaciones",
-      icon: AsignacionesIcon,
+      icon: CarOutlineIcon,
     },
     {
       label: "Seguimiento",
       href: "/seguimiento",
-      icon: SeguimientoIcon,
+      icon: PinOutlineIcon,
     },
     {
       label: "Canastos",
       href: "/canastos",
-      icon: CanastoIcon,
+      icon: BoxIcon,
     },
   ],
   footer: [
     {
       label: "Configuración",
       href: "configuracion",
-      icon: ConfigIcon,
+      icon: SettingIcon,
     },
     {
       label: "Cerrar sesión",
