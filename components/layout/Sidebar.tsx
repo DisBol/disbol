@@ -1,10 +1,15 @@
 "use client";
 
+import { signOut } from "next-auth/react";
 import { sidebarOperadorMenu } from "./config/sidebar-operador.config";
 import { SidebarItem } from "./SidebarItem";
 import { UserRoleSelect } from "./UserRoleSelect";
 
 export function Sidebar() {
+  const handleLogout = () => {
+    signOut({ callbackUrl: "/login" });
+  };
+
   return (
     <aside className="w-70 bg-[#0B1220] text-white flex flex-col">
       {/* Header */}
@@ -30,7 +35,11 @@ export function Sidebar() {
       {/* Footer */}
       <div className="px-3 py-4 border-t border-white/10 space-y-1">
         {sidebarOperadorMenu.footer.map((item) => (
-          <SidebarItem key={item.href} {...item} />
+          <SidebarItem
+            key={item.href || item.label}
+            {...item}
+            onClick={item.label === "Cerrar sesión" ? handleLogout : undefined}
+          />
         ))}
       </div>
     </aside>
