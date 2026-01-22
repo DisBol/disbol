@@ -6,7 +6,7 @@ import { UserRoleSelect } from "./UserRoleSelect";
 
 export function Sidebar() {
   return (
-    <aside className="w-[280px] bg-[#0B1220] text-white flex flex-col">
+    <aside className="w-70 bg-[#0B1220] text-white flex flex-col">
       {/* Header */}
       <div className="px-6 py-6 text-xl font-bold tracking-wide flex items-center">
         <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-white mr-3">
