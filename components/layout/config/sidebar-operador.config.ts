@@ -37,7 +37,7 @@ export const sidebarOperadorMenu = {
   footer: [
     {
       label: "Configuración",
-      href: "configuracion",
+      href: "/configuraciones",
       icon: SettingIcon,
     },
     {
