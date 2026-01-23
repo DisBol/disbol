@@ -6,7 +6,18 @@ import { LogoutRoundedIcon } from "@/components/icons/LogoutRounded";
 import { PinOutlineIcon } from "@/components/icons/PinOutlineIcon";
 import { ShoppingCartIcon } from "@/components/icons/ShoppingCart";
 
-export const sidebarOperadorMenu = {
+interface SidebarMenuItem {
+  label: string;
+  href?: string;
+  icon: React.ElementType;
+}
+
+interface SidebarMenu {
+  main: SidebarMenuItem[];
+  footer: SidebarMenuItem[];
+}
+
+export const sidebarOperadorMenu: SidebarMenu = {
   main: [
     {
       label: "Dashboard",
@@ -42,8 +53,8 @@ export const sidebarOperadorMenu = {
     },
     {
       label: "Cerrar sesión",
-      href: "/logout",
       icon: LogoutRoundedIcon,
+      // No href - se maneja con onClick en Sidebar.tsx
     },
   ],
 };

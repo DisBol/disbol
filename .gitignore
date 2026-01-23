@@ -19,7 +19,7 @@
 
 # production
 /build
-
+/auth.config.ts
 # misc
 .DS_Store
 *.pem
