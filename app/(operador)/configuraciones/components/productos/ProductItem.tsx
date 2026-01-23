@@ -1,4 +1,4 @@
-import { Product } from "../types/ProductTypes";
+import { Product } from "../../types/ProductTypes";
 
 // product-item.tsx
 interface Props {

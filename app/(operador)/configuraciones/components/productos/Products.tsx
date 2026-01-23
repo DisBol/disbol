@@ -1,4 +1,4 @@
-import { Category } from "../types/ProductTypes";
+import { Category } from "../../types/ProductTypes";
 import { CategoryCard } from "./CategoryCard";
 import { ProductsHeader } from "./HeaderActions";
 
@@ -29,7 +29,7 @@ const categories: Category[] = [
   },
 ];
 
-export default function ProductsPage() {
+export default function Products() {
   return (
     <div className="space-y-6">
       <ProductsHeader />
