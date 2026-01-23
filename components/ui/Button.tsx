@@ -57,7 +57,7 @@ export interface ButtonProps
 }
 
 export const Button = React.forwardRef<
-  React.ElementRef<typeof Primitive.button>,
+  React.ComponentRef<typeof Primitive.button>,
   ButtonProps
 >(
   (
