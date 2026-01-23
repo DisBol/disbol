@@ -1,5 +1,5 @@
 // product-grid.tsx
-import { Product } from "../types/ProductTypes";
+import { Product } from "../../types/ProductTypes";
 import { ProductItem } from "./ProductItem";
 
 interface Props {
