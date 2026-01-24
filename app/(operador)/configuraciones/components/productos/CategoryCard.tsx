@@ -1,25 +1,23 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { Category } from "../../types/ProductTypes";
+import { CategoryView } from "../../hooks/useProductsByCategory";
 import { ProductGrid } from "./ProductGrid";
 
 interface Props {
-  category: Category;
+  category: CategoryView;
 }
 
 export function CategoryCard({ category }: Props) {
   return (
- 
-      <Card>
-        <CardHeader>
-          <h3 className="text-red-600 font-bold text-sm uppercase">
-            {category.name}
-          </h3>
-        </CardHeader>
+    <Card>
+      <CardHeader>
+        <h3 className="text-red-600 font-bold text-sm uppercase">
+          {category.name}
+        </h3>
+      </CardHeader>
 
-        <CardContent>
-          <ProductGrid products={category.products} />
-        </CardContent>
-      </Card>
-  
+      <CardContent>
+        <ProductGrid products={category.products} />
+      </CardContent>
+    </Card>
   );
 }
