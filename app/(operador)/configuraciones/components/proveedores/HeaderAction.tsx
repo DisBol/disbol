@@ -3,15 +3,19 @@ import { RoundPlusIcon } from "@/components/icons/RoundPlus";
 import { Button } from "@/components/ui/Button";
 import { useState } from "react";
 import FormProvider from "./ProviderForrm";
+import { useProviderStore } from "../../store/providers.store";
 
 export function ProviderHeader() {
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  const handleSaveProvider = (data: {
+  const { fetchProviders } = useProviderStore();
+
+  const handleSaveProvider = async (data: {
     name: string;
     assignedGroups: { id: string; name: string; category: string }[];
   }) => {
-    console.log("Nuevo proveedor:", data);
+    console.log("Nuevo proveedor guardado:", data);
+    await fetchProviders();
     setIsFormOpen(false);
   };
 
