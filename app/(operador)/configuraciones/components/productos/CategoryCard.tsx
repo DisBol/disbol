@@ -1,12 +1,16 @@
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { CategoryView } from "../../hooks/useProductsByCategory";
+import {
+  CategoryView,
+  ProductView,
+} from "../../hooks/productos/useProductsByCategory";
 import { ProductGrid } from "./ProductGrid";
 
 interface Props {
   category: CategoryView;
+  onEditProduct?: (product: ProductView, categoryId: number) => void;
 }
 
-export function CategoryCard({ category }: Props) {
+export function CategoryCard({ category, onEditProduct }: Props) {
   return (
     <Card>
       <CardHeader>
@@ -16,7 +20,11 @@ export function CategoryCard({ category }: Props) {
       </CardHeader>
 
       <CardContent>
-        <ProductGrid products={category.products} />
+        <ProductGrid
+          products={category.products}
+          categoryId={category.id}
+          onEditProduct={onEditProduct}
+        />
       </CardContent>
     </Card>
   );

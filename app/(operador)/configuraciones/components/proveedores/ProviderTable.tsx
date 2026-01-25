@@ -1,8 +1,15 @@
 "use client";
 import { DeleteIcon } from "@/components/icons/DeleteIcon";
-import { EditIcon } from "@/components/icons/Editicon";
+import { EditIcon } from "@/components/icons/EditIcon";
 import { Chip } from "@/components/ui/Chip";
 import {
+  TableWrapper,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
   TableWrapper,
   Table,
   TableHeader,

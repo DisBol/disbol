@@ -1,9 +1,13 @@
 "use client";
-import { useProductsByCategory } from "../../hooks/useProductsByCategory";
+import { useProductsContext, ProductView } from "../../context/ProductsContext";
 import { CategoryCard } from "./CategoryCard";
 
-export default function ProductList() {
-  const { categories, loading, error } = useProductsByCategory();
+interface ProductListProps {
+  onEditProduct?: (product: ProductView, categoryId: number) => void;
+}
+
+export default function ProductList({ onEditProduct }: ProductListProps) {
+  const { categories, loading, error } = useProductsContext();
 
   if (loading) {
     return (
@@ -26,7 +30,11 @@ export default function ProductList() {
   return (
     <div className="space-y-6">
       {categories.map((category) => (
-        <CategoryCard key={category.id} category={category} />
+        <CategoryCard
+          key={category.id}
+          category={category}
+          onEditProduct={onEditProduct}
+        />
       ))}
     </div>
   );
