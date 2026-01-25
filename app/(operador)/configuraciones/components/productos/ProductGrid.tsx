@@ -1,9 +1,9 @@
 // product-grid.tsx
-import { Product } from "../../types/ProductTypes";
+import { ProductView } from "../../hooks/useProductsByCategory";
 import { ProductItem } from "./ProductItem";
 
 interface Props {
-  products: Product[];
+  products: ProductView[];
 }
 
 export function ProductGrid({ products }: Props) {
