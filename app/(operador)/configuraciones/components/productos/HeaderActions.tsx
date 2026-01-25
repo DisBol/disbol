@@ -1,7 +1,15 @@
 import { RoundPlusIcon } from "@/components/icons/RoundPlus";
 import { Button } from "@/components/ui/Button";
 
-export function ProductsHeader() {
+interface ProductsHeaderProps {
+  onNewProduct?: () => void;
+  onNewCategory?: () => void;
+}
+
+export function ProductsHeader({
+  onNewProduct,
+  onNewCategory,
+}: ProductsHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <h2 className="text-lg font-bold">Productos</h2>
@@ -11,6 +19,7 @@ export function ProductsHeader() {
           variant="danger"
           size="sm"
           leftIcon={<RoundPlusIcon className="h-4 w-4" />}
+          onClick={onNewProduct}
         >
           Nuevo Producto
         </Button>
@@ -19,6 +28,7 @@ export function ProductsHeader() {
           variant="secondary"
           size="sm"
           leftIcon={<RoundPlusIcon className="h-4 w-4" />}
+          onClick={onNewCategory}
         >
           Nueva Categoría
         </Button>
