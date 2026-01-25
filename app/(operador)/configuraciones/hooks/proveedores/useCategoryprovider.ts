@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { CategoryProviderResponse, Datum } from "../interfaces/getcategoryprovider.interface";
-import { GetCategoryProviders } from "../services/getcategoryprovider";
+import { CategoryProviderResponse, Datum } from "../../interfaces/proveedores/getcategoryprovider.interface";
+import { GetCategoryProviders } from "../../services/provedores/getcategoryprovider";
 
 
 export interface ProviderView {
