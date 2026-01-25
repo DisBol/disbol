@@ -1,5 +1,6 @@
-import { ProductView } from "../../hooks/productos/useProductsByCategory";
 import { EditIcon } from "@/components/icons/EditIcon";
+import { ProductView } from "../../hooks/productos/useProductsByCategory";
+
 import { DeleteIcon } from "@/components/icons/DeleteIcon";
 
 interface Props {

@@ -7,7 +7,6 @@ import ProductForm from "./ProductForm";
 import CategoryForm from "./CategoryForm";
 import { useAddProduct } from "../../hooks/productos/useAddProduct";
 import { useUpdateProduct } from "../../hooks/productos/useUpdateProduct";
-import { useAddCategory } from "../../hooks/productos/useAddCategory";
 import {
   ProductsProvider,
   useProductsContext,
@@ -17,7 +16,6 @@ import {
   ProductFormData,
   ProductEditFormData,
 } from "../../interfaces/productos/productform.interface";
-import { CategoryFormData } from "../../interfaces/productos/addcategory.interface";
 
 function ProductsContent() {
   const [showNewProductForm, setShowNewProductForm] = useState(false);
@@ -26,9 +24,12 @@ function ProductsContent() {
     product: ProductView;
     categoryId: number;
   } | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const { addProduct } = useAddProduct();
   const { updateProduct } = useUpdateProduct();
-  const { addCategory } = useAddCategory();
   const { refetch } = useProductsContext();
 
   // Ref para hacer scroll al formulario
@@ -46,6 +47,18 @@ function ProductsContent() {
     }
   }, [editingProduct]);
 
+  // Scroll al formulario cuando se edite una categoría
+  useEffect(() => {
+    if (editingCategory && formRef.current) {
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    }
+  }, [editingCategory]);
+
   const handleNewProduct = () => {
     setShowNewProductForm(true);
     setShowNewCategoryForm(false);
@@ -60,12 +73,21 @@ function ProductsContent() {
     setShowNewProductForm(false);
     setShowNewCategoryForm(false);
     setEditingProduct(null);
+    setEditingCategory(null);
   };
 
   const handleEditProduct = (product: ProductView, categoryId: number) => {
     setEditingProduct({ product, categoryId });
     setShowNewProductForm(false);
     setShowNewCategoryForm(false);
+    setEditingCategory(null);
+  };
+
+  const handleEditCategory = (category: { id: number; name: string }) => {
+    setEditingCategory(category);
+    setShowNewProductForm(false);
+    setShowNewCategoryForm(false);
+    setEditingProduct(null);
   };
 
   const handleDeleteProduct = async (
@@ -121,17 +143,9 @@ function ProductsContent() {
     }
   };
 
-  const handleCategorySubmit = async (data: CategoryFormData) => {
-    const categoryData = {
-      name: data.categoryName,
-      active: "true",
-    };
-
-    const success = await addCategory(categoryData);
-    if (success) {
-      handleCloseForm();
-      await refetch(); // Refrescar para mostrar la nueva categoría
-    }
+  const handleCategorySuccess = async () => {
+    handleCloseForm();
+    await refetch(); // Refrescar para mostrar la nueva categoría
   };
 
   return (
@@ -162,11 +176,21 @@ function ProductsContent() {
           </div>
         )}
 
+        {editingCategory && (
+          <div ref={formRef} className="flex justify-center">
+            <CategoryForm
+              category={editingCategory}
+              onCancel={handleCloseForm}
+              onSuccess={handleCategorySuccess}
+            />
+          </div>
+        )}
+
         {showNewCategoryForm && (
           <div className="flex justify-center">
             <CategoryForm
               onCancel={handleCloseForm}
-              onSubmit={handleCategorySubmit}
+              onSuccess={handleCategorySuccess}
             />
           </div>
         )}
@@ -174,6 +198,7 @@ function ProductsContent() {
         <ProductList
           onEditProduct={handleEditProduct}
           onDeleteProduct={handleDeleteProduct}
+          onEditCategory={handleEditCategory}
         />
       </div>
     </Card>

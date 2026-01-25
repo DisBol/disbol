@@ -1,4 +1,4 @@
-export interface AddCategoryResponse {
+export interface UpdateCategoryResponse {
   data: Data;
   metadata: Metadata;
 }
