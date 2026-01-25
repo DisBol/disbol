@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { SelectField } from "@/components/ui/SelectInput";
-import { useProductsContext } from "../../context/ProductsContext";
+import { useCategories } from "../../hooks/productos/useCategories";
 import {
   ProductFormData,
   ProductEditFormData,
@@ -26,7 +26,7 @@ export default function ProductForm({
   onCancel,
   onSubmit,
 }: ProductFormProps) {
-  const { categories, loading } = useProductsContext();
+  const { categories, isLoading } = useCategories();
   const isEditing = !!product;
 
   // Estado inicial basado en si es edición o creación
@@ -36,11 +36,6 @@ export default function ProductForm({
     productName: product?.name || "",
   });
   const [errors, setErrors] = useState<Partial<ProductFormData>>({});
-
-  const categoryOptions = categories.map((category) => ({
-    value: category.id.toString(),
-    label: category.name,
-  }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,14 +80,14 @@ export default function ProductForm({
         <SelectField
           label="Categoría *"
           id="category"
-          options={categoryOptions}
+          options={categories}
           placeholder="Seleccionar Categoría..."
           value={formData.categoryId}
           onChange={(e) =>
-            setFormData((prev) => ({ ...prev, categoryId: e.target.value }))
+            setFormData({ ...formData, categoryId: e.target.value })
           }
           error={errors.categoryId}
-          disabled={loading}
+          disabled={isLoading}
         />
 
         <InputField
@@ -120,7 +115,7 @@ export default function ProductForm({
             type="submit"
             variant="danger"
             className="flex-1 sm:flex-none sm:w-36"
-            disabled={loading}
+            disabled={isLoading}
           >
             {isEditing ? "Actualizar" : "Crear Producto"}
           </Button>
