@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import {
   ProductByCategoryResponse,
   Datum,
-} from "../interfaces/getproductbycategory.interface";
-import { GetProductByCategory } from "../services/getproductbycategory";
+} from "../../interfaces/productos/getproductbycategory.interface";
+import { GetProductByCategory } from "../../services/productos/getproductbycategory";
 
 export interface CategoryView {
   id: number;

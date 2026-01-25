@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { AddProduct } from "../services/addproduct";
-import { AddProductRequest } from "../interfaces/addproduct.interface";
+import { AddProduct } from "../../services/productos/addproduct";
+import { AddProductRequest } from "../../interfaces/productos/addproduct.interface";
 
 interface UseAddProductReturn {
   addProduct: (productData: AddProductRequest) => Promise<boolean>;
