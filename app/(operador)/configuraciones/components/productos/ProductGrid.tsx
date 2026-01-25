@@ -6,9 +6,15 @@ interface Props {
   products: ProductView[];
   categoryId: number;
   onEditProduct?: (product: ProductView, categoryId: number) => void;
+  onDeleteProduct?: (product: ProductView, categoryId: number) => void;
 }
 
-export function ProductGrid({ products, categoryId, onEditProduct }: Props) {
+export function ProductGrid({
+  products,
+  categoryId,
+  onEditProduct,
+  onDeleteProduct,
+}: Props) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
       {products.map((product) => (
@@ -17,6 +23,7 @@ export function ProductGrid({ products, categoryId, onEditProduct }: Props) {
           product={product}
           categoryId={categoryId}
           onEdit={onEditProduct}
+          onDelete={onDeleteProduct}
         />
       ))}
     </div>

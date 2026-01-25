@@ -8,9 +8,14 @@ import { ProductGrid } from "./ProductGrid";
 interface Props {
   category: CategoryView;
   onEditProduct?: (product: ProductView, categoryId: number) => void;
+  onDeleteProduct?: (product: ProductView, categoryId: number) => void;
 }
 
-export function CategoryCard({ category, onEditProduct }: Props) {
+export function CategoryCard({
+  category,
+  onEditProduct,
+  onDeleteProduct,
+}: Props) {
   return (
     <Card>
       <CardHeader>
@@ -24,6 +29,7 @@ export function CategoryCard({ category, onEditProduct }: Props) {
           products={category.products}
           categoryId={category.id}
           onEditProduct={onEditProduct}
+          onDeleteProduct={onDeleteProduct}
         />
       </CardContent>
     </Card>

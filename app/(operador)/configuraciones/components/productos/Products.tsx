@@ -64,6 +64,21 @@ function ProductsContent() {
     setShowNewCategoryForm(false);
   };
 
+  const handleDeleteProduct = async (product: ProductView, categoryId: number) => {
+    // Reutilizar useUpdateProduct para soft delete
+    const productData = {
+      id: product.id,
+      name: product.name,
+      active: "false", // Soft delete
+      Category_id: categoryId.toString(),
+    };
+
+    const success = await updateProduct(productData);
+    if (success) {
+      await refetch();
+    }
+  };
+
   const handleProductSubmit = async (
     data: ProductFormData | ProductEditFormData,
   ) => {
@@ -140,7 +155,10 @@ function ProductsContent() {
           </div>
         )}
 
-        <ProductList onEditProduct={handleEditProduct} />
+        <ProductList 
+          onEditProduct={handleEditProduct} 
+          onDeleteProduct={handleDeleteProduct}
+        />
       </div>
     </Card>
   );
