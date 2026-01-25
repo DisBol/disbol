@@ -1,53 +1,40 @@
-import { useState, useEffect, useMemo } from "react";
-import { CategoryProviderResponse, Datum } from "../../interfaces/proveedores/getcategoryprovider.interface";
-import { GetCategoryProviders } from "../../services/provedores/getcategoryprovider";
-
+import { useEffect, useMemo } from "react";
+import { Datum } from "../../interfaces/proveedores/getcategoryprovider.interface";
+import { useProviderStore } from "../../store/providers.store";
 
 export interface ProviderView {
+  id: number;
   nombre: string;
   grupos: string[];
   estado: string;
 }
 
 interface UseCategoryProviderReturn {
-  rawData: Datum[] | null; 
-  providers: ProviderView[]; 
+  rawData: Datum[] | null;
+  providers: ProviderView[];
   loading: boolean;
   error: Error | null;
+  refresh: () => Promise<void>;
 }
 
 export function useCategoryProvider(): UseCategoryProviderReturn {
-  const [data, setData] = useState<Datum[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { rawData, loading, error, fetchProviders } = useProviderStore();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result: CategoryProviderResponse = await GetCategoryProviders();
-        setData(result.data);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Unknown error"));
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!rawData) {
+      fetchProviders();
+    }
+  }, [rawData, fetchProviders]);
 
-    fetchData();
-  }, []);
-
- 
   const providers = useMemo<ProviderView[]>(() => {
-    if (!data) return [];
+    if (!rawData) return [];
 
     const map = new Map<string, ProviderView>();
 
-    data.forEach((item) => {
-
+    rawData.forEach((item) => {
       if (!map.has(item.name_0)) {
         map.set(item.name_0, {
+          id: item.id_0,
           nombre: item.name_0,
           grupos: [],
           estado: "Activo",
@@ -56,11 +43,12 @@ export function useCategoryProvider(): UseCategoryProviderReturn {
       // Nota: Asumo que 'item.name' es el nombre del grupo
       const provider = map.get(item.name_0);
       if (provider && item.name) {
-         provider.grupos.push(item.name);
+        provider.grupos.push(item.name);
       }
     });
 
     return Array.from(map.values());
-  }, [data]); 
-  return { rawData: data, providers, loading, error };
-} 
+  }, [rawData]);
+
+  return { rawData, providers, loading, error, refresh: fetchProviders };
+}

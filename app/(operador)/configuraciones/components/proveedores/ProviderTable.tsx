@@ -12,9 +12,18 @@ import {
   TableCell,
 } from "@/components/ui/Table";
 import { useCategoryProvider } from "../../hooks/proveedores/useCategoryprovider";
+import { useUpdateProvider } from "../../hooks/proveedores/useUpdateProvider";
 
 export default function ProviderCard() {
   const { providers, loading, error } = useCategoryProvider();
+  const { updateProvider } = useUpdateProvider();
+
+  const handleDeactivate = async (id: number, name: string) => {
+    if (confirm("¿Estás seguro de que deseas desactivar este proveedor?")) {
+      await updateProvider(id, name, "false");
+    }
+  };
+
   if (loading) return <div>Cargando...</div>;
   if (error) return <div>Error...</div>;
   return (
@@ -70,7 +79,12 @@ export default function ProviderCard() {
                       <button className="p-1 sm:p-1.5 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-md transition-colors">
                         <EditIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
-                      <button className="p-1 sm:p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                      <button
+                        onClick={() =>
+                          handleDeactivate(proveedor.id, proveedor.nombre)
+                        }
+                        className="p-1 sm:p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      >
                         <DeleteIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                     </div>
@@ -100,7 +114,12 @@ export default function ProviderCard() {
                 <button className="p-1.5 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-md transition-colors">
                   <EditIcon className="w-4 h-4" />
                 </button>
-                <button className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                <button
+                  onClick={() =>
+                    handleDeactivate(proveedor.id, proveedor.nombre)
+                  }
+                  className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                >
                   <DeleteIcon className="w-4 h-4" />
                 </button>
               </div>
