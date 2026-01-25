@@ -21,6 +21,7 @@ interface UseProductsByCategoryReturn {
   categories: CategoryView[];
   loading: boolean;
   error: Error | null;
+  refetch: () => Promise<void>;
 }
 
 export function useProductsByCategory(): UseProductsByCategoryReturn {
@@ -28,20 +29,25 @@ export function useProductsByCategory(): UseProductsByCategoryReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result: ProductByCategoryResponse = await GetProductByCategory();
-        setData(result.data);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Unknown error"));
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const result: ProductByCategoryResponse = await GetProductByCategory();
+      setData(result.data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Unknown error"));
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const refetch = async () => {
+    await fetchData();
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -74,5 +80,5 @@ export function useProductsByCategory(): UseProductsByCategoryReturn {
     return Array.from(categoryMap.values());
   }, [data]);
 
-  return { rawData: data, categories, loading, error };
+  return { rawData: data, categories, loading, error, refetch };
 }
