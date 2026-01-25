@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 const Tabs = TabsPrimitive.Root;
 
 const tabsListVariants = cva(
-  "inline-flex items-center justify-center text-muted-foreground transition-all",
+  "inline-flex items-center justify-center text-muted-foreground transition-all flex-wrap",
   {
     variants: {
       variant: {
-        solid: "p-1 bg-gray-100/80 rounded-xl",
+        solid: "p-1 bg-gray-100/80 rounded-xl md:p-1",
         underlined:
           "w-full justify-start rounded-none bg-transparent p-0 border-b border-gray-200",
-        bordered: "p-1 border border-gray-200 bg-white rounded-xl",
+        bordered: "p-1 border border-gray-200 bg-white rounded-xl md:p-1",
       },
       fullWidth: {
         true: "w-full",
@@ -23,12 +23,13 @@ const tabsListVariants = cva(
       variant: "solid",
       fullWidth: false,
     },
-  }
+  },
 );
 
 export interface TabsListProps
-  extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>,
-  VariantProps<typeof tabsListVariants> { }
+  extends
+    React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>,
+    VariantProps<typeof tabsListVariants> {}
 
 const TabsList = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.List>,
@@ -42,36 +43,35 @@ const TabsList = React.forwardRef<
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
-
-
 const tabsTriggerVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         solid:
-          "rounded-lg px-3 py-1.5 data-[state=active]:bg-white data-[state=active]:text-pink-600 data-[state=active]:shadow-sm hover:text-gray-900",
+          "rounded-lg px-2 py-1 md:px-3 md:py-1.5 text-xs md:text-sm data-[state=active]:bg-white data-[state=active]:text-pink-600 data-[state=active]:shadow-sm hover:text-gray-900",
         underlined:
-          "rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-pink-600 data-[state=active]:text-pink-600 hover:text-pink-600/80",
+          "rounded-none border-b-2 border-transparent px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm data-[state=active]:border-pink-600 data-[state=active]:text-pink-600 hover:text-pink-600/80",
         bordered:
-          "rounded-lg px-3 py-1.5 hover:bg-gray-50 data-[state=active]:bg-pink-50 data-[state=active]:text-pink-700 data-[state=active]:border-pink-200",
+          "rounded-lg px-2 py-1 md:px-3 md:py-1.5 text-xs md:text-sm hover:bg-gray-50 data-[state=active]:bg-pink-50 data-[state=active]:text-pink-700 data-[state=active]:border-pink-200",
       },
       size: {
         sm: "text-xs h-8",
-        md: "text-sm h-10",
-        lg: "text-base h-12 px-6",
+        md: "text-xs h-9 md:text-sm md:h-10",
+        lg: "text-sm md:text-base h-10 md:h-12 px-4 md:px-6",
       },
     },
     defaultVariants: {
       variant: "solid",
       size: "md",
     },
-  }
+  },
 );
 
 export interface TabsTriggerProps
-  extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>,
-  VariantProps<typeof tabsTriggerVariants> {
+  extends
+    React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>,
+    VariantProps<typeof tabsTriggerVariants> {
   icon?: React.ReactNode;
 }
 
@@ -90,7 +90,6 @@ const TabsTrigger = React.forwardRef<
 ));
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
-
 const tabsContentVariants = cva(
   "mt-4 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   {
@@ -104,12 +103,13 @@ const tabsContentVariants = cva(
     defaultVariants: {
       animation: "fade",
     },
-  }
+  },
 );
 
 export interface TabsContentProps
-  extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>,
-  VariantProps<typeof tabsContentVariants> { }
+  extends
+    React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>,
+    VariantProps<typeof tabsContentVariants> {}
 
 const TabsContent = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.Content>,
