@@ -7,7 +7,6 @@ import ProductForm from "./ProductForm";
 import CategoryForm from "./CategoryForm";
 import { useAddProduct } from "../../hooks/productos/useAddProduct";
 import { useUpdateProduct } from "../../hooks/productos/useUpdateProduct";
-import { useAddCategory } from "../../hooks/productos/useAddCategory";
 import {
   ProductsProvider,
   useProductsContext,
@@ -17,7 +16,6 @@ import {
   ProductFormData,
   ProductEditFormData,
 } from "../../interfaces/productos/productform.interface";
-import { CategoryFormData } from "../../interfaces/productos/addcategory.interface";
 
 function ProductsContent() {
   const [showNewProductForm, setShowNewProductForm] = useState(false);
@@ -28,7 +26,6 @@ function ProductsContent() {
   } | null>(null);
   const { addProduct } = useAddProduct();
   const { updateProduct } = useUpdateProduct();
-  const { addCategory } = useAddCategory();
   const { refetch } = useProductsContext();
 
   // Ref para hacer scroll al formulario
@@ -121,17 +118,9 @@ function ProductsContent() {
     }
   };
 
-  const handleCategorySubmit = async (data: CategoryFormData) => {
-    const categoryData = {
-      name: data.categoryName,
-      active: "true",
-    };
-
-    const success = await addCategory(categoryData);
-    if (success) {
-      handleCloseForm();
-      await refetch(); // Refrescar para mostrar la nueva categoría
-    }
+  const handleCategorySuccess = async () => {
+    handleCloseForm();
+    await refetch(); // Refrescar para mostrar la nueva categoría
   };
 
   return (
@@ -166,7 +155,7 @@ function ProductsContent() {
           <div className="flex justify-center">
             <CategoryForm
               onCancel={handleCloseForm}
-              onSubmit={handleCategorySubmit}
+              onSuccess={handleCategorySuccess}
             />
           </div>
         )}

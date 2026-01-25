@@ -1,11 +1,6 @@
+import { AddCategoryResponse } from "../../interfaces/productos/addcategory.interface";
 import { apiCall } from "../apiClient";
-import {
-  CategoryAddRequest,
-  CategoryAddResponse,
-} from "../../interfaces/productos/addcategory.interface";
 
-export async function AddCategory(
-  categoryData: CategoryAddRequest,
-): Promise<CategoryAddResponse> {
-  return apiCall("addcategory", categoryData);
+export async function AddCategory(name: string): Promise<AddCategoryResponse> {
+  return apiCall("addcategory", { name, active: "true" });
 }

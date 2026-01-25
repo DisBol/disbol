@@ -1,47 +1,39 @@
 import { useState } from "react";
 import { AddCategory } from "../../services/productos/addcategory";
-import {
-  CategoryAddRequest,
-  CategoryAddResponse,
-} from "../../interfaces/productos/addcategory.interface";
+import { AddCategoryResponse } from "../../interfaces/productos/addcategory.interface";
 
-interface UseAddCategoryReturn {
-  isLoading: boolean;
-  error: string | null;
-  addCategory: (categoryData: CategoryAddRequest) => Promise<boolean>;
-}
-
-export function useAddCategory(): UseAddCategoryReturn {
+export function useAddCategory() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<AddCategoryResponse | null>(null);
 
-  const addCategory = async (
-    categoryData: CategoryAddRequest,
-  ): Promise<boolean> => {
+  const addCategory = async (name: string) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response: CategoryAddResponse = await AddCategory(categoryData);
+      const response = await AddCategory(name);
+      setData(response);
+      return response;
 
       // Verificar que la respuesta sea exitosa
-      if (response.data && response.data.changes > 0) {
-        return true;
-      } else {
-        setError("Error al crear la categoría");
-        return false;
-      }
+      //   if (response.data && response.data.changes > 0) {
+      //     return response;
+      //   } else {
+      //     setError("Error al crear la categoría");
+      //     return null;
+      //   }
     } catch (err) {
       const errorMessage =
         err instanceof Error
           ? err.message
           : "Error desconocido al crear la categoría";
       setError(errorMessage);
-      return false;
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  return { isLoading, error, addCategory };
+  return { addCategory, isLoading, error, data };
 }

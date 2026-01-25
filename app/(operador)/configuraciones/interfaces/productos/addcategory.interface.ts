@@ -1,31 +1,23 @@
-// Interfaz para el formulario de categoría
-export interface CategoryFormData {
-  categoryName: string;
+export interface AddCategoryResponse {
+  data: Data;
+  metadata: Metadata;
 }
 
-// Interfaz para el request a la API
-export interface CategoryAddRequest extends Record<string, unknown> {
-  name: string;
-  active: string;
+export interface Data {
+  type: number;
+  index: number;
+  lastID: number;
+  changes: number;
+  totalChanges: number;
+  finalized: number;
+  rowId: number;
 }
 
-// Interfaz para la respuesta de la API
-export interface CategoryAddResponse {
-  data: {
-    type: number;
-    index: number;
-    lastID: number;
-    changes: number;
-    totalChanges: number;
-    finalized: number;
-    rowId: number;
-  };
-  metadata: {
-    connectedMs: number;
-    executedMs: number;
-    elapsedMs: number;
-    functionPreparedMs: number;
-    functionConnectedMs: number;
-    functionExecutedMs: number;
-  };
+export interface Metadata {
+  connectedMs: number;
+  executedMs: number;
+  elapsedMs: number;
+  functionPreparedMs: number;
+  functionConnectedMs: number;
+  functionExecutedMs: number;
 }

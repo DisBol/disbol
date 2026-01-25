@@ -2,24 +2,29 @@
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
-import { CategoryFormData } from "../../interfaces/productos/addcategory.interface";
 import { useState } from "react";
+import { useAddCategory } from "../../hooks/productos/useAddCategory";
+
+interface CategoryFormData {
+  categoryName: string;
+}
 
 interface CategoryFormProps {
   onCancel?: () => void;
-  onSubmit?: (data: CategoryFormData) => void;
+  onSuccess?: () => void;
 }
 
 export default function CategoryForm({
   onCancel,
-  onSubmit,
+  onSuccess,
 }: CategoryFormProps) {
   const [formData, setFormData] = useState<CategoryFormData>({
     categoryName: "",
   });
   const [errors, setErrors] = useState<Partial<CategoryFormData>>({});
+  const { addCategory, isLoading, error } = useAddCategory();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validación
@@ -30,11 +35,14 @@ export default function CategoryForm({
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      onSubmit?.(formData);
+      const result = await addCategory(formData.categoryName.trim());
 
-      // Resetear formulario después de envío exitoso
-      setFormData({ categoryName: "" });
-      setErrors({});
+      if (result) {
+        // Resetear formulario después de envío exitoso
+        setFormData({ categoryName: "" });
+        setErrors({});
+        onSuccess?.();
+      }
     }
   };
 
@@ -59,7 +67,7 @@ export default function CategoryForm({
           onChange={(e) =>
             setFormData({ ...formData, categoryName: e.target.value })
           }
-          error={errors.categoryName}
+          error={errors.categoryName || error || undefined}
         />
 
         <div className="flex gap-3 pt-4 justify-end">
@@ -67,6 +75,7 @@ export default function CategoryForm({
             type="button"
             variant="outline"
             onClick={handleCancel}
+            disabled={isLoading}
             className="flex-1 sm:flex-none sm:w-36"
           >
             Cancelar
@@ -74,9 +83,10 @@ export default function CategoryForm({
           <Button
             type="submit"
             variant="danger"
+            disabled={isLoading}
             className="flex-1 sm:flex-none sm:w-36"
           >
-            Crear Categoría
+            {isLoading ? "Creando..." : "Crear Categoría"}
           </Button>
         </div>
       </form>
