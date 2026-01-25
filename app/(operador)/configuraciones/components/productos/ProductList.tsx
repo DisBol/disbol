@@ -1,9 +1,9 @@
 "use client";
-import { useProductsByCategory } from "../../hooks/useProductsByCategory";
+import { useProductsContext } from "../../context/ProductsContext";
 import { CategoryCard } from "./CategoryCard";
 
 export default function ProductList() {
-  const { categories, loading, error } = useProductsByCategory();
+  const { categories, loading, error } = useProductsContext();
 
   if (loading) {
     return (
