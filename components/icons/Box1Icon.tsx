@@ -1,12 +1,17 @@
-import React from "react";
+import * as React from "react";
 
-export const Box1Icon = (props: React.SVGProps<SVGSVGElement>) => {
+interface IconProps extends React.SVGProps<SVGSVGElement> {
+  size?: number;
+}
+
+export const Box1Icon = ({ size = 28, className, ...props }: IconProps) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="28"
-      height="28"
+      width={size}
+      height={size}
       viewBox="0 0 28 28"
+      className={className}
       {...props}
     >
       <path

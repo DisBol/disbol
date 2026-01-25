@@ -1,12 +1,17 @@
-import React from "react";
+import * as React from "react";
 
-export const DeleteIcon = (props: React.SVGProps<SVGSVGElement>) => {
+interface IconProps extends React.SVGProps<SVGSVGElement> {
+  size?: number;
+}
+
+export const DeleteIcon = ({ size = 20, className, ...props }: IconProps) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
+      width={size}
+      height={size}
       viewBox="0 0 20 20"
+      className={className}
       {...props}
     >
       <path
