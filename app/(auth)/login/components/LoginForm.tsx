@@ -10,11 +10,14 @@ import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 
 import { loginSchema, type LoginSchema } from "../schemas/login.schema";
+import { EyeOffIcon } from "@/components/icons/EyeOff";
+import { EyeFillIcon } from "@/components/icons/EyeFill";
 
 export function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -66,11 +69,24 @@ export function LoginForm() {
 
       <InputField
         label="Contraseña"
-        type="password"
+        type={showPassword ? "text" : "password"}
         placeholder="Ingresa tu contraseña"
         {...register("password")}
         error={errors.password?.message}
         disabled={isLoading}
+        suffix={
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="text-muted-foreground hover:text-foreground transition-colors align-middle"
+          >
+            {showPassword ? (
+              <EyeFillIcon />
+            ) : (
+              <EyeOffIcon />
+            )}
+          </button>
+        }
       />
 
       <Button type="submit" variant="primary" disabled={isLoading}>
