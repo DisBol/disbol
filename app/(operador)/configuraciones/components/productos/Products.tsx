@@ -4,8 +4,10 @@ import { Card } from "@/components/ui/Card";
 import { ProductsHeader } from "./HeaderActions";
 import ProductList from "./ProductList";
 import ProductForm from "./ProductForm";
+import CategoryForm from "./CategoryForm";
 import { useAddProduct } from "../../hooks/productos/useAddProduct";
 import { useUpdateProduct } from "../../hooks/productos/useUpdateProduct";
+import { useAddCategory } from "../../hooks/productos/useAddCategory";
 import {
   ProductsProvider,
   useProductsContext,
@@ -15,6 +17,7 @@ import {
   ProductFormData,
   ProductEditFormData,
 } from "../../interfaces/productos/productform.interface";
+import { CategoryFormData } from "../../interfaces/productos/addcategory.interface";
 
 function ProductsContent() {
   const [showNewProductForm, setShowNewProductForm] = useState(false);
@@ -25,6 +28,7 @@ function ProductsContent() {
   } | null>(null);
   const { addProduct } = useAddProduct();
   const { updateProduct } = useUpdateProduct();
+  const { addCategory } = useAddCategory();
   const { refetch } = useProductsContext();
 
   // Ref para hacer scroll al formulario
@@ -64,7 +68,10 @@ function ProductsContent() {
     setShowNewCategoryForm(false);
   };
 
-  const handleDeleteProduct = async (product: ProductView, categoryId: number) => {
+  const handleDeleteProduct = async (
+    product: ProductView,
+    categoryId: number,
+  ) => {
     // Reutilizar useUpdateProduct para soft delete
     const productData = {
       id: product.id,
@@ -114,6 +121,19 @@ function ProductsContent() {
     }
   };
 
+  const handleCategorySubmit = async (data: CategoryFormData) => {
+    const categoryData = {
+      name: data.categoryName,
+      active: "true",
+    };
+
+    const success = await addCategory(categoryData);
+    if (success) {
+      handleCloseForm();
+      await refetch(); // Refrescar para mostrar la nueva categoría
+    }
+  };
+
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -144,19 +164,15 @@ function ProductsContent() {
 
         {showNewCategoryForm && (
           <div className="flex justify-center">
-            <Card className="p-6 max-w-md">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                Nueva Categoría
-              </h2>
-              <p className="text-gray-500">
-                Formulario de nueva categoría (por implementar)
-              </p>
-            </Card>
+            <CategoryForm
+              onCancel={handleCloseForm}
+              onSubmit={handleCategorySubmit}
+            />
           </div>
         )}
 
-        <ProductList 
-          onEditProduct={handleEditProduct} 
+        <ProductList
+          onEditProduct={handleEditProduct}
           onDeleteProduct={handleDeleteProduct}
         />
       </div>
