@@ -4,19 +4,36 @@ import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { SelectField } from "@/components/ui/SelectInput";
 import { useProductsContext } from "../../context/ProductsContext";
-import { ProductFormData } from "../../interfaces/productform.interface";
+import {
+  ProductFormData,
+  ProductEditFormData,
+} from "../../interfaces/productos/productform.interface";
+import { ProductView } from "../../hooks/productos/useProductsByCategory";
 import { useState } from "react";
 
-interface FormProductProps {
+interface ProductFormProps {
+  // Para edición
+  product?: ProductView;
+  categoryId?: number;
+  // Callbacks
   onCancel?: () => void;
-  onSubmit?: (data: ProductFormData) => void;
+  onSubmit?: (data: ProductFormData | ProductEditFormData) => void;
 }
 
-export default function FormProduct({ onCancel, onSubmit }: FormProductProps) {
+export default function ProductForm({
+  product,
+  categoryId,
+  onCancel,
+  onSubmit,
+}: ProductFormProps) {
   const { categories, loading } = useProductsContext();
-  const [formData, setFormData] = useState<ProductFormData>({
-    categoryId: "",
-    productName: "",
+  const isEditing = !!product;
+
+  // Estado inicial basado en si es edición o creación
+  const [formData, setFormData] = useState({
+    ...(isEditing && { id: product.id }),
+    categoryId: categoryId?.toString() || "",
+    productName: product?.name || "",
   });
   const [errors, setErrors] = useState<Partial<ProductFormData>>({});
 
@@ -28,7 +45,7 @@ export default function FormProduct({ onCancel, onSubmit }: FormProductProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validación simple
+    // Validación
     const newErrors: Partial<ProductFormData> = {};
     if (!formData.categoryId) newErrors.categoryId = "Selecciona una categoría";
     if (!formData.productName.trim())
@@ -37,24 +54,32 @@ export default function FormProduct({ onCancel, onSubmit }: FormProductProps) {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      // Llamar a la función onSubmit si se proporciona
-      onSubmit?.(formData);
+      onSubmit?.(formData as ProductFormData | ProductEditFormData);
 
-      // Resetear el formulario
-      setFormData({ categoryId: "", productName: "" });
-      setErrors({});
+      // Solo resetear en modo creación
+      if (!isEditing) {
+        setFormData({ categoryId: "", productName: "" });
+        setErrors({});
+      }
     }
   };
 
   const handleCancel = () => {
-    setFormData({ categoryId: "", productName: "" });
+    // Resetear al estado inicial
+    setFormData({
+      ...(isEditing && { id: product!.id }),
+      categoryId: categoryId?.toString() || "",
+      productName: product?.name || "",
+    });
     setErrors({});
     onCancel?.();
   };
 
   return (
     <Card className="p-6 w-full">
-      <h2 className="text-md font-bold text-gray-900 mb-4">Nuevo Producto</h2>
+      <h2 className="text-md font-bold text-gray-900 mb-4">
+        {isEditing ? "Editar Producto" : "Nuevo Producto"}
+      </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <SelectField
@@ -97,7 +122,7 @@ export default function FormProduct({ onCancel, onSubmit }: FormProductProps) {
             className="flex-1 sm:flex-none sm:w-36"
             disabled={loading}
           >
-            Crear Producto
+            {isEditing ? "Actualizar" : "Crear Producto"}
           </Button>
         </div>
       </form>

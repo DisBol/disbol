@@ -1,21 +1,46 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { ProductsHeader } from "./HeaderActions";
 import ProductList from "./ProductList";
-import FormProduct from "./FormProduct";
-import { useAddProduct } from "../../hooks/useAddProduct";
+import ProductForm from "./ProductForm";
+import { useAddProduct } from "../../hooks/productos/useAddProduct";
+import { useUpdateProduct } from "../../hooks/productos/useUpdateProduct";
 import {
   ProductsProvider,
   useProductsContext,
+  ProductView,
 } from "../../context/ProductsContext";
-import { ProductFormData } from "../../interfaces/productform.interface";
+import {
+  ProductFormData,
+  ProductEditFormData,
+} from "../../interfaces/productos/productform.interface";
 
 function ProductsContent() {
   const [showNewProductForm, setShowNewProductForm] = useState(false);
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<{
+    product: ProductView;
+    categoryId: number;
+  } | null>(null);
   const { addProduct } = useAddProduct();
+  const { updateProduct } = useUpdateProduct();
   const { refetch } = useProductsContext();
+
+  // Ref para hacer scroll al formulario
+  const formRef = useRef<HTMLDivElement>(null);
+
+  // Scroll al formulario cuando se abra edición
+  useEffect(() => {
+    if (editingProduct && formRef.current) {
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    }
+  }, [editingProduct]);
 
   const handleNewProduct = () => {
     setShowNewProductForm(true);
@@ -30,23 +55,48 @@ function ProductsContent() {
   const handleCloseForm = () => {
     setShowNewProductForm(false);
     setShowNewCategoryForm(false);
+    setEditingProduct(null);
   };
 
-  const handleProductSubmit = async (data: ProductFormData) => {
-    const productData = {
-      name: data.productName,
-      active: "true",
-      Category_id: data.categoryId,
-    };
+  const handleEditProduct = (product: ProductView, categoryId: number) => {
+    setEditingProduct({ product, categoryId });
+    setShowNewProductForm(false);
+    setShowNewCategoryForm(false);
+  };
 
-    const success = await addProduct(productData);
+  const handleProductSubmit = async (
+    data: ProductFormData | ProductEditFormData,
+  ) => {
+    const isEditing = "id" in data;
 
-    if (success) {
-      // Cerrar el formulario y refrescar la lista
-      handleCloseForm();
-      await refetch();
+    if (isEditing) {
+      // Actualizar producto existente
+      const productData = {
+        id: data.id,
+        name: data.productName,
+        active: "true",
+        Category_id: data.categoryId,
+      };
+
+      const success = await updateProduct(productData);
+      if (success) {
+        handleCloseForm();
+        await refetch();
+      }
+    } else {
+      // Crear nuevo producto
+      const productData = {
+        name: data.productName,
+        active: "true",
+        Category_id: data.categoryId,
+      };
+
+      const success = await addProduct(productData);
+      if (success) {
+        handleCloseForm();
+        await refetch();
+      }
     }
-    // El error se maneja automáticamente en el hook useAddProduct
   };
 
   return (
@@ -59,7 +109,18 @@ function ProductsContent() {
 
         {showNewProductForm && (
           <div className="flex justify-center">
-            <FormProduct
+            <ProductForm
+              onCancel={handleCloseForm}
+              onSubmit={handleProductSubmit}
+            />
+          </div>
+        )}
+
+        {editingProduct && (
+          <div ref={formRef} className="flex justify-center">
+            <ProductForm
+              product={editingProduct.product}
+              categoryId={editingProduct.categoryId}
               onCancel={handleCloseForm}
               onSubmit={handleProductSubmit}
             />
@@ -79,7 +140,7 @@ function ProductsContent() {
           </div>
         )}
 
-        <ProductList />
+        <ProductList onEditProduct={handleEditProduct} />
       </div>
     </Card>
   );

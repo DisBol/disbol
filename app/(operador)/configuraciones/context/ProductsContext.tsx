@@ -3,7 +3,11 @@ import React, { createContext, useContext } from "react";
 import {
   useProductsByCategory,
   CategoryView,
-} from "../hooks/useProductsByCategory";
+  ProductView,
+} from "../hooks/productos/useProductsByCategory";
+
+// Re-export types for easier import
+export type { CategoryView, ProductView };
 
 interface ProductsContextType {
   categories: CategoryView[];
