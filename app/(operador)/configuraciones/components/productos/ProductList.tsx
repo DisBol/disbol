@@ -4,9 +4,13 @@ import { CategoryCard } from "./CategoryCard";
 
 interface ProductListProps {
   onEditProduct?: (product: ProductView, categoryId: number) => void;
+  onDeleteProduct?: (product: ProductView, categoryId: number) => void;
 }
 
-export default function ProductList({ onEditProduct }: ProductListProps) {
+export default function ProductList({
+  onEditProduct,
+  onDeleteProduct,
+}: ProductListProps) {
   const { categories, loading, error } = useProductsContext();
 
   if (loading) {
@@ -34,6 +38,7 @@ export default function ProductList({ onEditProduct }: ProductListProps) {
           key={category.id}
           category={category}
           onEditProduct={onEditProduct}
+          onDeleteProduct={onDeleteProduct}
         />
       ))}
     </div>
