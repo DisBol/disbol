@@ -1,4 +1,7 @@
-export async function apiCall(endpoint: string, body?: Record<string, any>) {
+export async function apiCall(
+  endpoint: string,
+  body?: Record<string, unknown>,
+) {
   const response = await fetch("/api/proxy", {
     method: "POST",
     headers: {

@@ -4,26 +4,23 @@ interface IconProps extends React.SVGProps<SVGSVGElement> {
   size?: number;
 }
 
-export const BoxOutlineIcon = ({
-  size = 15,
-  className,
-  ...props
-}: IconProps) => {
+export const EyeOffIcon = ({ size = 24, className, ...props }: IconProps) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      viewBox="0 0 15 15"
+      viewBox="0 0 24 24"
       className={className}
       {...props}
     >
       <path
         fill="none"
         stroke="currentColor"
+        strokeLinecap="round"
         strokeLinejoin="round"
-        d="M.5 3.498L7.5.5l7 2.998m-14 0l7 2.998m-7-2.998V3.5m14-.002l-7 2.998m7-2.998V11.5l-7 3m7-11.002L7.5 6.5v8m0-8.004V14.5m0-8.004L.5 3.5m7 11l-7-3v-8"
-        strokeWidth="1"
+        strokeWidth="2"
+        d="M2 10s3.5 4 10 4s10-4 10-4M4 11.645L2 14m20 0l-1.996-2.352M8.914 13.68L8 16.5m7.063-2.812L16 16.5"
       />
     </svg>
   );

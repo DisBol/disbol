@@ -1,12 +1,17 @@
-import React from "react";
+import * as React from "react";
 
-export const User16Icon = (props: React.SVGProps<SVGSVGElement>) => {
+interface IconProps extends React.SVGProps<SVGSVGElement> {
+  size?: number;
+}
+
+export const User16Icon = ({ size = 16, className, ...props }: IconProps) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width={size}
+      height={size}
       viewBox="0 0 16 16"
+      className={className}
       {...props}
     >
       <path

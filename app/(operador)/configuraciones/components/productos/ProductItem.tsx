@@ -1,8 +1,8 @@
-import { Product } from "../../types/ProductTypes";
+import { ProductView } from "../../hooks/useProductsByCategory";
 
 // product-item.tsx
 interface Props {
-  product: Product;
+  product: ProductView;
 }
 
 export function ProductItem({ product }: Props) {
