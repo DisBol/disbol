@@ -17,19 +17,22 @@ export default function Configuracion() {
   ];
 
   return (
-    <div className="bg-gray-50  p-6">
+    <div className="bg-gray-50 p-3 md:p-6">
       <Tabs defaultValue="proveedores">
-        <TabsList variant="solid">
+        <TabsList
+          variant="solid"
+          className="w-full md:w-auto flex-wrap md:flex-nowrap justify-start md:justify-center"
+        >
           {tabsConfig.map((tab) => (
             <TabsTrigger
               key={tab.id}
               value={tab.id}
               variant="solid"
               size="md"
-              className="gap-2"
+              className="gap-2 flex-1 md:flex-none min-w-max"
             >
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -37,7 +40,6 @@ export default function Configuracion() {
         <TabsContent value="proveedores" animation="slide">
           <Providers />
         </TabsContent>
-
 
         <TabsContent value="productos" animation="slide">
           <Products />
