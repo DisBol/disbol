@@ -10,15 +10,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  TableWrapper,
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
 } from "@/components/ui/Table";
-import { useCategoryProvider } from "../../hooks/useCategoryprovider";
+import { useCategoryProvider } from "../../hooks/proveedores/useCategoryprovider";
 
 export default function ProviderCard() {
   const { providers, loading, error } = useCategoryProvider();
