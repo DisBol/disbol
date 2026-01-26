@@ -53,9 +53,12 @@ const ProviderForm: React.FC<FormProviderProps> = ({
 
   const [name, setName] = useState("");
   const [assignedGroups, setAssignedGroups] = useState<AssignedGroup[]>([]);
+  const [nameError, setNameError] = useState<string | undefined>(undefined);
+  const [groupError, setGroupError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (initialData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(initialData.nombre);
       const groups = initialData.grupos.map((g) => ({
         id: crypto.randomUUID(),
@@ -93,8 +96,22 @@ const ProviderForm: React.FC<FormProviderProps> = ({
   };
 
   // Manejador: Guardar formulario
+
   const handleSave = async () => {
-    if (!name.trim()) return;
+    let hasError = false;
+    if (!name.trim()) {
+      setNameError("El nombre es obligatorio");
+      hasError = true;
+    } else {
+      setNameError(undefined);
+    }
+    if (assignedGroups.length === 0) {
+      setGroupError("Debe seleccionar al menos un grupo");
+      hasError = true;
+    } else {
+      setGroupError(undefined);
+    }
+    if (hasError) return;
 
     try {
       let providerId: number | undefined;
@@ -166,9 +183,10 @@ const ProviderForm: React.FC<FormProviderProps> = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ingrese el nombre"
+            error={nameError}
           />
 
-          <div className="relative">
+          <div className="flex flex-col gap-2">
             <Select
               label="Agregar Grupo de Productos"
               options={categories}
@@ -178,10 +196,13 @@ const ProviderForm: React.FC<FormProviderProps> = ({
                 loading ? "Cargando grupos..." : "Seleccionar grupo..."
               }
               radius="md"
+              size="lg"
+              className="h-12 px-4 text-base" // igualando al input
+              variant={groupError ? "error" : undefined}
             />
-            {error && (
-              <span className="text-xs text-red-500 absolute -bottom-5 left-0">
-                Error al cargar grupos
+            {(groupError || error) && (
+              <span className="text-xs text-danger mt-0.5">
+                {groupError || "Error al cargar grupos"}
               </span>
             )}
           </div>
@@ -192,7 +213,7 @@ const ProviderForm: React.FC<FormProviderProps> = ({
             Grupos Asignados ({assignedGroups.length})
           </label>
 
-          <div className="flex flex-wrap gap-2 min-h-[32px] p-2 border border-dashed border-gray-300 rounded-md bg-white">
+          <div className="flex flex-wrap gap-2 min-h-8 p-2 border border-dashed border-gray-300 rounded-md bg-white">
             {assignedGroups.length === 0 ? (
               <p className="text-sm text-gray-400 italic w-full text-center py-2">
                 {loading ? "Esperando datos..." : "No hay grupos asignados"}

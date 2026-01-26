@@ -48,8 +48,8 @@ export default function ProviderCard({ onEdit }: ProviderTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {providers.map((proveedor, index) => (
-                <TableRow key={index} className="group">
+              {providers.map((proveedor) => (
+                <TableRow key={proveedor.id} className="group">
                   <TableCell className="font-medium text-gray-900 text-xs sm:text-sm">
                     {proveedor.nombre}
                   </TableCell>
@@ -108,9 +108,9 @@ export default function ProviderCard({ onEdit }: ProviderTableProps) {
 
       {/* Vista Mobile - Cards */}
       <div className="md:hidden space-y-3">
-        {providers.map((proveedor, index) => (
+        {providers.map((proveedor) => (
           <div
-            key={index}
+            key={proveedor.id}
             className="bg-white border border-gray-200 rounded-lg p-4 space-y-3"
           >
             <div className="flex justify-between items-start">
