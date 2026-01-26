@@ -9,7 +9,7 @@ export function useAddCategoryProvider() {
 
   const addCategoryToProvider = async (
     providerId: number,
-    categoryId: number
+    categoryId: number,
   ): Promise<AddCategoryProviderResponse | null> => {
     setLoading(true);
     setError(null);

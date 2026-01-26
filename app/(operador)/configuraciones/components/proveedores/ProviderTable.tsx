@@ -11,10 +11,17 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/Table";
-import { useCategoryProvider } from "../../hooks/proveedores/useCategoryprovider";
+import {
+  ProviderView,
+  useCategoryProvider,
+} from "../../hooks/proveedores/useCategoryprovider";
 import { useUpdateProvider } from "../../hooks/proveedores/useUpdateProvider";
 
-export default function ProviderCard() {
+interface ProviderTableProps {
+  onEdit?: (provider: ProviderView) => void;
+}
+
+export default function ProviderCard({ onEdit }: ProviderTableProps) {
   const { providers, loading, error } = useCategoryProvider();
   const { updateProvider } = useUpdateProvider();
 
@@ -57,7 +64,7 @@ export default function ProviderCard() {
                           variant="flat"
                           className="text-xs"
                         >
-                          {grupo}
+                          {grupo.name}
                         </Chip>
                       ))}
                     </div>
@@ -76,7 +83,10 @@ export default function ProviderCard() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1 sm:gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1 sm:p-1.5 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-md transition-colors">
+                      <button
+                        onClick={() => onEdit?.(proveedor)}
+                        className="p-1 sm:p-1.5 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-md transition-colors"
+                      >
                         <EditIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                       <button
@@ -111,7 +121,10 @@ export default function ProviderCard() {
                 </p>
               </div>
               <div className="flex gap-1">
-                <button className="p-1.5 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-md transition-colors">
+                <button
+                  onClick={() => onEdit?.(proveedor)}
+                  className="p-1.5 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-md transition-colors"
+                >
                   <EditIcon className="w-4 h-4" />
                 </button>
                 <button
@@ -137,7 +150,7 @@ export default function ProviderCard() {
                     variant="flat"
                     className="text-xs"
                   >
-                    {grupo}
+                    {grupo.name}
                   </Chip>
                 ))}
               </div>

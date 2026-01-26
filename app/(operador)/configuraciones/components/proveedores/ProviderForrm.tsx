@@ -7,21 +7,31 @@ import { Button } from "@/components/ui/Button";
 import { useCategory } from "../../hooks/proveedores/useCategory";
 import { useAddProvider } from "../../hooks/proveedores/useAddProvider";
 import { useAddCategoryProvider } from "../../hooks/proveedores/useAddCategoryprovider";
+import { ProviderView } from "../../hooks/proveedores/useCategoryprovider";
+import { useUpdateProvider } from "../../hooks/proveedores/useUpdateProvider";
+import { useEffect } from "react";
+import { useUpdateCategory } from "../../hooks/proveedores/useUpdateCategoryprovider";
+import { useProviderStore } from "../../store/providers.store";
 
 interface AssignedGroup {
   id: string;
   categoryId: number;
   name: string;
   category: string;
+  CategoryProvider_id?: number;
 }
 
 interface FormProviderProps {
   onSave: (data: { name: string; assignedGroups: AssignedGroup[] }) => void;
   onCancel: () => void;
+  initialData?: ProviderView | null;
 }
 
-const ProviderForm: React.FC<FormProviderProps> = ({ onSave, onCancel }) => {
-  // 1. Usamos el Hook para obtener los datos de la API
+const ProviderForm: React.FC<FormProviderProps> = ({
+  onSave,
+  onCancel,
+  initialData,
+}) => {
   const { categories, rawData, loading, error } = useCategory();
   const { addProvider, loading: saving, error: saveError } = useAddProvider();
   const {
@@ -30,19 +40,38 @@ const ProviderForm: React.FC<FormProviderProps> = ({ onSave, onCancel }) => {
     error: categoryError,
   } = useAddCategoryProvider();
 
+  const {
+    updateProvider,
+    loading: updating,
+    error: updateError,
+  } = useUpdateProvider();
+  const {
+    updateCategory,
+    loading: updatingCategory,
+    error: updateCategoryError,
+  } = useUpdateCategory();
+
   const [name, setName] = useState("");
   const [assignedGroups, setAssignedGroups] = useState<AssignedGroup[]>([]);
 
-  // Función para guardar las relaciones proveedor-categoría
-  const saveProviderCategories = async (providerId: number) => {
-    for (const group of assignedGroups) {
-      await addCategoryToProvider(providerId, group.categoryId);
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.nombre);
+      const groups = initialData.grupos.map((g) => ({
+        id: crypto.randomUUID(),
+        categoryId: g.id,
+        name: g.name,
+        category: g.name,
+        CategoryProvider_id: g.CategoryProvider_id,
+      }));
+      setAssignedGroups(groups);
+    } else {
+      setName("");
+      setAssignedGroups([]);
     }
-  };
+  }, [initialData]);
 
-  // Manejador: Agregar grupo desde el Select
   const handleSelectGroup = (option: SelectOption) => {
-    // Evitar duplicados visuales si ya está seleccionado
     if (assignedGroups.some((g) => g.name === option.value)) return;
     const originalItem = rawData?.find((item) => item.name === option.value);
 
@@ -68,23 +97,60 @@ const ProviderForm: React.FC<FormProviderProps> = ({ onSave, onCancel }) => {
     if (!name.trim()) return;
 
     try {
-      // Paso 1: Crear el proveedor
-      const providerResponse = await addProvider(name);
-      const providerId = providerResponse?.data?.[0]?.provider_id;
+      let providerId: number | undefined;
 
-      if (!providerId) {
-        console.error(
-          "No se pudo obtener el ID del proveedor creado",
-          providerResponse,
+      if (initialData) {
+        providerId = initialData.id;
+        const currentActive =
+          initialData.estado === "Activo" ? "true" : "false";
+        await updateProvider(providerId, name, currentActive);
+        // Grupos actuales en el formulario
+        const currentGroupIds = new Set(
+          assignedGroups.map((g) => g.categoryId),
         );
-        return;
+        // Grupos originales (de la BD)
+        const initialGroupIds = new Set(initialData.grupos.map((g) => g.id));
+        const promises = [];
+        // A) Agregar solo las NUEVAS
+        const groupsToAdd = assignedGroups.filter(
+          (g) => !initialGroupIds.has(g.categoryId),
+        );
+        for (const group of groupsToAdd) {
+          promises.push(addCategoryToProvider(providerId, group.categoryId));
+        }
+        // B) Desactivar las REMOVIDAS
+        const groupsToRemove = initialData.grupos.filter(
+          (g) => !currentGroupIds.has(g.id),
+        );
+        for (const group of groupsToRemove) {
+          // pasando 'false' como estado.
+          if (group.CategoryProvider_id != null) {
+            promises.push(updateCategory(group.CategoryProvider_id, "false"));
+          }
+        }
+        // Ejecutar todas las promesas en paralelo
+        await Promise.all(promises);
+      } else {
+        // Paso 1: Crear el proveedor
+        const providerResponse = await addProvider(name);
+        providerId = providerResponse?.data?.[0]?.provider_id;
+        if (!providerId) {
+          console.error(
+            "No se pudo obtener el ID del proveedor creado",
+            providerResponse,
+          );
+          return;
+        }
+        // Paso 2: Guardar las relaciones proveedor-categoría
+        if (assignedGroups.length > 0) {
+          const promises = assignedGroups.map((group) =>
+            addCategoryToProvider(providerId!, group.categoryId),
+          );
+          await Promise.all(promises);
+        }
       }
-
-      // Paso 2: Guardar las relaciones proveedor-categoría
-      if (assignedGroups.length > 0) {
-        await saveProviderCategories(providerId);
-      }
-
+      // 3. FINALMENTE: Actualizar la tienda UNA SOLA VEZ
+      await useProviderStore.getState().fetchProviders();
       onSave({ name, assignedGroups });
     } catch (err) {
       console.error("Error al guardar proveedor:", err);
@@ -121,7 +187,6 @@ const ProviderForm: React.FC<FormProviderProps> = ({ onSave, onCancel }) => {
           </div>
         </div>
 
-        {/* --- Sección de Chips (Grupos Asignados) --- */}
         <div className="mb-6">
           <label className="block text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">
             Grupos Asignados ({assignedGroups.length})
@@ -159,14 +224,22 @@ const ProviderForm: React.FC<FormProviderProps> = ({ onSave, onCancel }) => {
             onClick={handleSave}
             variant="danger"
             leftIcon={<SaveIcon className="w-4 h-4" />}
-            disabled={loading || saving || savingCategories}
+            disabled={
+              loading ||
+              saving ||
+              savingCategories ||
+              updating ||
+              updatingCategory
+            }
           >
-            {saving || savingCategories ? "Guardando..." : "Guardar Proveedor"}
+            {saving || savingCategories || updating || updatingCategory
+              ? "Guardando..."
+              : "Guardar Proveedor"}
           </Button>
         </div>
         {(saveError || categoryError) && (
           <p className="text-red-500 text-sm mt-2">
-            {saveError || categoryError}
+            {saveError || categoryError || updateError || updateCategoryError}
           </p>
         )}
       </div>
