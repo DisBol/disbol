@@ -3,7 +3,7 @@ import { apiCall } from "../apiClient";
 
 export async function AddCategoryProvider(
   providerId: number,
-  categoryId: number
+  categoryId: number,
 ): Promise<AddCategoryProviderResponse> {
   return apiCall("addcategoryprovider", {
     Provider_id: providerId,
