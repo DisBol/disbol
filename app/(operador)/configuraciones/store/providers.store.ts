@@ -12,12 +12,15 @@ interface ProviderState {
   fetchProviders: () => Promise<void>;
 }
 
-export const useProviderStore = create<ProviderState>((set) => ({
+export const useProviderStore = create<ProviderState>((set, get) => ({
   rawData: null,
   loading: false,
   error: null,
   fetchProviders: async () => {
-    set({ loading: true, error: null });
+    if (!get().rawData) {
+      set({ loading: true, error: null });
+    }
+
     try {
       const result: CategoryProviderResponse = await GetCategoryProviders();
       set({ rawData: result.data, loading: false });

@@ -5,7 +5,7 @@ import { useProviderStore } from "../../store/providers.store";
 export interface ProviderView {
   id: number;
   nombre: string;
-  grupos: string[];
+  grupos: { id: number; name: string; CategoryProvider_id: number }[];
   estado: string;
 }
 
@@ -29,21 +29,24 @@ export function useCategoryProvider(): UseCategoryProviderReturn {
   const providers = useMemo<ProviderView[]>(() => {
     if (!rawData) return [];
 
-    const map = new Map<string, ProviderView>();
+    const map = new Map<number, ProviderView>();
 
     rawData.forEach((item) => {
-      if (!map.has(item.name_0)) {
-        map.set(item.name_0, {
+      if (!map.has(item.id_0)) {
+        map.set(item.id_0, {
           id: item.id_0,
           nombre: item.name_0,
           grupos: [],
           estado: "Activo",
         });
       }
-      // Nota: Asumo que 'item.name' es el nombre del grupo
-      const provider = map.get(item.name_0);
+      const provider = map.get(item.id_0);
       if (provider && item.name) {
-        provider.grupos.push(item.name);
+        provider.grupos.push({
+          id: item.id,
+          name: item.name,
+          CategoryProvider_id: item.CategoryProvider_id,
+        });
       }
     });
 
