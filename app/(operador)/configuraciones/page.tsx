@@ -6,6 +6,7 @@ import { TruckIcon } from "@/components/icons/TruckIcon";
 import { User16Icon } from "@/components/icons/User16Icon";
 import Products from "./components/productos/Products";
 import Providers from "./components/proveedores/Providers";
+import Clients from "./components/clientes/Clients";
 export default function Configuracion() {
   const tabsConfig = [
     { id: "proveedores", label: "Proveedores", icon: BoxOutlineIcon },
@@ -43,6 +44,10 @@ export default function Configuracion() {
 
         <TabsContent value="productos" animation="slide">
           <Products />
+        </TabsContent>
+
+        <TabsContent value="clientes" animation="slide">
+          <Clients />
         </TabsContent>
       </Tabs>
     </div>
