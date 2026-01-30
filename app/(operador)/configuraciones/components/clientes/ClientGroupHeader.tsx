@@ -5,17 +5,25 @@ import { useState } from "react";
 import { TabType } from "./ClientTabs";
 import ClientForm from "./ClientForm";
 import GroupForm from "./GroupForm";
+import {
+  Datum,
+  GroupFormData,
+} from "../../interfaces/clientes/getclientgroup.interface";
 
 interface ClientGroupHeaderProps {
   activeTab: TabType;
   onClientSaved?: () => void;
   onGroupSaved?: () => void;
+  editingGroup?: Datum | null;
+  onGroupEdit?: (group: Datum | null) => void;
 }
 
 export function ClientGroupHeader({
   activeTab,
   onClientSaved,
   onGroupSaved,
+  editingGroup,
+  onGroupEdit,
 }: ClientGroupHeaderProps) {
   const [isClientFormOpen, setIsClientFormOpen] = useState(false);
   const [isGroupFormOpen, setIsGroupFormOpen] = useState(false);
@@ -27,9 +35,10 @@ export function ClientGroupHeader({
     onClientSaved?.();
   };
 
-  const handleSaveGroup = () => {
-    console.log("Grupo guardado exitosamente");
+  const handleSaveGroup = async (data: GroupFormData) => {
+    console.log("Grupo guardado exitosamente:", data);
     setIsGroupFormOpen(false);
+    onGroupEdit?.(null); // Limpiar el grupo en edición
     // Notificar al componente padre para refrescar la lista
     onGroupSaved?.();
   };
@@ -40,6 +49,8 @@ export function ClientGroupHeader({
     if (isClientTab) {
       setIsClientFormOpen(true);
     } else {
+      // Limpiar cualquier grupo en edición y abrir formulario para nuevo grupo
+      onGroupEdit?.(null);
       setIsGroupFormOpen(true);
     }
   };
@@ -50,6 +61,7 @@ export function ClientGroupHeader({
 
   const handleCancelGroup = () => {
     setIsGroupFormOpen(false);
+    onGroupEdit?.(null); // Limpiar el grupo en edición
   };
 
   return (
@@ -79,8 +91,12 @@ export function ClientGroupHeader({
       />
 
       {/* Form de Grupo (se despliega abajo) */}
-      {isGroupFormOpen && (
-        <GroupForm onSave={handleSaveGroup} onCancel={handleCancelGroup} />
+      {(isGroupFormOpen || editingGroup) && (
+        <GroupForm
+          onSave={handleSaveGroup}
+          onCancel={handleCancelGroup}
+          group={editingGroup || undefined}
+        />
       )}
     </>
   );
