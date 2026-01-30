@@ -13,6 +13,7 @@ export interface ClientGroupOption {
 
 interface UseClientGroupsReturn {
   clientGroups: ClientGroupOption[];
+  rawData: Datum[];
   isLoading: boolean;
   error: Error | null;
 }
@@ -52,5 +53,5 @@ export function useClientGroups(): UseClientGroupsReturn {
       active: group.active,
     })) || [];
 
-  return { clientGroups, isLoading, error };
+  return { clientGroups, rawData: data || [], isLoading, error };
 }
