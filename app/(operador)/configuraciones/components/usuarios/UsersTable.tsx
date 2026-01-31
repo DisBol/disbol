@@ -38,7 +38,7 @@ export default function UsersTable({
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs sm:text-sm">Usuario</TableHead>
-                <TableHead className="text-xs sm:text-sm">Contraseña</TableHead>
+                <TableHead className="text-xs sm:text-sm">CI</TableHead>
                 <TableHead className="text-xs sm:text-sm">Rol</TableHead>
                 <TableHead className="text-xs sm:text-sm">Estado</TableHead>
                 <TableHead className="text-xs sm:text-sm">Acciones</TableHead>
