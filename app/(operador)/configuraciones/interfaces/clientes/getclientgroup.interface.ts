@@ -20,3 +20,14 @@ export interface Metadata {
   functionConnectedMs: number;
   functionExecutedMs: number;
 }
+
+export interface GroupFormData {
+  nombre: string;
+  idCerca: string;
+}
+
+export interface GroupFormProps {
+  onSave: (data: GroupFormData) => Promise<void>;
+  onCancel: () => void;
+  group?: Datum;
+}

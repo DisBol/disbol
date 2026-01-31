@@ -16,15 +16,19 @@ import { useClientGroups } from "../../hooks/clientes/useClientsGroups";
 
 interface GroupTableProps {
   onEdit?: (group: Datum) => void;
-  onDelete?: (groupId: number) => void;
+  onDelete?: (group: Datum) => void;
 }
 
 export default function GroupTable({ onEdit, onDelete }: GroupTableProps) {
-  const { clientGroups, isLoading, error } = useClientGroups();
+  const { rawData, isLoading, error } = useClientGroups();
 
-  const handleDeactivate = (id: number, name: string) => {
-    if (confirm(`¿Estás seguro de que deseas desactivar el grupo "${name}"?`)) {
-      onDelete?.(id);
+  const handleDeactivate = (group: Datum) => {
+    if (
+      confirm(
+        `¿Estás seguro de que deseas desactivar el grupo "${group.name}"?`,
+      )
+    ) {
+      onDelete?.(group);
     }
   };
 
@@ -50,13 +54,8 @@ export default function GroupTable({ onEdit, onDelete }: GroupTableProps) {
     );
   }
 
-  // Transformar los datos del hook para la tabla
-  const groups = clientGroups.map((group) => ({
-    id: parseInt(group.value),
-    name: group.label,
-    descripcion: "Descripción predeterminada", // Campo quemado como solicitaste
-    active: group.active,
-  }));
+  // Usar los datos crudos directamente
+  const groups = rawData;
 
   return (
     <div className="w-full">
@@ -67,9 +66,6 @@ export default function GroupTable({ onEdit, onDelete }: GroupTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs sm:text-sm">Nombre</TableHead>
-                <TableHead className="text-xs sm:text-sm">
-                  Descripción
-                </TableHead>
                 <TableHead className="text-xs sm:text-sm">Estado</TableHead>
                 <TableHead className="text-xs sm:text-sm">Acciones</TableHead>
               </TableRow>
@@ -79,9 +75,6 @@ export default function GroupTable({ onEdit, onDelete }: GroupTableProps) {
                 <TableRow key={group.id} className="group">
                   <TableCell className="font-medium text-gray-900 text-xs sm:text-sm">
                     {group.name}
-                  </TableCell>
-                  <TableCell className="text-gray-600 text-xs sm:text-sm">
-                    {group.descripcion}
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -96,22 +89,13 @@ export default function GroupTable({ onEdit, onDelete }: GroupTableProps) {
                   <TableCell>
                     <div className="flex gap-1 sm:gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() =>
-                          handleEdit({
-                            id: group.id,
-                            name: group.name,
-                            idCerca: 0, // Campo requerido por la interfaz
-                            active: group.active,
-                            created_at: new Date(),
-                            updated_at: new Date(),
-                          })
-                        }
+                        onClick={() => handleEdit(group)}
                         className="p-1 sm:p-1.5 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-md transition-colors"
                       >
                         <EditIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeactivate(group.id, group.name)}
+                        onClick={() => handleDeactivate(group)}
                         className="p-1 sm:p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                       >
                         <DeleteIcon className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -141,34 +125,18 @@ export default function GroupTable({ onEdit, onDelete }: GroupTableProps) {
               </div>
               <div className="flex gap-1">
                 <button
-                  onClick={() =>
-                    handleEdit({
-                      id: group.id,
-                      name: group.name,
-                      idCerca: 0,
-                      active: group.active,
-                      created_at: new Date(),
-                      updated_at: new Date(),
-                    })
-                  }
+                  onClick={() => handleEdit(group)}
                   className="p-1.5 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-md transition-colors"
                 >
                   <EditIcon className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDeactivate(group.id, group.name)}
+                  onClick={() => handleDeactivate(group)}
                   className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 >
                   <DeleteIcon className="w-4 h-4" />
                 </button>
               </div>
-            </div>
-
-            <div>
-              <p className="text-xs text-gray-500 font-medium mb-1">
-                Descripción
-              </p>
-              <p className="text-sm text-gray-700">{group.descripcion}</p>
             </div>
 
             <div>
