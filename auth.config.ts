@@ -1,6 +1,26 @@
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
+interface CustomUser {
+  id: string;
+  username: string;
+  role: string;
+  roleId: number;
+  clientId: number;
+  employeeId: number;
+}
+
+interface CustomSession {
+  user: {
+    id: string;
+    username: string;
+    role: string;
+    roleId: number;
+    clientId: number;
+    employeeId: number;
+  };
+}
+
 const API_URL = "https://clgqxx5idk.g4.sqlite.cloud:443/v2/functions/loginuser";
 const API_TOKEN = "sQZHtQhFSbz12LU5VoVWKiHPt3f4ECue92TUWez9hMc";
 
@@ -46,6 +66,7 @@ export const authConfig = {
             id: userData.id.toString(),
             username: userData.username,
             role: userData.Role_name,
+            roleId: userData.Role_id,
             clientId: userData.Client_id,
             employeeId: userData.Employee_id,
           };
@@ -65,21 +86,25 @@ export const authConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        const customUser = user as CustomUser;
         token.id = user.id;
-        token.username = (user as any).username;
-        token.role = (user as any).role;
-        token.clientId = (user as any).clientId;
-        token.employeeId = (user as any).employeeId;
+        token.username = customUser.username;
+        token.role = customUser.role;
+        token.roleId = customUser.roleId;
+        token.clientId = customUser.clientId;
+        token.employeeId = customUser.employeeId;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).username = token.username as string;
-        (session.user as any).role = token.role as string;
-        (session.user as any).clientId = token.clientId as number;
-        (session.user as any).employeeId = token.employeeId as number;
+        const customSession = session as CustomSession;
+        customSession.user.id = token.id as string;
+        customSession.user.username = token.username as string;
+        customSession.user.role = token.role as string;
+        customSession.user.roleId = token.roleId as number;
+        customSession.user.clientId = token.clientId as number;
+        customSession.user.employeeId = token.employeeId as number;
       }
       return session;
     },

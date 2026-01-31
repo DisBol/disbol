@@ -2,11 +2,17 @@
 
 import clsx from "clsx";
 import { signOut } from "next-auth/react";
+import { useMemo } from "react";
 import { sidebarOperadorMenu } from "./config/sidebar-operador.config";
 import { SidebarItem } from "./SidebarItem";
 import { UserRoleSelect } from "./UserRoleSelect";
 import { MenuRoundedIcon } from "../icons/MenuRoundedIcon";
 import { CloseRoundedIcon } from "../icons/CloseRoundedIcon";
+import { useRoutePermissions } from "@/hooks/useRoutePermissions";
+import {
+  getVisibilityClasses,
+  getCollapsedToggleClasses,
+} from "./utils/sidebar-utils";
 
 interface SidebarProps {
   open?: boolean;
@@ -21,9 +27,27 @@ export function Sidebar({
   collapsed,
   onToggleCollapse,
 }: SidebarProps) {
+  const { canAccess } = useRoutePermissions();
+
   const handleLogout = () => {
     signOut({ callbackUrl: "/login" });
   };
+
+  // Memoizar los menús filtrados para mejor performance
+  const { filteredMainMenu, filteredFooterMenu } = useMemo(() => {
+    const filteredMainMenu = sidebarOperadorMenu.main.filter((item) =>
+      item.href ? canAccess(item.href) : true,
+    );
+
+    const filteredFooterMenu = sidebarOperadorMenu.footer.filter((item) =>
+      item.href ? canAccess(item.href) : true,
+    );
+
+    return { filteredMainMenu, filteredFooterMenu };
+  }, [canAccess]);
+
+  const visibilityClasses = getVisibilityClasses({ open, collapsed });
+  const collapsedToggleClasses = getCollapsedToggleClasses(collapsed);
 
   return (
     <>
@@ -53,12 +77,10 @@ export function Sidebar({
 
             {/* Texto solo en desktop */}
             <span
-              className={clsx("text-xl font-bold tracking-wide", {
-                inline: open, // Visible en móvil cuando open
-                hidden: !open, // Oculto en móvil por defecto
-                "md:inline": !collapsed, // Visible en desktop cuando no collapsed
-                "md:hidden": collapsed, // Oculto en desktop cuando collapsed
-              })}
+              className={clsx(
+                "text-xl font-bold tracking-wide",
+                visibilityClasses,
+              )}
             >
               DISBOL
             </span>
@@ -69,12 +91,7 @@ export function Sidebar({
             onClick={open ? onClose : onToggleCollapse}
             className={clsx(
               "p-2 rounded-lg hover:bg-white/10 transition-colors",
-              {
-                block: open, // Visible en móvil cuando open
-                hidden: !open, // Oculto en móvil por defecto
-                "md:block": !collapsed, // Visible en desktop cuando no collapsed
-                "md:hidden": collapsed, // Oculto en desktop cuando collapsed
-              },
+              visibilityClasses,
             )}
           >
             {open ? (
@@ -86,21 +103,12 @@ export function Sidebar({
         </div>
 
         {/* Tipo de usuario */}
-        <div
-          className={clsx("px-6 pb-6", {
-            block: open, // Visible en móvil cuando open
-            hidden: !open, // Oculto en móvil por defecto
-            "md:block": !collapsed, // Visible en desktop cuando no collapsed
-            "md:hidden": collapsed, // Oculto en desktop cuando collapsed
-          })}
-        >
+        <div className={clsx("px-6 pb-6", visibilityClasses)}>
           <UserRoleSelect />
         </div>
 
         {/* Hamburguesa para modo colapsado */}
-        <div
-          className={`px-3 pb-4 hidden md:${collapsed ? "block" : "hidden"}`}
-        >
+        <div className={collapsedToggleClasses}>
           <button
             onClick={onToggleCollapse}
             className="flex items-center justify-center w-full rounded-lg px-4 py-3 text-sm font-medium transition-colors text-slate-300 hover:bg-white/10 hover:text-white"
@@ -111,7 +119,7 @@ export function Sidebar({
 
         {/* Menú principal */}
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-          {sidebarOperadorMenu.main.map((item) => (
+          {filteredMainMenu.map((item) => (
             <SidebarItem
               key={item.href}
               {...item}
@@ -123,7 +131,7 @@ export function Sidebar({
 
         {/* Footer */}
         <div className="px-3 py-4 border-t border-white/10 space-y-1">
-          {sidebarOperadorMenu.footer.map((item) => (
+          {filteredFooterMenu.map((item) => (
             <SidebarItem
               key={item.href || item.label}
               {...item}

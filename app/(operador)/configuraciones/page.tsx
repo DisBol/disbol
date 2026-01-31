@@ -4,12 +4,14 @@ import { BoxOutline2Icon } from "@/components/icons/BoxOutline2";
 import { BoxOutlineIcon } from "@/components/icons/BoxOutlineIcon";
 import { TruckIcon } from "@/components/icons/TruckIcon";
 import { User16Icon } from "@/components/icons/User16Icon";
+import { RouteProtection } from "@/components/shared/RouteProtection";
 import Products from "./components/productos/Products";
 import Providers from "./components/proveedores/Providers";
 import Clients from "./components/clientes/Clients";
 import Cars from "./components/vehiculos/Car";
 import Containers from "./components/contenedores/Container";
 import Users from "./components/usuarios/Users";
+
 export default function Configuracion() {
   const tabsConfig = [
     { id: "proveedores", label: "Proveedores", icon: BoxOutlineIcon },
@@ -21,50 +23,52 @@ export default function Configuracion() {
   ];
 
   return (
-    <div className="bg-gray-50 p-3 md:p-6">
-      <Tabs defaultValue="proveedores">
-        <TabsList
-          variant="solid"
-          className="w-full md:w-auto flex-wrap md:flex-nowrap justify-start md:justify-center"
-        >
-          {tabsConfig.map((tab) => (
-            <TabsTrigger
-              key={tab.id}
-              value={tab.id}
-              variant="solid"
-              size="md"
-              className="gap-2 flex-1 md:flex-none min-w-max"
-            >
-              <tab.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <RouteProtection requiredTransaction="Configuracion">
+      <div className="bg-gray-50 p-3 md:p-6">
+        <Tabs defaultValue="proveedores">
+          <TabsList
+            variant="solid"
+            className="w-full md:w-auto flex-wrap md:flex-nowrap justify-start md:justify-center"
+          >
+            {tabsConfig.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                variant="solid"
+                size="md"
+                className="gap-2 flex-1 md:flex-none min-w-max"
+              >
+                <tab.icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        <TabsContent value="proveedores" animation="slide">
-          <Providers />
-        </TabsContent>
+          <TabsContent value="proveedores" animation="slide">
+            <Providers />
+          </TabsContent>
 
-        <TabsContent value="productos" animation="slide">
-          <Products />
-        </TabsContent>
+          <TabsContent value="productos" animation="slide">
+            <Products />
+          </TabsContent>
 
-        <TabsContent value="clientes" animation="slide">
-          <Clients />
-        </TabsContent>
+          <TabsContent value="clientes" animation="slide">
+            <Clients />
+          </TabsContent>
 
-        <TabsContent value="vehiculos" animation="slide">
-          <Cars />
-        </TabsContent>
+          <TabsContent value="vehiculos" animation="slide">
+            <Cars />
+          </TabsContent>
 
-        <TabsContent value="contenedores" animation="slide">
-          <Containers />
-        </TabsContent>
+          <TabsContent value="contenedores" animation="slide">
+            <Containers />
+          </TabsContent>
 
-        <TabsContent value="usuarios" animation="slide">
-          <Users />
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value="usuarios" animation="slide">
+            <Users />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </RouteProtection>
   );
 }
