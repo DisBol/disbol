@@ -1,12 +1,14 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SaveIcon } from "@/components/icons/Save";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { RoleFormData } from "../../interfaces/usuarios/role.interface";
+import { useTransaction } from "../../hooks/usuarios/useTransaction";
+import { useAddRole } from "../../hooks/usuarios/useAddRole";
+import { useAddTransactionRole } from "../../hooks/usuarios/useAddTransactionRole";
 
 interface RolesFormProps {
-  onSave: (data: RoleFormData) => void;
+  onSave: () => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -14,33 +16,64 @@ interface RolesFormProps {
 export default function RolesForm({
   onSave,
   onCancel,
-  isLoading = false,
+  isLoading: initialLoading = false,
 }: RolesFormProps) {
   const [roleName, setRoleName] = useState("");
-  const [screens, setScreens] = useState({
-    dashboard: false,
-    consolidacion: false,
-    asignaciones: false,
-    seguimiento: false,
-    canastos: false,
-    appChofer: false,
-    appCliente: false,
-    contabilidad: false,
-    rrhh: false,
-    configuracion: false,
-  });
+  const [selectedTransactions, setSelectedTransactions] = useState<number[]>(
+    [],
+  );
 
-  const handleScreenChange = (key: keyof typeof screens) => {
-    setScreens((prev) => ({ ...prev, [key]: !prev[key] }));
+  const {
+    transactions,
+    getTransactions,
+    isLoading: isLoadingTransactions,
+  } = useTransaction();
+  const { addRole, isLoading: isAddingRole } = useAddRole();
+  const { addTransactionRole, isLoading: isAddingTransaction } =
+    useAddTransactionRole();
+
+  useEffect(() => {
+    getTransactions();
+  }, [getTransactions]);
+
+  const handleCheckboxChange = (id: number) => {
+    setSelectedTransactions((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!roleName.trim()) {
       alert("El nombre del rol es obligatorio");
       return;
     }
-    onSave({ roleName, screens });
+
+    // 1. Create Role
+    const roleResponse = await addRole(roleName);
+
+    if (roleResponse && roleResponse.data && roleResponse.data.lastID) {
+      const newRoleId = roleResponse.data.lastID;
+
+      // 2. Assign Transactions
+      // We process them sequentially or in parallel. Parallel is faster.
+      const transactionPromises = selectedTransactions.map((transactionId) =>
+        addTransactionRole(transactionId, newRoleId),
+      );
+
+      await Promise.all(transactionPromises);
+
+      // 3. Finish
+      onSave();
+    } else {
+      alert("Error al crear el rol");
+    }
   };
+
+  const isLoading =
+    initialLoading ||
+    isLoadingTransactions ||
+    isAddingRole ||
+    isAddingTransaction;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 animate-in slide-in-from-top">
@@ -62,56 +95,20 @@ export default function RolesForm({
             PANTALLAS CON ACCESO
           </label>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Checkbox
-              label="Dashboard"
-              checked={screens.dashboard}
-              onChange={() => handleScreenChange("dashboard")}
-            />
-            <Checkbox
-              label="Consolidación"
-              checked={screens.consolidacion}
-              onChange={() => handleScreenChange("consolidacion")}
-            />
-            <Checkbox
-              label="Asignaciones"
-              checked={screens.asignaciones}
-              onChange={() => handleScreenChange("asignaciones")}
-            />
-            <Checkbox
-              label="Seguimiento"
-              checked={screens.seguimiento}
-              onChange={() => handleScreenChange("seguimiento")}
-            />
-            <Checkbox
-              label="Canastos"
-              checked={screens.canastos}
-              onChange={() => handleScreenChange("canastos")}
-            />
-            <Checkbox
-              label="App Chofer"
-              checked={screens.appChofer}
-              onChange={() => handleScreenChange("appChofer")}
-            />
-            <Checkbox
-              label="App Cliente"
-              checked={screens.appCliente}
-              onChange={() => handleScreenChange("appCliente")}
-            />
-            <Checkbox
-              label="Contabilidad"
-              checked={screens.contabilidad}
-              onChange={() => handleScreenChange("contabilidad")}
-            />
-            <Checkbox
-              label="RRHH / Planillas"
-              checked={screens.rrhh}
-              onChange={() => handleScreenChange("rrhh")}
-            />
-            <Checkbox
-              label="Configuración"
-              checked={screens.configuracion}
-              onChange={() => handleScreenChange("configuracion")}
-            />
+            {isLoadingTransactions ? (
+              <div className="col-span-full text-sm text-gray-500">
+                Cargando pantallas...
+              </div>
+            ) : (
+              transactions.map((transaction) => (
+                <Checkbox
+                  key={transaction.id}
+                  label={transaction.name}
+                  checked={selectedTransactions.includes(transaction.id)}
+                  onChange={() => handleCheckboxChange(transaction.id)}
+                />
+              ))
+            )}
           </div>
         </div>
 
