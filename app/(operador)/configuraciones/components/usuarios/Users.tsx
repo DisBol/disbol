@@ -63,13 +63,10 @@ export default function Users() {
     }
   };
 
-  const handleSaveRole = async (data: RoleFormData) => {
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    console.log("Role Saved:", data);
-    setIsSaving(false);
+  const handleSaveRole = async () => {
     handleClose();
-    alert("Rol guardado (simulado, ver consola)");
+    alert("Rol y transacciones guardados correctamente");
+    // Optionally refetch roles if there was a list of roles
   };
 
   const handleDelete = async (item: Datum) => {
