@@ -89,15 +89,15 @@ export default function UsersForm({
 
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-              CONTRASEÑA
+              CI
             </label>
             <InputField
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Contraseña"
+              placeholder="CI"
               error={errors.password}
               className="w-full"
-              type="password"
+              type="text"
             />
           </div>
 
