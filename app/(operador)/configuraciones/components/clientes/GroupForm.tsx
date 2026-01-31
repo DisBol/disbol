@@ -1,25 +1,66 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { SaveIcon } from "@/components/icons/Save";
 import { InputField } from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { GroupFormProps } from "../../interfaces/clientes/getclientgroup.interface";
+import {
+  GroupFormProps,
+  GroupFormData,
+} from "../../interfaces/clientes/getclientgroup.interface";
+import { useAddClientGroup } from "../../hooks/clientes/useAddClientGroup";
+import { useUpdateClientGroup } from "../../hooks/clientes/useUpdateClientGroup";
 
 const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
-  const [formData, setFormData] = useState({
-    nombre: "",
-    descripcion: "",
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const {
+    addClientGroup,
+    loading: addLoading,
+    error: addError,
+  } = useAddClientGroup();
+  const {
+    updateClientGroup,
+    loading: updateLoading,
+    error: updateError,
+  } = useUpdateClientGroup();
+
+  // Estado combinado para loading y error
+  const loading = addLoading || updateLoading;
+  const error = addError || updateError;
+
+  const [formData, setFormData] = useState<GroupFormData>(() => {
+    if (group) {
+      return {
+        nombre: group.name,
+        idCerca: group.idCerca.toString(),
+      };
+    }
+    return {
+      nombre: "",
+      idCerca: "",
+    };
   });
 
-  const [loading, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Si estamos editando un grupo, cargamos los datos
+  // Efecto para enfocar el formulario cuando se está editando un grupo
   useEffect(() => {
-    if (group) {
-      setFormData({
-        nombre: group.nombre,
-        descripcion: group.descripcion,
-      });
+    if (group && formRef.current) {
+      // Pequeño delay para asegurar que el DOM esté actualizado
+      const timer = setTimeout(() => {
+        formRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        // También enfocar el primer input
+        const firstInput = formRef.current?.querySelector(
+          'input[type="text"]',
+        ) as HTMLInputElement;
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
   }, [group]);
 
@@ -31,8 +72,10 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
       newErrors.nombre = "El nombre es requerido";
     }
 
-    if (!formData.descripcion.trim()) {
-      newErrors.descripcion = "La descripción es requerida";
+    if (!formData.idCerca.trim()) {
+      newErrors.idCerca = "El ID cerca es requerido";
+    } else if (!/^\d+$/.test(formData.idCerca)) {
+      newErrors.idCerca = "El ID cerca debe ser un número";
     }
 
     setErrors(newErrors);
@@ -43,46 +86,72 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
   const handleSave = async () => {
     if (!validateForm()) return;
 
-    setSaving(true);
-
     try {
+      if (group) {
+        // Modo edición - usar el hook de actualización
+        await updateClientGroup(
+          group.id,
+          formData.nombre,
+          formData.idCerca,
+          group.active, // Mantener el estado actual
+        );
+      } else {
+        // Modo creación - usar el hook de creación
+        await addClientGroup(formData.nombre, formData.idCerca);
+      }
+
+      // Notificar al padre que se guardó exitosamente
       await onSave(formData);
     } catch (err) {
       console.error("Error al guardar grupo:", err);
-    } finally {
-      setSaving(false);
     }
   };
 
   // Manejadores para los cambios en los campos
-  const handleChange = (field: keyof typeof formData) => (value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Limpiar error cuando el usuario empiece a escribir
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
+  const handleChange =
+    (field: keyof GroupFormData) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      // Limpiar error cuando el usuario empiece a escribir
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 animate-in slide-in-from-top">
+    <div
+      ref={formRef}
+      className="bg-gray-50 border border-gray-200 rounded-lg p-6 animate-in slide-in-from-top"
+    >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <InputField
             label="Nombre del Grupo"
             value={formData.nombre}
-            // onChange={handleChange("nombre")}
+            onChange={handleChange("nombre")}
             placeholder="Ej: Grupo A"
             error={errors.nombre}
           />
 
           <InputField
-            label="Descripción"
-            value={formData.descripcion}
-            // onChange={handleChange("descripcion")}
-            placeholder="Ej: Clientes principales del norte"
-            error={errors.descripcion}
+            label="ID Cerca (Temporal)"
+            value={formData.idCerca}
+            onChange={handleChange("idCerca")}
+            placeholder="Ej: 123"
+            error={errors.idCerca}
+            type="number"
           />
         </div>
+
+        {/* Error de guardado */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+            <p className="text-sm text-red-600">
+              Error al guardar: {error.message}
+            </p>
+          </div>
+        )}
 
         {/* Botones de acción */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:justify-end">
