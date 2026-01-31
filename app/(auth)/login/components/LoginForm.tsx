@@ -45,7 +45,7 @@ export function LoginForm() {
         router.refresh();
       }
     } catch (err) {
-      setError("Error al iniciar sesión");
+      setError("Error al iniciar sesión: " + (err as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -80,11 +80,7 @@ export function LoginForm() {
             onClick={() => setShowPassword(!showPassword)}
             className="text-muted-foreground hover:text-foreground transition-colors align-middle"
           >
-            {showPassword ? (
-              <EyeFillIcon />
-            ) : (
-              <EyeOffIcon />
-            )}
+            {showPassword ? <EyeFillIcon /> : <EyeOffIcon />}
           </button>
         }
       />
