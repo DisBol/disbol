@@ -19,3 +19,19 @@ export interface Metadata {
   functionConnectedMs: number;
   functionExecutedMs: number;
 }
+
+export interface RoleFormData {
+  roleName: string;
+  screens: {
+    dashboard: boolean;
+    consolidacion: boolean;
+    asignaciones: boolean;
+    seguimiento: boolean;
+    canastos: boolean;
+    appChofer: boolean;
+    appCliente: boolean;
+    contabilidad: boolean;
+    rrhh: boolean;
+    configuracion: boolean;
+  };
+}
