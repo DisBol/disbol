@@ -11,6 +11,7 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/Table";
+import { SelectField } from "@/components/ui/SelectInput";
 import { useState } from "react";
 import { useClients } from "../../hooks/clientes/useClients";
 import { useClientGroups } from "../../hooks/clientes/useClientsGroups";
@@ -23,7 +24,9 @@ interface ClientTableProps {
 }
 
 export default function ClientTable({ onClientUpdated }: ClientTableProps) {
-  const { clients, rawData, loading, error } = useClients();
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("0");
+  const [isFiltering, setIsFiltering] = useState(false);
+  const { clients, rawData, loading, error, fetchByGroup } = useClients();
   const { clientGroups } = useClientGroups();
   const { updateClient, loading: updateLoading } = useUpdateClient();
   const [editingClient, setEditingClient] = useState<ClientData | undefined>(
@@ -61,12 +64,32 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
           clientData.ClientGroup_id.toString(),
         );
 
-        // Refrescar la lista después de eliminar
+        // Refrescar la lista después de eliminar manteniendo el filtro
+        const numericGroupId =
+          selectedGroupId === "0" ? undefined : parseInt(selectedGroupId);
+        await fetchByGroup(numericGroupId);
         onClientUpdated?.();
       }
     } catch (error) {
       console.error("Error al eliminar cliente:", error);
       // Aquí podrías mostrar un toast o mensaje de error
+    }
+  };
+
+  // Función para manejar cambio de filtro por grupo
+  const handleGroupFilterChange = async (groupId: string) => {
+    console.log("Filtro seleccionado:", groupId);
+    setSelectedGroupId(groupId);
+    setIsFiltering(true);
+
+    try {
+      const numericGroupId = groupId === "0" ? undefined : parseInt(groupId);
+      console.log("Enviando a API:", numericGroupId);
+      await fetchByGroup(numericGroupId);
+    } catch (error) {
+      console.error("Error al filtrar:", error);
+    } finally {
+      setIsFiltering(false);
     }
   };
 
@@ -77,15 +100,21 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
   };
 
   // Función para manejar actualización exitosa
-  const handleClientSaved = () => {
+  const handleClientSaved = async () => {
     handleCloseEditModal();
+    // Refrescar manteniendo el filtro actual
+    const numericGroupId =
+      selectedGroupId === "0" ? undefined : parseInt(selectedGroupId);
+    await fetchByGroup(numericGroupId);
     onClientUpdated?.();
   };
 
-  if (loading) {
+  if (loading || isFiltering) {
     return (
       <div className="flex justify-center items-center py-8">
-        <div className="text-gray-500">Cargando clientes...</div>
+        <div className="text-gray-500">
+          {isFiltering ? "Filtrando clientes..." : "Cargando clientes..."}
+        </div>
       </div>
     );
   }
@@ -106,8 +135,40 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
     return group ? group.label : "Sin grupo";
   };
 
+  // Preparar opciones para el select de filtro
+  const groupFilterOptions = [
+    { value: "0", label: "Todos los grupos" },
+    ...clientGroups,
+  ];
+
   return (
     <div className="w-full">
+      {/* Filtro por Grupo */}
+      <div className="mb-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="w-full sm:w-64">
+          <SelectField
+            label="Filtrar por grupo"
+            value={selectedGroupId}
+            onChange={(e) => handleGroupFilterChange(e.target.value)}
+            options={groupFilterOptions}
+            placeholder="Selecciona un grupo"
+          />
+        </div>
+        <div className="text-sm text-gray-500">
+          {clients.length} cliente{clients.length !== 1 ? "s" : ""}
+          {selectedGroupId !== "0" && (
+            <span>
+              {" "}
+              en{" "}
+              {
+                groupFilterOptions.find((g) => g.value === selectedGroupId)
+                  ?.label
+              }
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Vista Desktop - Tabla */}
       <div className="hidden md:block overflow-x-auto">
         <TableWrapper className="min-w-full">

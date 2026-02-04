@@ -191,8 +191,8 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
       title={isEditing ? "Editar Cliente" : "Nuevo Cliente"}
       size="lg"
     >
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
           <InputField
             label="Nombre del Cliente"
             value={formData.name}
@@ -200,19 +200,8 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
             placeholder="Ingrese el nombre del cliente"
             error={errors.name}
           />
-
-          <InputField
-            label="Documento"
-            value={formData.document}
-            onChange={handleInputChange("document")}
-            placeholder="Ej: 100000"
-            error={errors.document}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer pl-0.5">
               Grupo / Ruta *
             </label>
             <SelectInput
@@ -229,6 +218,16 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
               <p className="text-sm text-red-600">{errors.clientGroupId}</p>
             )}
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+          <InputField
+            label="Documento"
+            value={formData.document}
+            onChange={handleInputChange("document")}
+            placeholder="Ej: 100000"
+            error={errors.document}
+          />
 
           <InputField
             label="Teléfono"

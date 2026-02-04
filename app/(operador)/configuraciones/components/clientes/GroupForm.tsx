@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { SaveIcon } from "@/components/icons/Save";
 import { InputField } from "@/components/ui/InputField";
+import { SelectField } from "@/components/ui/SelectInput";
 import { Button } from "@/components/ui/Button";
 import {
   GroupFormProps,
@@ -8,6 +9,7 @@ import {
 } from "../../interfaces/clientes/getclientgroup.interface";
 import { useAddClientGroup } from "../../hooks/clientes/useAddClientGroup";
 import { useUpdateClientGroup } from "../../hooks/clientes/useUpdateClientGroup";
+import { useGeofences } from "../../hooks/monnet/useGeofences";
 
 const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
   const formRef = useRef<HTMLDivElement>(null);
@@ -22,6 +24,12 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
     loading: updateLoading,
     error: updateError,
   } = useUpdateClientGroup();
+
+  const {
+    geofences,
+    loading: geofencesLoading,
+    error: geofencesError,
+  } = useGeofences();
 
   // Estado combinado para loading y error
   const loading = addLoading || updateLoading;
@@ -73,9 +81,9 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
     }
 
     if (!formData.idCerca.trim()) {
-      newErrors.idCerca = "El ID cerca es requerido";
+      newErrors.idCerca = "Debe seleccionar una ruta";
     } else if (!/^\d+$/.test(formData.idCerca)) {
-      newErrors.idCerca = "El ID cerca debe ser un número";
+      newErrors.idCerca = "La ruta seleccionada debe ser válida";
     }
 
     setErrors(newErrors);
@@ -127,21 +135,60 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <InputField
-            label="Nombre del Grupo"
+            label="Nombre del Grupo *"
             value={formData.nombre}
             onChange={handleChange("nombre")}
             placeholder="Ej: Grupo A"
             error={errors.nombre}
           />
 
-          <InputField
-            label="ID Cerca (Temporal)"
-            value={formData.idCerca}
-            onChange={handleChange("idCerca")}
-            placeholder="Ej: 123"
-            error={errors.idCerca}
-            type="number"
-          />
+          {geofencesLoading ? (
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pl-0.5 mb-2 block">
+                Ruta *
+              </label>
+              <div className="h-11 bg-gray-100 animate-pulse rounded-md flex items-center px-3">
+                <span className="text-gray-500 text-sm">Cargando rutas...</span>
+              </div>
+            </div>
+          ) : geofencesError ? (
+            <div>
+              <InputField
+                label="Ruta *"
+                value={formData.idCerca}
+                onChange={handleChange("idCerca")}
+                placeholder="Ingrese ID manualmente"
+                error={errors.idCerca}
+                type="number"
+              />
+              <p className="text-xs text-red-600 mt-1">
+                Error cargando rutas: {geofencesError.message}
+              </p>
+            </div>
+          ) : (
+            <SelectField
+              label="Ruta *"
+              value={formData.idCerca}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData((prev) => ({ ...prev, idCerca: value }));
+                if (errors.idCerca) {
+                  setErrors((prev) => ({ ...prev, idCerca: "" }));
+                }
+              }}
+              options={[
+                { value: "", label: "Seleccione una ruta" },
+                ...geofences
+                  .filter((geofence) => geofence.visible === 1) // Solo mostrar geofences visibles
+                  .map((geofence) => ({
+                    value: geofence.idCerca.toString(),
+                    // label: `${geofence.nombre} (${geofence.tipo_cerca}) - ID: ${geofence.idCerca}`,
+                    label: `${geofence.nombre}`,
+                  })),
+              ]}
+              error={errors.idCerca}
+            />
+          )}
         </div>
 
         {/* Error de guardado */}
