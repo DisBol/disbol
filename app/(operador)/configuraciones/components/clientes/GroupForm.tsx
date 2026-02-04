@@ -215,7 +215,9 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
             size="sm"
             leftIcon={<SaveIcon className="h-4 w-4" />}
             onClick={handleSave}
-            disabled={loading || !formData.nombre.trim()}
+            disabled={
+              loading || !formData.nombre.trim() || !formData.idCerca.trim()
+            }
             loading={loading}
           >
             {loading
