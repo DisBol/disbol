@@ -46,6 +46,7 @@ interface SelectProps extends VariantProps<typeof selectVariants> {
   placeholder?: string;
   className?: string;
   emptyMessage?: string;
+  closeOnSelect?: boolean;
 }
 
 export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
@@ -61,6 +62,7 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       radius,
       className,
       emptyMessage = "No hay opciones disponibles",
+      closeOnSelect = true,
     },
     ref,
   ) => {
@@ -96,7 +98,7 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
     return (
       <div className="w-full flex flex-col gap-1.5" ref={containerRef}>
         {label && (
-          <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">
             {label}
           </label>
         )}
@@ -118,7 +120,14 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
                 !selectedValues.length && "text-gray-500",
               )}
             >
-              {placeholder || "Seleccionar..."}
+              {selectedValues.length > 0
+                ? selectedValues
+                    .map(
+                      (val) => options.find((opt) => opt.value === val)?.label,
+                    )
+                    .filter(Boolean)
+                    .join(", ")
+                : placeholder || "Seleccionar..."}
             </span>
             <ArrowDownBoldIcon
               className={clsx(
@@ -141,6 +150,9 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelect(option);
+                        if (closeOnSelect) {
+                          setIsOpen(false);
+                        }
                       }}
                       className={clsx(
                         "w-full text-left px-3 py-2.5 text-sm flex justify-between items-center transition-colors border-b last:border-0 border-gray-50",

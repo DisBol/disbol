@@ -7,8 +7,8 @@ const inputVariants = cva(
   {
     variants: {
       inputSize: {
-        sm: "h-9 px-2",
-        md: "h-11 px-3",
+        sm: "h-8 px-2 text-xs",
+        md: "h-10 px-3",
         lg: "h-12 px-4 text-base",
       },
       variant: {
