@@ -6,7 +6,7 @@ import { Chip } from "@/components/ui/Chip";
 import { Select } from "@/components/ui/SelecMultipe";
 import { InputField } from "@/components/ui/InputField";
 import { DateField } from "@/components/ui/DateField";
-import { useGetrequesthistory } from "../hooks/solicitudes/useGetrequesthistory";
+import { useGetrequesthistory } from "../hooks/useGetrequesthistory";
 
 export default function TableResquest() {
   const { data, loading, error, filters, updateFilter } =
