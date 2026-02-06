@@ -47,6 +47,7 @@ interface SelectProps extends VariantProps<typeof selectVariants> {
   className?: string;
   emptyMessage?: string;
   closeOnSelect?: boolean;
+  disabled?: boolean;
 }
 
 export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
@@ -63,6 +64,7 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       className,
       emptyMessage = "No hay opciones disponibles",
       closeOnSelect = true,
+      disabled,
     },
     ref,
   ) => {
@@ -95,6 +97,29 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       };
     }, [isOpen]);
 
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    // Filter options based on search term
+    const filteredOptions = React.useMemo(() => {
+      if (!searchTerm) return options;
+      return options.filter((option) =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+    }, [options, searchTerm]);
+
+    // Reset search when closing
+    React.useEffect(() => {
+      if (!isOpen) {
+        setSearchTerm("");
+      } else {
+        // Focus input when opening
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      }
+    }, [isOpen]);
+
     return (
       <div className="w-full flex flex-col gap-1.5" ref={containerRef}>
         {label && (
@@ -106,7 +131,8 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
         <div className="relative">
           <button
             type="button"
-            onClick={() => setIsOpen(!isOpen)}
+            disabled={disabled}
+            onClick={() => !disabled && setIsOpen(!isOpen)}
             aria-expanded={isOpen}
             className={clsx(
               selectVariants({ variant, size, radius }),
@@ -138,43 +164,56 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
           </button>
 
           {isOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto animate-in fade-in zoom-in-95 duration-100">
-              {options.length > 0 ? (
-                options.map((option) => {
-                  const isSelected = selectedValues.includes(option.value);
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      disabled={isSelected}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelect(option);
-                        if (closeOnSelect) {
-                          setIsOpen(false);
-                        }
-                      }}
-                      className={clsx(
-                        "w-full text-left px-3 py-2.5 text-sm flex justify-between items-center transition-colors border-b last:border-0 border-gray-50",
-                        isSelected
-                          ? "bg-gray-50 text-gray-400 cursor-not-allowed"
-                          : "text-gray-700 hover:bg-gray-100 hover:text-primary",
-                      )}
-                    >
-                      <span className="font-medium">{option.label}</span>
-                      {isSelected && (
-                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase font-bold">
-                          Agregado
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="px-4 py-3 text-sm text-gray-500 italic text-center">
-                  {emptyMessage}
-                </div>
-              )}
+            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto animate-in fade-in zoom-in-95 duration-100 flex flex-col">
+              <div className="p-2 sticky top-0 bg-white border-b border-gray-100 z-10">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className="w-full px-2 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
+                  placeholder="Buscar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="overflow-y-auto">
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((option) => {
+                    const isSelected = selectedValues.includes(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        disabled={isSelected}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelect(option);
+                          if (closeOnSelect) {
+                            setIsOpen(false);
+                          }
+                        }}
+                        className={clsx(
+                          "w-full text-left px-3 py-2.5 text-sm flex justify-between items-center transition-colors border-b last:border-0 border-gray-50",
+                          isSelected
+                            ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                            : "text-gray-700 hover:bg-gray-100 hover:text-primary",
+                        )}
+                      >
+                        <span className="font-medium">{option.label}</span>
+                        {isSelected && (
+                          <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase font-bold">
+                            Agregado
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-4 py-3 text-sm text-gray-500 italic text-center">
+                    {emptyMessage}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

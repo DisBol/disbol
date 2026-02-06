@@ -1,5 +1,6 @@
-import { GetRequestHistoryResponse } from "../../interfaces/solicitudes/getrequesthistory.interface";
-import { apiCall } from "../../../configuraciones/services/apiClient";
+import { apiCall } from "../../configuraciones/services/apiClient";
+import { GetRequestHistoryResponse } from "../interfaces/getrequesthistory.interface";
+
 
 export async function GetRequestHistory(
   start_date: string,
