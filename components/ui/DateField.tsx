@@ -23,7 +23,7 @@ export const DateField = React.forwardRef<HTMLInputElement, DateFieldProps>(
         ref={inputRef}
         type="date"
         className={`[&::-webkit-calendar-picker-indicator]:hidden ${className || ""}`}
-        rightIcon={
+        suffix={
           <CalendarIcon
             className="w-4 h-4 cursor-pointer hover:text-gray-600"
             onClick={handleIconClick}

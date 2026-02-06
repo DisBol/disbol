@@ -33,6 +33,10 @@ export interface CardCodeProps
   // Optional Menudencia Checkbox
   menudencia?: boolean;
   onMenudenciaChange?: (checked: boolean) => void;
+  // Optional Precio Field
+  showPrecio?: boolean;
+  precio?: string;
+  onPrecioChange?: (val: string) => void;
   // Optional Weight Info Text
   weightInfo?: {
     bruto: string;
@@ -53,6 +57,9 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       onUnidadesChange,
       menudencia,
       onMenudenciaChange,
+      showPrecio = false,
+      precio = "0.00",
+      onPrecioChange,
       weightInfo,
       readOnly = false,
       ...props
@@ -107,6 +114,28 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               />
             )}
           </div>
+
+          {/* Campo Precio - Solo se muestra cuando showPrecio es true */}
+          {showPrecio && (
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">
+                PRECIO
+              </label>
+              {readOnly ? (
+                <div className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-sm font-medium text-gray-700 text-center h-8 flex items-center justify-center">
+                  {precio}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={precio}
+                  onChange={(e) => onPrecioChange?.(e.target.value)}
+                  className="w-full px-2 py-1 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-sm text-gray-900 h-8 text-center transition-colors"
+                  placeholder="0.00"
+                />
+              )}
+            </div>
+          )}
 
           <div className="pt-2 mt-auto flex justify-center">
             {readOnly ? (
