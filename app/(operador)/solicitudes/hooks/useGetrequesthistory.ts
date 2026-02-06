@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { GetRequestHistory } from "../../service/solicitudes/getrequesthistory";
-import { Datum } from "../../interfaces/solicitudes/getrequesthistory.interface";
+import { Datum } from "../interfaces/getrequesthistory.interface";
+import { GetRequestHistory } from "../service/getrequesthistory";
+
 
 export interface RequestHistoryFilters {
   start_date: string;
