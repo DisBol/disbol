@@ -1,50 +1,194 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import CardCode from "@/components/ui/CardCode";
 import { Select } from "@/components/ui/SelecMultipe";
 import { Button } from "@/components/ui/Button";
 import { SaveIcon } from "@/components/icons/Save";
+import ClientForm from "../../configuraciones/components/clientes/ClientForm";
 import { useCategoryProvider } from "../../configuraciones/hooks/proveedores/useCategoryprovider";
 import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
 import { useClientGroups } from "../../configuraciones/hooks/clientes/useClientsGroups";
 import { useClients } from "../../configuraciones/hooks/clientes/useClients";
-import ClientForm from "../../configuraciones/components/clientes/ClientForm";
+import { useAddRequest } from "../hooks/useAddRequest";
+import { useAddRequestPaymentType } from "../hooks/useAddrequestpaymenttype";
+import { useAddRequestRequestState } from "../hooks/useAddrequestrequeststate";
+import { useAddRequestStage } from "../hooks/useAddrequeststage";
+import { useAddProductRequest } from "../hooks/useAddproductrequest";
 
-// Interfaces
+// --- Interfaces de Tipos ---
+
+// Estado individual de un producto en la tarjeta
 interface ProductState {
   cajas: string;
   unidades: string;
   menudencia: boolean;
 }
 
+// Objeto que almacena el estado de todos los productos seleccionados (Clave: ID del producto)
 interface ProductsData {
   [key: string]: ProductState;
 }
 
 export default function NewRequest() {
-  // Hooks for data
+  const router = useRouter();
+
+  // ----------------------------------------------------------------------
+  // 1. HOOKS DE OBTENCIÓN DE DATOS (DATA FETCHING)
+  // ----------------------------------------------------------------------
   const { providers, loading: isLoadingProviders } = useCategoryProvider();
+
   const { categories: categoriesWithProducts, loading: isLoadingProducts } =
     useProductsByCategory();
+
   const { clientGroups, isLoading: isLoadingGroups } = useClientGroups();
+
+  // 'fetchByGroup' se usará para recargar clientes cuando cambie la ruta
   const { clients, fetchByGroup, loading: isLoadingClients } = useClients();
 
-  // State
+  // ----------------------------------------------------------------------
+  // 2. ESTADOS LOCALES (STATE)
+  // ----------------------------------------------------------------------
   const [proveedor, setProveedor] = useState("");
   const [grupo, setGrupo] = useState("");
   const [ruta, setRuta] = useState("");
   const [cliente, setCliente] = useState("");
+
+  // Estado para controlar la visibilidad del modal de "Nuevo Cliente"
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+
+  // Estado principal que guarda las cantidades ingresadas por producto
   const [productosData, setProductosData] = useState<ProductsData>({});
 
-  // Reset group when provider changes
-  const handleProviderChange = (value: string) => {
-    setProveedor(value);
-    setGrupo("");
+  // ----------------------------------------------------------------------
+  // 3. HOOKS DE LÓGICA DE REGISTRO (API ACTIONS)
+  // ----------------------------------------------------------------------
+  const { addRequest, loading: loadingRequest } = useAddRequest();
+  const { addPaymentType, loading: loadingPayment } =
+    useAddRequestPaymentType();
+  const { addRequestState, loading: loadingState } =
+    useAddRequestRequestState();
+  const { addStage, loading: loadingStage } = useAddRequestStage();
+  const { addProduct, loading: loadingProduct } = useAddProductRequest();
+
+  // Bandera general para saber si se está procesando el registro
+  const isRegistering =
+    loadingRequest ||
+    loadingPayment ||
+    loadingState ||
+    loadingStage ||
+    loadingProduct;
+
+  // ----------------------------------------------------------------------
+  // 4. LÓGICA DE NEGOCIO Y MANEJADORES
+  // ----------------------------------------------------------------------
+
+  /**
+   * Maneja el proceso completo de guardar la solicitud.
+   * Realiza múltiples llamadas a la API en secuencia (Waterfall).
+   */
+  const handleRegister = async () => {
+    // A. Validaciones iniciales
+    if (!proveedor || !cliente || !ruta) {
+      alert(
+        "Por favor complete todos los campos requeridos (Proveedor, Ruta, Cliente).",
+      );
+      return;
+    }
+
+    // B. Filtrar solo los productos que tienen cantidad > 0
+    const selectedProductsIds = Object.keys(productosData).filter((key) => {
+      const prod = productosData[key];
+      return parseInt(prod.cajas) > 0 || parseInt(prod.unidades) > 0;
+    });
+
+    if (selectedProductsIds.length === 0) {
+      alert("Seleccione al menos un producto.");
+      return;
+    }
+
+    try {
+      // PASO 1: Crear la cabecera de la Solicitud (Request)
+      const reqResponse = await addRequest(
+        parseInt(proveedor),
+        parseInt(cliente),
+      );
+
+      // Obtenemos el ID generado
+      const request_id = reqResponse.data[0]?.request_id;
+      if (!request_id) throw new Error("No se obtuvo request_id del servidor");
+
+      // PASO 2: Asignar Tipo de Pago
+      await addPaymentType(request_id);
+
+      // PASO 3: Asignar Estado de la Solicitud
+      await addRequestState(request_id);
+
+      // PASO 4: Crear la Etapa (Stage)
+      // Primero calculamos los totales de todos los productos seleccionados
+      let totalUnits = 0;
+      let totalCajas = 0;
+
+      selectedProductsIds.forEach((id) => {
+        const prod = productosData[id];
+        totalUnits += parseInt(prod.unidades || "0");
+        totalCajas += parseInt(prod.cajas || "0");
+      });
+
+      // Enviamos los totales a la API
+      const stageResponse = await addStage(
+        1, // position (fijo según lógica actual)
+        0, // in_container
+        0, // out_container
+        totalUnits,
+        totalCajas,
+        0.0, // payment
+        request_id,
+      );
+
+      const requestStage_id = stageResponse.data[0]?.requeststage_id;
+      if (!requestStage_id) throw new Error("No se obtuvo requeststage_id");
+
+      // PASO 5: Registrar cada Producto individualmente (Loop)
+      for (const prodId of selectedProductsIds) {
+        const prodData = productosData[prodId];
+        const units = parseInt(prodData.unidades || "0");
+        const cajas = parseInt(prodData.cajas || "0");
+        const menudencia = prodData.menudencia;
+
+        await addProduct(
+          cajas,
+          units,
+          menudencia,
+          0.0, // net_weight (por defecto 0 si no se captura)
+          0.0, // gross_weight
+          0.0, // payment
+          requestStage_id,
+          parseInt(prodId),
+        );
+      }
+
+      // Finalización exitosa
+      alert("Solicitud registrada con éxito!");
+      // Aquí podrías redirigir al usuario o limpiar el formulario
+      // router.push('/solicitudes');
+    } catch (error) {
+      console.error("Error en registro:", error);
+      alert(
+        "Error al registrar la solicitud: " +
+          (error instanceof Error ? error.message : "Error desconocido"),
+      );
+    }
   };
 
-  // Convert providers to options
+  // Maneja el cambio de proveedor y resetea el grupo
+  const handleProviderChange = (value: string) => {
+    setProveedor(value);
+    setGrupo(""); // Resetear grupo al cambiar proveedor
+  };
+
+  // Prepara opciones para el Select de Proveedores
   const providerOptions = useMemo(() => {
     return providers.map((p) => ({
       value: p.id.toString(),
@@ -52,7 +196,7 @@ export default function NewRequest() {
     }));
   }, [providers]);
 
-  // Get groups for selected provider
+  // Prepara opciones para el Select de Grupos (Depende del Proveedor seleccionado)
   const groupOptions = useMemo(() => {
     if (!proveedor) return [];
 
@@ -68,7 +212,7 @@ export default function NewRequest() {
     }));
   }, [proveedor, providers]);
 
-  // Route options from Client Groups
+  // Prepara opciones para el Select de Rutas
   const routeOptions = useMemo(() => {
     return clientGroups.map((g) => ({
       value: g.value,
@@ -76,17 +220,17 @@ export default function NewRequest() {
     }));
   }, [clientGroups]);
 
-  // Fetch clients when route changes
+  // Efecto: Cargar clientes cuando se selecciona una Ruta
   useEffect(() => {
     if (ruta) {
       fetchByGroup(parseInt(ruta));
-      setCliente(""); // Reset client when route changes
+      setCliente(""); // Resetear cliente al cambiar de ruta
     } else {
       fetchByGroup(undefined);
     }
   }, [ruta]);
 
-  // Client options
+  // Prepara opciones para el Select de Clientes
   const clientOptions = useMemo(() => {
     return clients.map((c) => ({
       value: c.id.toString(),
@@ -94,7 +238,7 @@ export default function NewRequest() {
     }));
   }, [clients]);
 
-  // Get products for selected group (category)
+  // Obtiene los productos disponibles según el Grupo seleccionado
   const availableProducts = useMemo(() => {
     if (!grupo) return [];
 
@@ -105,12 +249,14 @@ export default function NewRequest() {
     return selectedCategory ? selectedCategory.products : [];
   }, [grupo, categoriesWithProducts]);
 
+  // Actualiza el estado local (Inputs) de un producto específico
   const handleProductoChange = (
     codigo: string,
     field: keyof ProductState,
     value: string | boolean,
   ) => {
     setProductosData((prev) => {
+      // Obtener estado actual o inicializar
       const current = prev[codigo] || {
         cajas: "0",
         unidades: "0",
@@ -127,18 +273,22 @@ export default function NewRequest() {
     });
   };
 
+  // ----------------------------------------------------------------------
+  // 5. RENDERIZADO (JSX)
+  // ----------------------------------------------------------------------
   return (
     <div className="bg-white p-4 md:p-6 shadow-sm border-b border-gray-100">
       <div className="max-w-[1600px] mx-auto">
+        {/* Título de la Página */}
         <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-6">
           <span className="text-red-500 text-2xl">+</span>
           Nueva de Solicitud
         </h1>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* SIDEBAR IZQUIERDO - Formulario */}
+          {/* --- BARRA LATERAL IZQUIERDA (Selectores) --- */}
           <div className="w-full lg:w-80 shrink-0 space-y-5">
-            {/* Proveedor Origen */}
+            {/* 1. Selección de Proveedor */}
             <div>
               <Select
                 label="PROVEEDOR ORIGEN"
@@ -151,6 +301,7 @@ export default function NewRequest() {
               />
             </div>
 
+            {/* 2. Selección de Grupo (Categoría) */}
             <div>
               <Select
                 label="GRUPO"
@@ -165,6 +316,8 @@ export default function NewRequest() {
                 disabled={!proveedor}
               />
             </div>
+
+            {/* 3. Selección de Ruta */}
             <div>
               <Select
                 label="RUTA"
@@ -177,7 +330,7 @@ export default function NewRequest() {
               />
             </div>
 
-            {/* Cliente Destino */}
+            {/* 4. Selección de Cliente (Con botón de agregar nuevo) */}
             <div className="space-y-1">
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
@@ -196,6 +349,7 @@ export default function NewRequest() {
                     disabled={!ruta}
                   />
                 </div>
+                {/* Botón para abrir modal de nuevo cliente */}
                 <button
                   className="w-10 h-10 shrink-0 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 flex items-center justify-center transition-colors mb-0.5"
                   onClick={() => setIsClientModalOpen(true)}
@@ -219,7 +373,7 @@ export default function NewRequest() {
             </div>
           </div>
 
-          {/* LADO DERECHO - Productos Requeridos */}
+          {/* --- PANEL DERECHO (Grilla de Productos) --- */}
           <div className="flex-1">
             <h2 className="text-xs font-bold text-gray-500 uppercase mb-4">
               PRODUCTOS REQUERIDOS
@@ -235,6 +389,7 @@ export default function NewRequest() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {availableProducts.map((producto) => {
                   const prodId = producto.id.toString();
+                  // Obtener estado actual o valores por defecto
                   const state = productosData[prodId] || {
                     cajas: "0",
                     unidades: "0",
@@ -244,7 +399,7 @@ export default function NewRequest() {
                   return (
                     <CardCode
                       key={producto.id}
-                      label={producto.name} // Using product name as label, code might be part of name or separate
+                      label={producto.name}
                       cajas={state.cajas}
                       unidades={state.unidades}
                       onCajasChange={(val) =>
@@ -265,20 +420,26 @@ export default function NewRequest() {
           </div>
         </div>
 
-        {/* Botón Registrar - Footer */}
+        {/* --- FOOTER: Botón de Acción --- */}
         <div className="mt-8">
-          <Button className="w-full " leftIcon={<SaveIcon />} size="lg">
-            Registrar Pedido
+          <Button
+            className="w-full"
+            leftIcon={<SaveIcon />}
+            size="lg"
+            onClick={handleRegister}
+            disabled={isRegistering}
+          >
+            {isRegistering ? "Registrando..." : "Registrar Pedido"}
           </Button>
         </div>
       </div>
 
-      {/* Modal Nuevo Cliente */}
+      {/* --- MODALES --- */}
       <ClientForm
         isOpen={isClientModalOpen}
         onSave={() => {
           setIsClientModalOpen(false);
-          // Refresh clients for current route
+          // Recargar clientes de la ruta actual si se guardó uno nuevo
           if (ruta) {
             fetchByGroup(parseInt(ruta));
           }
