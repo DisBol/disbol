@@ -4,7 +4,7 @@ import { AddProductrequestResponse } from "../interfaces/addproductrequest.inter
 export async function AddProductRequest(
   containers: number,
   units: number,
-  menudencia: string, // prompt says "true" string, keeping it string or maybe check interface? Let's use string to be safe based on prompt "true", but usually boolean. Prompt says "active":"true", "menudencia":"true".
+  menudencia: string,
   net_weight: number,
   gross_weight: number,
   payment: number,

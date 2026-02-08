@@ -1,7 +1,7 @@
 import React from "react";
 import { RouteProtection } from "@/components/shared/RouteProtection";
-import NewRequest from "./components/NewRequest";
 import TableResquest from "./components/TableResquest";
+import NewRequest from "./components/NewRequest";
 
 export default function SolicitudesPage() {
   return (
