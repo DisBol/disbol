@@ -5,6 +5,8 @@ import { SelectInput } from "@/components/ui/SelectInput";
 import { DateField } from "@/components/ui/DateField";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import CardCode from "@/components/ui/CardCode";
+import ReceptionScreen from "./ReceptionScreen";
 
 // Interfaces
 interface ProductQuantity {
@@ -70,11 +72,18 @@ const ESTADO_OPTIONS = [
   { value: "cancelado", label: "CANCELADO" },
 ];
 
-export default function HistoryAssignment() {
+export default function HistoryAssignment({
+  onReceptionStateChange,
+}: {
+  onReceptionStateChange?: (show: boolean) => void;
+}) {
   const [selectedProveedor, setSelectedProveedor] = useState("todos");
   const [selectedEstado, setSelectedEstado] = useState("todos");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
+  const [showReception, setShowReception] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] =
+    useState<Assignment | null>(null);
 
   const getStatusColor = (estado: string) => {
     switch (estado) {
@@ -88,6 +97,28 @@ export default function HistoryAssignment() {
         return { color: "default" as const, variant: "solid" as const };
     }
   };
+
+  const handleRecibirClick = (assignment: Assignment) => {
+    setSelectedAssignment(assignment);
+    setShowReception(true);
+    onReceptionStateChange?.(true);
+  };
+
+  const handleBackFromReception = () => {
+    setShowReception(false);
+    setSelectedAssignment(null);
+    onReceptionStateChange?.(false);
+  };
+
+  // Si estamos mostrando la pantalla de recepción, renderizarla
+  if (showReception && selectedAssignment) {
+    return (
+      <ReceptionScreen
+        assignment={selectedAssignment}
+        onBack={handleBackFromReception}
+      />
+    );
+  }
 
   return (
     <div className="bg-white p-4 md:p-6">
@@ -203,6 +234,7 @@ export default function HistoryAssignment() {
                     color="success"
                     size="sm"
                     className="min-w-22.5"
+                    onClick={() => handleRecibirClick(assignment)}
                   >
                     Recibir
                   </Button>
@@ -217,46 +249,27 @@ export default function HistoryAssignment() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
                   {assignment.productos.map((producto) => (
-                    <div
+                    <CardCode
                       key={producto.codigo}
-                      className="bg-gray-50 rounded-lg p-3 border border-gray-100"
-                    >
-                      {/* Header del Producto */}
-                      <h4 className="font-bold text-gray-900 text-xs mb-2 text-center">
-                        Código {producto.codigo}
-                      </h4>
-
-                      {/* Cantidades */}
-                      <div className="space-y-2">
-                        <div>
-                          <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">
-                            CAJAS
-                          </label>
-                          <div className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 text-center h-8 flex items-center justify-center">
-                            {producto.cajas}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">
-                            UNID.
-                          </label>
-                          <div className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 text-center h-8 flex items-center justify-center">
-                            {producto.unidades}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Información de Peso */}
-                      <div className="mt-3 pt-2 border-t border-gray-200 text-center">
-                        <div className="text-xs text-blue-600 font-medium">
-                          {producto.kgBruto.toFixed(2)} kg Bruto
-                        </div>
-                        <div className="text-xs text-blue-600 font-medium">
-                          {producto.kgNeto.toFixed(2)} kg Neto
-                        </div>
-                      </div>
-                    </div>
+                      label={`Código ${producto.codigo}`}
+                      cajas={producto.cajas}
+                      unidades={producto.unidades}
+                      readOnly={true}
+                      weightInfo={{
+                        adicional: [
+                          {
+                            label: "",
+                            value: `${producto.kgBruto.toFixed(2)} kg Bruto`,
+                            color: "default",
+                          },
+                          {
+                            label: "",
+                            value: `${producto.kgNeto.toFixed(2)} kg Neto`,
+                            color: "default",
+                          },
+                        ],
+                      }}
+                    />
                   ))}
                 </div>
               </div>
