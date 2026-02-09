@@ -105,7 +105,8 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                 min="0"
                 value={cajas}
                 onChange={(e) => onCajasChange?.(e.target.value)}
-                className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-center transition-colors"
+                className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
+                placeholder="0"
               />
             )}
           </div>
@@ -124,7 +125,8 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                 min="0"
                 value={unidades}
                 onChange={(e) => onUnidadesChange?.(e.target.value)}
-                className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-center transition-colors"
+                className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
+                placeholder="0"
               />
             )}
           </div>
@@ -144,7 +146,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                   type="text"
                   value={precio}
                   onChange={(e) => onPrecioChange?.(e.target.value)}
-                  className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-center transition-colors"
+                  className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
                   placeholder="0.00"
                 />
               )}
