@@ -4,7 +4,7 @@ interface IconProps extends React.SVGProps<SVGSVGElement> {
   size?: number;
 }
 
-export const SaveIcon = ({ size = 28, className, ...props }: IconProps) => {
+export const SaveIcon = ({ size = 20, className, ...props }: IconProps) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

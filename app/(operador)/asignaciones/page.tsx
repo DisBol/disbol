@@ -1,14 +1,21 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import { RouteProtection } from "@/components/shared/RouteProtection";
+import ProductAssignment from "./components/ProductAssignment";
+import HistoryAssignment from "./components/HistoryAssignment";
 
 export default function AsignacionesPage() {
+  const [showReception, setShowReception] = useState(false);
+
   return (
     <RouteProtection requiredTransaction="Asignaciones">
-      <div className="p-8">
-        <h1 className="text-3xl font-bold mb-6">Asignaciones</h1>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p>Contenido de asignaciones...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 pb-12">
+        {!showReception && <ProductAssignment />}
+        <HistoryAssignment 
+          onReceptionStateChange={setShowReception}
+        />
+        {/* <TableResquest /> */}
       </div>
     </RouteProtection>
   );
