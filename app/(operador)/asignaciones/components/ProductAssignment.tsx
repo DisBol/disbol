@@ -98,8 +98,8 @@ export default function ProductAssignment() {
   return (
     <div className="bg-white p-4 md:p-6 shadow-sm border-b border-gray-100">
       <div className="max-w-400 mx-auto">
-        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-6">
-          <span className="text-red-500 text-2xl">+</span>
+        <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-6">
+          <span className="text-red-500 text-xl">+</span>
           Asignación de Productos
         </h1>
 
@@ -163,7 +163,7 @@ export default function ProductAssignment() {
               CANTIDADES A ASIGNAR
             </h2>
             {availableProducts.length === 0 ? (
-              <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-lg">
+              <div className="text-center text-sm py-10 text-gray-500 bg-gray-50 rounded-lg">
                 {!grupo
                   ? "Seleccione un proveedor y grupo para ver los productos"
                   : "No hay productos disponibles para este grupo"}
