@@ -24,25 +24,14 @@ interface Assignment {
   id: string;
   fecha: string;
   proveedor: string;
-  estado: "EMITIDO" | "ENVIADO" | "ENTREGADO" | "NO ENTREGADO" | "ELIMINADO";
   productos: ProductQuantity[];
 }
-
-const ESTADO_OPTIONS = [
-  { value: "todos", label: "Todos los Estados" },
-  { value: "emitido", label: "EMITIDO" },
-  { value: "enviado", label: "ENVIADO" },
-  { value: "entregado", label: "ENTREGADO" },
-  { value: "no_entregado", label: "NO ENTREGADO" },
-  { value: "eliminado", label: "ELIMINADO" },
-];
 
 export default function HistoryAssignment({
   onReceptionStateChange,
 }: {
   onReceptionStateChange?: (show: boolean) => void;
 }) {
-  const [selectedEstado, setSelectedEstado] = useState("todos");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [showReception, setShowReception] = useState(false);
@@ -66,26 +55,6 @@ export default function HistoryAssignment({
     fetchAssignmentHistory,
   } = useGetAssignmentHistory();
 
-  // Función para mapear el estado desde AssignmentStage_id
-  const mapAssignmentStageToStatus = (
-    stageId: number,
-  ): Assignment["estado"] => {
-    switch (stageId) {
-      case 1:
-        return "EMITIDO";
-      case 2:
-        return "ENVIADO";
-      case 3:
-        return "ENTREGADO";
-      case 4:
-        return "NO ENTREGADO";
-      case 5:
-        return "ELIMINADO";
-      default:
-        return "EMITIDO";
-    }
-  };
-
   // Obtener las asignaciones transformadas y aplicar filtros del lado del cliente
   const assignments = useMemo(() => {
     // Función para transformar los datos de la API
@@ -106,7 +75,6 @@ export default function HistoryAssignment({
                 "es-ES",
               ),
               proveedor: item.Provider_name,
-              estado: mapAssignmentStageToStatus(item.AssignmentStage_id), // Mapear estado POR EL MOMENTO SOLO CON EL STAGE_ID, LUEGO VER SI SE PUEDE OBTENER DE LA API
               productos: [],
             };
           }
@@ -116,8 +84,8 @@ export default function HistoryAssignment({
             codigo: item.Product_name,
             cajas: item.ProductAssignment_container,
             unidades: item.ProductAssignment_units,
-            kgBruto: 0, // No viene en la API, por ahora 0
-            kgNeto: 0, // No viene en la API, por ahora 0
+            kgBruto: parseFloat(item.ProductAssignment_gross_weight || "0"),
+            kgNeto: parseFloat(item.ProductAssignment_net_weight || "0"),
           });
 
           return acc;
@@ -128,29 +96,8 @@ export default function HistoryAssignment({
       return Object.values(groupedData);
     };
 
-    const transformed = transformApiDataToAssignments(assignmentData);
-
-    // Aplicar filtro de estado del lado del cliente
-    if (selectedEstado === "todos") {
-      return transformed;
-    }
-
-    // Mapear el valor seleccionado al estado correspondiente
-    const stateMap: Record<string, Assignment["estado"]> = {
-      emitido: "EMITIDO",
-      enviado: "ENVIADO",
-      entregado: "ENTREGADO",
-      no_entregado: "NO ENTREGADO",
-      eliminado: "ELIMINADO",
-    };
-
-    const targetState = stateMap[selectedEstado];
-    if (!targetState) return transformed;
-
-    return transformed.filter(
-      (assignment) => assignment.estado === targetState,
-    );
-  }, [assignmentData, selectedEstado]);
+    return transformApiDataToAssignments(assignmentData);
+  }, [assignmentData]);
 
   // Función para convertir fecha a yyyy-mm-dd hh:mm:ss
   const formatDateForAPI = (dateStr: string, isEndDate = false) => {
@@ -253,23 +200,6 @@ export default function HistoryAssignment({
     applyFilters();
   }, [fetchAssignmentHistory]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getStatusColor = (estado: string) => {
-    switch (estado) {
-      case "EMITIDO":
-        return { color: "info" as const, variant: "solid" as const };
-      case "ENVIADO":
-        return { color: "warning" as const, variant: "solid" as const };
-      case "ENTREGADO":
-        return { color: "success" as const, variant: "solid" as const };
-      case "NO ENTREGADO":
-        return { color: "default" as const, variant: "solid" as const };
-      case "ELIMINADO":
-        return { color: "danger" as const, variant: "bordered" as const };
-      default:
-        return { color: "default" as const, variant: "solid" as const };
-    }
-  };
-
   const handleRecibirClick = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setShowReception(true);
@@ -313,19 +243,6 @@ export default function HistoryAssignment({
                 placeholder={
                   isLoadingProviders ? "Cargando..." : "Seleccionar proveedor"
                 }
-              />
-            </div>
-
-            {/* Estado Filter */}
-            <div className="min-w-45">
-              <Select
-                size="sm"
-                options={ESTADO_OPTIONS}
-                selectedValues={selectedEstado ? [selectedEstado] : []}
-                onSelect={(option) => {
-                  setSelectedEstado(option.value);
-                  // No need to call applyFilters here since it's client-side filtering
-                }}
               />
             </div>
 
@@ -411,26 +328,8 @@ export default function HistoryAssignment({
                       <span className="text-xs font-bold text-gray-500 uppercase block">
                         PROVEEDOR
                       </span>
-                      <Chip
-                        variant="solid"
-                        color="default"
-                        size="sm"
-                        radius="md"
-                      >
+                      <Chip variant="flat" color="info" size="sm" radius="md">
                         {assignment.proveedor}
-                      </Chip>
-                    </div>
-
-                    <div>
-                      <span className="text-xs font-bold text-gray-500 uppercase block">
-                        ESTADO
-                      </span>
-                      <Chip
-                        {...getStatusColor(assignment.estado)}
-                        size="sm"
-                        radius="md"
-                      >
-                        {assignment.estado}
                       </Chip>
                     </div>
                   </div>

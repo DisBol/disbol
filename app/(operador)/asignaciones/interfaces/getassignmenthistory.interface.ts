@@ -18,6 +18,8 @@ export interface Datum {
   ProductAssignment_units: number;
   ProductAssignment_container: number;
   ProductAssignment_menudencia: string;
+  ProductAssignment_gross_weight: string;
+  ProductAssignment_net_weight: string;
 }
 
 export interface Metadata {
