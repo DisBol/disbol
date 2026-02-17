@@ -12,6 +12,7 @@ export interface Datum {
   ClientGroup_name: ClientGroupName;
   Client_name: ClientName;
   Provider_id: number;
+  Client_id: number;
   Provider_name: ProviderName;
   Category_id: number;
   Category_name: CategoryName;

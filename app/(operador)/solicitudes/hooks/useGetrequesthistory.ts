@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { Datum } from "../interfaces/getrequesthistory.interface";
 import { GetRequestHistory } from "../service/getrequesthistory";
 
-
 export interface RequestHistoryFilters {
   start_date: string;
   end_date: string;
   Provider_id: number;
   ClientGroup_id: number;
   RequestState_id: number;
+  Client_id?: number;
 }
 
 export interface GroupedRequest {
@@ -18,17 +18,29 @@ export interface GroupedRequest {
   ClientGroup_name: string;
   Client_name: string;
   Provider_name: string;
+  Provider_id: number;
+  Client_id: number;
   items: Datum[];
-  pagado: boolean; 
+  pagado: boolean;
 }
 
 export function useGetrequesthistory() {
+  const getTodayFormatted = (isEnd = false) => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const time = isEnd ? "23:59:59" : "00:00:00";
+    return `${year}-${month}-${day} ${time}`;
+  };
+
   const [filters, setFilters] = useState<RequestHistoryFilters>({
-    start_date: "2026-01-01 00:00:00",
-    end_date: "2026-02-01 00:00:00",
+    start_date: getTodayFormatted(false),
+    end_date: getTodayFormatted(true),
     Provider_id: 0,
     ClientGroup_id: 0,
     RequestState_id: 0,
+    Client_id: 0,
   });
 
   const [data, setData] = useState<GroupedRequest[]>([]);
@@ -45,6 +57,7 @@ export function useGetrequesthistory() {
         filters.Provider_id,
         filters.ClientGroup_id,
         filters.RequestState_id,
+        filters.Client_id,
       );
 
       const grouped = response.data.reduce((acc, curr) => {
@@ -52,7 +65,6 @@ export function useGetrequesthistory() {
         if (existing) {
           existing.items.push(curr);
         } else {
-  
           const isPaid = curr.PaymentType_name === "Efectivo";
 
           acc.push({
@@ -62,6 +74,8 @@ export function useGetrequesthistory() {
             ClientGroup_name: curr.ClientGroup_name,
             Client_name: curr.Client_name,
             Provider_name: curr.Provider_name,
+            Provider_id: curr.Provider_id,
+            Client_id: curr.Client_id,
             pagado: isPaid,
             items: [curr],
           });
@@ -79,7 +93,6 @@ export function useGetrequesthistory() {
   }, [filters]);
 
   useEffect(() => {
-
     if (filters.start_date && filters.end_date) {
       fetchHistory();
     }
