@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { DateField } from "@/components/ui/DateField";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -27,11 +33,19 @@ interface Assignment {
   productos: ProductQuantity[];
 }
 
-export default function HistoryAssignment({
-  onReceptionStateChange,
-}: {
+// Interface para los métodos expuestos del componente
+export interface HistoryAssignmentRef {
+  refresh: () => void;
+}
+
+interface HistoryAssignmentProps {
   onReceptionStateChange?: (show: boolean) => void;
-}) {
+}
+
+const HistoryAssignment = forwardRef<
+  HistoryAssignmentRef,
+  HistoryAssignmentProps
+>(({ onReceptionStateChange }, ref) => {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [showReception, setShowReception] = useState(false);
@@ -199,6 +213,11 @@ export default function HistoryAssignment({
   useEffect(() => {
     applyFilters();
   }, [fetchAssignmentHistory]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Exponer funciones al componente padre
+  useImperativeHandle(ref, () => ({
+    refresh: applyFilters,
+  }));
 
   const handleRecibirClick = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
@@ -402,4 +421,8 @@ export default function HistoryAssignment({
       </div>
     </div>
   );
-}
+});
+
+HistoryAssignment.displayName = "HistoryAssignment";
+
+export default HistoryAssignment;

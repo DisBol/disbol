@@ -9,6 +9,12 @@ import { InputField } from "@/components/ui/InputField";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useCategoryProvider } from "../../configuraciones/hooks/proveedores/useCategoryprovider";
 import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
+import {
+  useAddAssignment,
+  useAddAssignmentStage,
+  useAddTicket,
+  useAddProductAssignment,
+} from "../hooks";
 
 interface ProductState {
   cajas: string;
@@ -21,13 +27,30 @@ interface ProductsData {
   [key: string]: ProductState;
 }
 
-export default function ProductAssignment() {
+export default function ProductAssignment({
+  onAssignmentCreated,
+}: {
+  onAssignmentCreated?: () => void;
+}) {
   const { providers, loading: isLoadingProviders } = useCategoryProvider();
   const [proveedor, setProveedor] = useState("");
   const [grupo, setGrupo] = useState("");
   const [precio, setPrecio] = useState("");
   const [precioDiferido, setPrecioDiferido] = useState(false);
   const { categories: categoriesWithProducts } = useProductsByCategory();
+
+  // Hooks para las operaciones de asignación
+  const { addAssignment, loading: loadingAssignment } = useAddAssignment();
+  const { addAssignmentStage, loading: loadingStage } = useAddAssignmentStage();
+  const { addTicket, loading: loadingTicket } = useAddTicket();
+  const { addProductAssignment, loading: loadingProduct } =
+    useAddProductAssignment();
+
+  // Estados adicionales para campos requeridos
+  const [codigoTicket, setCodigoTicket] = useState("");
+
+  const isLoading =
+    loadingAssignment || loadingStage || loadingTicket || loadingProduct;
 
   // Maneja el cambio de proveedor y resetea el grupo
   const handleProviderChange = (value: string) => {
@@ -73,13 +96,13 @@ export default function ProductAssignment() {
   const [productosData, setProductosData] = useState<ProductsData>({});
 
   const handleProductoChange = (
-    codigo: string,
+    productId: string,
     field: keyof ProductState,
     value: string | boolean,
   ) => {
     setProductosData((prev) => {
       // Obtener estado actual o inicializar
-      const current = prev[codigo] || {
+      const current = prev[productId] || {
         cajas: "",
         unidades: "",
         menudencia: true,
@@ -87,12 +110,131 @@ export default function ProductAssignment() {
 
       return {
         ...prev,
-        [codigo]: {
+        [productId]: {
           ...current,
           [field]: value,
         },
       };
     });
+  };
+
+  // Función para procesar la asignación de productos
+  const handleAsignarProductos = async () => {
+    if (!proveedor) {
+      alert("Debe seleccionar un proveedor");
+      return;
+    }
+
+    if (!grupo) {
+      alert("Debe seleccionar un grupo de productos");
+      return;
+    }
+
+    // Filtrar productos que tienen cantidades ingresadas
+    const productosConCantidades = Object.entries(productosData).filter(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ([_, data]) => data.cajas !== "" || data.unidades !== "",
+    );
+
+    if (productosConCantidades.length === 0) {
+      alert("Debe ingresar cantidades para al menos un producto");
+      return;
+    }
+
+    if (!codigoTicket.trim()) {
+      alert("Debe ingresar un código de ticket");
+      return;
+    }
+
+    try {
+      // Paso 1: Crear Assignment
+      const assignmentId = await addAssignment({
+        Provider_id: proveedor,
+      });
+
+      if (!assignmentId) {
+        throw new Error("Error al crear la asignación");
+      }
+
+      // Calcular totales
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const totalUnidades = productosConCantidades.reduce((sum, [_, data]) => {
+        return sum + (parseInt(data.unidades) || 0);
+      }, 0);
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const totalCajas = productosConCantidades.reduce((sum, [_, data]) => {
+        return sum + (parseInt(data.cajas) || 0);
+      }, 0);
+
+      const precioTotal = precioDiferido ? "0" : precio || "0";
+
+      // Paso 2: Crear AssignmentStage
+      const assignmentStageId = await addAssignmentStage({
+        position: "1",
+        in_container: totalCajas,
+        out_container: 0,
+        units: totalUnidades,
+        container: totalCajas,
+        payment: precioTotal,
+        Assignment_id: assignmentId.toString(),
+      });
+
+      if (!assignmentStageId) {
+        throw new Error("Error al crear la etapa de asignación");
+      }
+
+      // Paso 3: Crear Ticket
+      const ticketId = await addTicket({
+        code: codigoTicket,
+        deferred_payment: precioDiferido ? "true" : "false",
+        total_payment: precioTotal,
+        product_payment: precioTotal,
+        AssignmentStage_id: assignmentStageId.toString(),
+      });
+
+      if (!ticketId) {
+        throw new Error("Error al crear el ticket");
+      }
+
+      // Paso 4: Crear ProductAssignment para cada producto
+      const promises = productosConCantidades.map(async ([productId, data]) => {
+        const productPrice = precioDiferido ? data.precio || "0" : precio;
+        const cajas = parseInt(data.cajas) || 0;
+        const unidades = parseInt(data.unidades) || 0;
+
+        return addProductAssignment({
+          container: cajas,
+          units: unidades,
+          menudencia: data.menudencia ? "true" : "false",
+          net_weight: "0", // Valor por defecto - se puede modificar después
+          gross_weight: "0", // Valor por defecto - se puede modificar después
+          payment: productPrice || "0",
+          Tickets_id: ticketId.toString(),
+          Product_id: productId,
+        });
+      });
+
+      await Promise.all(promises);
+
+      // Limpiar formulario después del éxito
+      setProductosData({});
+      setCodigoTicket("");
+      setPrecio("");
+      setPrecioDiferido(false);
+
+      alert(
+        `¡Asignación creada exitosamente! Productos asignados: ${productosConCantidades.length}`,
+      );
+
+      // Notificar al componente padre que se refresque el historial
+      onAssignmentCreated?.();
+    } catch (error) {
+      console.error("Error en la asignación:", error);
+      alert(
+        `Error: ${error instanceof Error ? error.message : "Error desconocido"}`,
+      );
+    }
   };
 
   return (
@@ -155,6 +297,17 @@ export default function ProductAssignment() {
                 />
               </div>
             </div>
+
+            {/* Código de Ticket */}
+            <div>
+              <InputField
+                label="CÓDIGO DE TICKET"
+                type="text"
+                value={codigoTicket}
+                onChange={(e) => setCodigoTicket(e.target.value)}
+                placeholder="Ingrese código del ticket"
+              />
+            </div>
           </div>
 
           {/* LADO DERECHO - Productos Requeridos */}
@@ -208,8 +361,14 @@ export default function ProductAssignment() {
         </div>
 
         <div className="mt-8">
-          <Button className="w-full " leftIcon={<SaveIcon />} size="md">
-            Asignar Productos
+          <Button
+            className="w-full"
+            leftIcon={<SaveIcon />}
+            size="md"
+            onClick={handleAsignarProductos}
+            disabled={isLoading}
+          >
+            {isLoading ? "Procesando..." : "Asignar Productos"}
           </Button>
         </div>
       </div>
