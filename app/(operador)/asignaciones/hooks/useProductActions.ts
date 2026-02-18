@@ -4,7 +4,8 @@ import { useUpdateProductAssignment } from "./useUpdateProductAssignment";
 
 export const useProductActions = () => {
   const { setProductUpdating } = useAssignmentsStore();
-  const { updateProductAssignment } = useUpdateProductAssignment();
+  const { updateProductAssignment, deleteProductAssignment } =
+    useUpdateProductAssignment();
 
   // Helper para manejar operaciones comunes
   const executeProductOperation = useCallback(
@@ -75,7 +76,36 @@ export const useProductActions = () => {
     [updateProductAssignment, executeProductOperation],
   );
 
+  const deleteProduct = useCallback(
+    async (
+      assignmentId: string,
+      productAssignmentId: string,
+      productId: string,
+      ticketId: string,
+      productCode: string,
+      menudencia: string,
+    ) => {
+      return executeProductOperation(assignmentId, productCode, async () => {
+        const deleteData = {
+          id: productAssignmentId,
+          container: 0,
+          units: 0,
+          menudencia: menudencia,
+          net_weight: "0",
+          gross_weight: "0",
+          payment: "0",
+          Tickets_id: ticketId,
+          Product_id: productId,
+        };
+
+        return deleteProductAssignment(deleteData);
+      });
+    },
+    [deleteProductAssignment, executeProductOperation],
+  );
+
   return {
     updateProduct,
+    deleteProduct,
   };
 };

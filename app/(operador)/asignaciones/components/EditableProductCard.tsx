@@ -12,6 +12,7 @@ interface EditableProductCardProps {
     productCode: string,
     updates: Partial<ProductQuantity>,
   ) => void;
+  onDelete: (productCode: string) => void;
   isUpdating?: boolean;
 }
 
@@ -19,6 +20,7 @@ const EditableProductCard: React.FC<EditableProductCardProps> = ({
   product,
   isEditing,
   onLocalChange,
+  onDelete,
   isUpdating = false,
 }) => {
   // Estado local para valores editables
@@ -47,7 +49,7 @@ const EditableProductCard: React.FC<EditableProductCardProps> = ({
     if (
       window.confirm(`¿Está seguro de eliminar el producto ${product.codigo}?`)
     ) {
-      onLocalChange(product.codigo, { cajas: 0, unidades: 0 });
+      onDelete(product.codigo);
     }
   };
 

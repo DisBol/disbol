@@ -40,7 +40,7 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
     updateProductInAssignment,
   } = useAssignmentsStore();
 
-  const { updateProduct } = useProductActions();
+  const { updateProduct, deleteProduct } = useProductActions();
 
   const handleEditToggle = async (assignmentId: string) => {
     if (editingAssignments.has(assignmentId)) {
@@ -106,6 +106,38 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
   ) => {
     setPendingChange(assignmentId, productCode, updates);
     updateProductInAssignment(assignmentId, productCode, updates);
+  };
+
+  const handleDeleteProduct = async (
+    assignmentId: string,
+    productCode: string,
+  ) => {
+    const assignment = assignments.find((a) => a.id === assignmentId);
+    if (!assignment) return;
+
+    const product = assignment.productos.find((p) => p.codigo === productCode);
+    if (!product) return;
+
+    try {
+      await deleteProduct(
+        assignmentId,
+        product.productAssignmentId,
+        product.productId,
+        product.ticketId,
+        product.codigo,
+        product.menudencia,
+      );
+
+      // Limpiar cambios pendientes y salir del modo edición después de eliminar
+      clearPendingChanges(assignmentId);
+      stopEditingAssignment(assignmentId);
+
+      // Refrescar datos tras eliminación
+      setTimeout(() => onRefreshData(), 500);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert("Error al eliminar el producto. Por favor, intente nuevamente.");
+    }
   };
 
   const handleCancel = (assignmentId: string) => {
@@ -238,7 +270,6 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                   onClick={() => handleEditToggle(assignment.id)}
                 >
                   <EditIcon className="w-4 h-4 mr-1" />
-                  Editar
                 </Button>
               )}
             </div>
@@ -257,6 +288,9 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                     isUpdating={isUpdating}
                     onLocalChange={(productCode, updates) =>
                       handleLocalChange(assignment.id, productCode, updates)
+                    }
+                    onDelete={(productCode) =>
+                      handleDeleteProduct(assignment.id, productCode)
                     }
                   />
                 );
