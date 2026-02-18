@@ -11,6 +11,7 @@ import {
   ProductQuantity,
 } from "../stores/assignments-store";
 import { useProductActions } from "../hooks/useProductActions";
+import { useUpdateAssignment } from "../hooks/useUpdateAssignment";
 import { DeleteIcon } from "@/components/icons/DeleteIcon";
 
 interface HistoryAssignmentListProps {
@@ -41,6 +42,7 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
   } = useAssignmentsStore();
 
   const { updateProduct, deleteProduct } = useProductActions();
+  const { deleteAssignment } = useUpdateAssignment();
 
   const handleEditToggle = async (assignmentId: string) => {
     if (editingAssignments.has(assignmentId)) {
@@ -137,6 +139,27 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
     } catch (error) {
       console.error("Error deleting product:", error);
       alert("Error al eliminar el producto. Por favor, intente nuevamente.");
+    }
+  };
+
+  const handleDeleteAssignment = async (assignmentId: string) => {
+    const assignment = assignments.find((a) => a.id === assignmentId);
+    if (!assignment) return;
+
+    const confirmMessage = `¿Está seguro de eliminar toda la asignación del proveedor ${assignment.proveedor}?\nEsta acción eliminará todos los productos de la asignación.`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      await deleteAssignment(assignment.id, assignment.providerId);
+
+      // Refrescar datos tras eliminación
+      setTimeout(() => onRefreshData(), 500);
+    } catch (error) {
+      console.error("Error deleting assignment:", error);
+      alert("Error al eliminar la asignación. Por favor, intente nuevamente.");
     }
   };
 
@@ -276,7 +299,8 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                     color="secondary"
                     size="sm"
                     className="p-1 text-red-500 hover:text-red-700 transition-colors"
-                    onClick={() => handleEditToggle(assignment.id)}
+                    onClick={() => handleDeleteAssignment(assignment.id)}
+                    title="Eliminar asignación completa"
                   >
                     <DeleteIcon className="w-4 h-4 mr-1" />
                   </Button>

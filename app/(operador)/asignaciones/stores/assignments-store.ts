@@ -20,6 +20,7 @@ export interface Assignment {
   id: string;
   fecha: string;
   proveedor: string;
+  providerId: string; // ID del proveedor necesario para eliminar assignment
   productos: ProductQuantity[];
 }
 
@@ -101,6 +102,7 @@ const transformApiDataToAssignments = (
             "es-ES",
           ),
           proveedor: item.Provider_name,
+          providerId: item.Provider_id.toString(),
           productos: [],
         };
       }
