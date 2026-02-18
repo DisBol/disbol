@@ -33,7 +33,6 @@ interface ReceptionScreenProps {
     id: string;
     fecha: string;
     proveedor: string;
-    estado: string;
     productos: any[];
   };
   onBack: () => void;

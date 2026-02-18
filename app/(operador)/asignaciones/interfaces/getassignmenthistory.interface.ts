@@ -13,11 +13,14 @@ export interface Datum {
   Category_id: number;
   Category_name: string;
   Ticket_id: number;
+  ProductAssignment_id: number;
   Product_id: number;
   Product_name: string;
   ProductAssignment_units: number;
   ProductAssignment_container: number;
   ProductAssignment_menudencia: string;
+  ProductAssignment_gross_weight: string;
+  ProductAssignment_net_weight: string;
 }
 
 export interface Metadata {
