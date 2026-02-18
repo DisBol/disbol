@@ -4,7 +4,6 @@ import React from "react";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { EditIcon } from "@/components/icons/EditIcon";
-import { SaveIcon } from "@/components/icons/Save";
 import EditableProductCard from "./EditableProductCard";
 import {
   Assignment,
@@ -12,6 +11,7 @@ import {
   ProductQuantity,
 } from "../stores/assignments-store";
 import { useProductActions } from "../hooks/useProductActions";
+import { DeleteIcon } from "@/components/icons/DeleteIcon";
 
 interface HistoryAssignmentListProps {
   assignments: Assignment[];
@@ -257,20 +257,30 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                     className="min-w-20"
                     onClick={() => handleEditToggle(assignment.id)}
                   >
-                    <SaveIcon className="w-4 h-4 mr-1" />
                     Guardar
                   </Button>
                 </div>
               ) : (
-                <Button
-                  variant="outline"
-                  color="secondary"
-                  size="sm"
-                  className="min-w-20"
-                  onClick={() => handleEditToggle(assignment.id)}
-                >
-                  <EditIcon className="w-4 h-4 mr-1" />
-                </Button>
+                <div>
+                  <Button
+                    variant="ghost"
+                    color="secondary"
+                    size="sm"
+                    className="p-1 text-blue-500 hover:text-blue-700 transition-colors"
+                    onClick={() => handleEditToggle(assignment.id)}
+                  >
+                    <EditIcon className="w-4 h-4 mr-1" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    color="secondary"
+                    size="sm"
+                    className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                    onClick={() => handleEditToggle(assignment.id)}
+                  >
+                    <DeleteIcon className="w-4 h-4 mr-1" />
+                  </Button>
+                </div>
               )}
             </div>
 
