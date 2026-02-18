@@ -13,6 +13,7 @@ export interface Datum {
   Category_id: number;
   Category_name: string;
   Ticket_id: number;
+  ProductAssignment_id: number;
   Product_id: number;
   Product_name: string;
   ProductAssignment_units: number;
