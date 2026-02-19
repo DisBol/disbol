@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
+import { Assignment, ProductQuantity } from "../stores/assignments-store";
 
 // Interfaces
 interface ProductReception {
@@ -25,12 +26,7 @@ interface Boleta {
 }
 
 interface ReceptionScreenProps {
-  assignment: {
-    id: string;
-    fecha: string;
-    proveedor: string;
-    productos: any[];
-  };
+  assignment: Assignment;
   onBack: () => void;
 }
 
@@ -38,64 +34,17 @@ export default function ReceptionScreen({
   assignment,
   onBack,
 }: ReceptionScreenProps) {
-  const [productos] = useState<ProductReception[]>([
-    {
-      codigo: "104",
-      cajas: 10,
-      unidades: 5,
-      kgBruto: 100.0,
-      kgNeto: 95.0,
-      kgRecibidos: 0.0,
-    },
-    {
-      codigo: "105",
-      cajas: 0,
-      unidades: 0,
-      kgBruto: 0.0,
-      kgNeto: 0.0,
-      kgRecibidos: 0.0,
-    },
-    {
-      codigo: "106",
-      cajas: 0,
-      unidades: 0,
-      kgBruto: 0.0,
-      kgNeto: 0.0,
-      kgRecibidos: 0.0,
-    },
-    {
-      codigo: "107",
-      cajas: 5,
-      unidades: 2,
-      kgBruto: 50.0,
-      kgNeto: 47.5,
-      kgRecibidos: 0.0,
-    },
-    {
-      codigo: "108",
-      cajas: 0,
-      unidades: 0,
-      kgBruto: 0.0,
-      kgNeto: 0.0,
-      kgRecibidos: 0.0,
-    },
-    {
-      codigo: "109",
-      cajas: 0,
-      unidades: 0,
-      kgBruto: 0.0,
-      kgNeto: 0.0,
-      kgRecibidos: 0.0,
-    },
-    {
-      codigo: "110",
-      cajas: 0,
-      unidades: 0,
-      kgBruto: 0.0,
-      kgNeto: 0.0,
-      kgRecibidos: 0.0,
-    },
-  ]);
+  // Transformar productos del assignment a formato de recepción
+  const productos = useMemo<ProductReception[]>(() => {
+    return assignment.productos.map((producto: ProductQuantity) => ({
+      codigo: producto.codigo,
+      cajas: producto.cajas,
+      unidades: producto.unidades,
+      kgBruto: producto.kgBruto,
+      kgNeto: producto.kgNeto,
+      kgRecibidos: 0.0, // Valor inicial para kg recibidos
+    }));
+  }, [assignment.productos]);
 
   const [boletas, setBoletas] = useState<Boleta[]>([
     {

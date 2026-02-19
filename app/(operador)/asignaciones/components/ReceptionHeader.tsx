@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { CarOutlineIcon } from "@/components/icons/CarOutlineIcon";
 import { Card } from "@/components/ui/Card";
 import CardCode from "@/components/ui/CardCode";
+import { Assignment } from "../stores/assignments-store";
 
 interface ProductReception {
   codigo: string;
@@ -16,12 +17,7 @@ interface ProductReception {
 }
 
 interface ReceptionHeaderProps {
-  assignment: {
-    id: string;
-    fecha: string;
-    proveedor: string;
-    productos: any[];
-  };
+  assignment: Assignment;
   productos: ProductReception[];
   costoTotalGeneral: string;
   onBack: () => void;
@@ -39,7 +35,7 @@ export default function ReceptionHeader({
     <Card className="p-4 md:p-6">
       {/* Header con información general */}
       <div className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <span className="text-xs font-bold text-gray-500 uppercase block">
               PROVEEDOR:
