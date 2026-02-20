@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Card } from "@/components/ui/Card";
+import CardCode from "@/components/ui/CardCode";
 
 interface ProductReception {
   codigo: string;
@@ -15,6 +16,20 @@ interface ProductReception {
   kgRecibidos: number;
 }
 
+export interface PesajeData {
+  id: string;
+  cajas: number;
+  unidades: number;
+  kg: number;
+}
+
+interface BoletaDetail {
+  cajas: number;
+  unidades: number;
+  precio?: string;
+  pesajes?: PesajeData[];
+}
+
 interface Boleta {
   id: string;
   codigo: string;
@@ -22,6 +37,8 @@ interface Boleta {
   costoTotal: string;
   precioDiferido: boolean;
   codigosSeleccionados: string[];
+  menudencias: string[];
+  detalles: Record<string, BoletaDetail>;
 }
 
 interface ReceptionTicketsProps {
@@ -32,6 +49,22 @@ interface ReceptionTicketsProps {
   onEliminarBoleta: (boletaId: string) => void;
   onUpdateBoleta: (boletaId: string, field: keyof Boleta, value: any) => void;
   onToggleCodigoEnBoleta: (boletaId: string, codigo: string) => void;
+  onToggleMenudenciaEnBoleta: (boletaId: string, codigo: string) => void;
+  onUpdateCantidadBoleta: (
+    boletaId: string,
+    codigo: string,
+    field: "cajas" | "unidades" | "precio",
+    value: number | string,
+  ) => void;
+  onAgregarPesaje: (boletaId: string, codigo: string) => void;
+  onUpdatePesaje: (
+    boletaId: string,
+    codigo: string,
+    pesajeId: string,
+    field: "cajas" | "unidades" | "kg",
+    value: number,
+  ) => void;
+  onRemovePesaje: (boletaId: string, codigo: string, pesajeId: string) => void;
 }
 
 export default function ReceptionTickets({
@@ -42,6 +75,10 @@ export default function ReceptionTickets({
   onEliminarBoleta,
   onUpdateBoleta,
   onToggleCodigoEnBoleta,
+  onUpdateCantidadBoleta,
+  onAgregarPesaje,
+  onUpdatePesaje,
+  onRemovePesaje,
 }: ReceptionTicketsProps) {
   return (
     <Card className="p-4 md:p-6 mt-4">
@@ -106,6 +143,7 @@ export default function ReceptionTickets({
                   </span>
                   <InputField
                     value={boleta.costoPorKg}
+                    disabled={boleta.precioDiferido}
                     onChange={(e) =>
                       onUpdateBoleta(boleta.id, "costoPorKg", e.target.value)
                     }
@@ -137,25 +175,116 @@ export default function ReceptionTickets({
                 <h4 className="text-sm font-bold text-gray-600 uppercase mb-3">
                   Códigos en esta Boleta
                 </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-                  {productos.map((producto) => (
-                    <div
-                      key={producto.codigo}
-                      className="flex items-center gap-2"
-                    >
-                      <Checkbox
-                        checked={boleta.codigosSeleccionados.includes(
-                          producto.codigo,
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {productos.map((producto) => {
+                    const isSelected = boleta.codigosSeleccionados.includes(
+                      producto.codigo,
+                    );
+                    const isMenudencia = boleta.menudencias?.includes(
+                      producto.codigo,
+                    );
+
+                    const detalle = boleta.detalles?.[producto.codigo] || {
+                      cajas: 0,
+                      unidades: 0,
+                    };
+
+                    return (
+                      <div key={producto.codigo} className="relative h-full">
+                        {isSelected ? (
+                          <div className="h-full">
+                            <CardCode
+                              label={
+                                <div className="flex items-center justify-center gap-2">
+                                  <Checkbox
+                                    checked={true}
+                                    onChange={() =>
+                                      onToggleCodigoEnBoleta(
+                                        boleta.id,
+                                        producto.codigo,
+                                      )
+                                    }
+                                    label={`Código ${producto.codigo}`}
+                                  />
+                                </div>
+                              }
+                              cajas={detalle.cajas}
+                              unidades={detalle.unidades}
+                              readOnly={false}
+                              onCajasChange={(val) =>
+                                onUpdateCantidadBoleta(
+                                  boleta.id,
+                                  producto.codigo,
+                                  "cajas",
+                                  val === "" ? 0 : Number(val),
+                                )
+                              }
+                              onUnidadesChange={(val) =>
+                                onUpdateCantidadBoleta(
+                                  boleta.id,
+                                  producto.codigo,
+                                  "unidades",
+                                  val === "" ? 0 : Number(val),
+                                )
+                              }
+                              showPrecio={boleta.precioDiferido}
+                              precio={detalle.precio || ""}
+                              onPrecioChange={(val) =>
+                                onUpdateCantidadBoleta(
+                                  boleta.id,
+                                  producto.codigo,
+                                  "precio",
+                                  val,
+                                )
+                              }
+                              variant="active"
+                              // Don't pass menudencia props to hide the checkbox at bottom
+                              weightInfo={{
+                                bruto: `${producto.kgBruto.toFixed(2)}`,
+                                neto: `${producto.kgNeto.toFixed(2)}`,
+                              }}
+                              className="pointer-events-auto h-full"
+                              pesajes={detalle.pesajes}
+                              onAgregarPesaje={() =>
+                                onAgregarPesaje(boleta.id, producto.codigo)
+                              }
+                              onUpdatePesaje={(pesajeId, field, value) =>
+                                onUpdatePesaje(
+                                  boleta.id,
+                                  producto.codigo,
+                                  pesajeId,
+                                  field,
+                                  value,
+                                )
+                              }
+                              onRemovePesaje={(pesajeId) =>
+                                onRemovePesaje(
+                                  boleta.id,
+                                  producto.codigo,
+                                  pesajeId,
+                                )
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <div className="border border-gray-200 rounded-lg p-3 bg-white flex items-center gap-3 h-full">
+                            <div>
+                              <Checkbox
+                                checked={false}
+                                onChange={() =>
+                                  onToggleCodigoEnBoleta(
+                                    boleta.id,
+                                    producto.codigo,
+                                  )
+                                }
+                                label={`Código ${producto.codigo}`}
+                              />
+                            </div>
+                          </div>
                         )}
-                        onChange={() =>
-                          onToggleCodigoEnBoleta(boleta.id, producto.codigo)
-                        }
-                      />
-                      <span className="text-xs font-medium text-gray-700">
-                        Código {producto.codigo}
-                      </span>
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

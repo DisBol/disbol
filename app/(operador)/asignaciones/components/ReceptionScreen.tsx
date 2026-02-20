@@ -16,6 +16,20 @@ interface ProductReception {
   kgRecibidos: number;
 }
 
+export interface PesajeData {
+  id: string;
+  cajas: number;
+  unidades: number;
+  kg: number;
+}
+
+interface BoletaDetail {
+  cajas: number;
+  unidades: number;
+  precio?: string;
+  pesajes?: PesajeData[];
+}
+
 interface Boleta {
   id: string;
   codigo: string;
@@ -23,6 +37,8 @@ interface Boleta {
   costoTotal: string;
   precioDiferido: boolean;
   codigosSeleccionados: string[];
+  menudencias: string[];
+  detalles: Record<string, BoletaDetail>;
 }
 
 interface ReceptionScreenProps {
@@ -54,6 +70,8 @@ export default function ReceptionScreen({
       costoTotal: "0.00",
       precioDiferido: false,
       codigosSeleccionados: [],
+      menudencias: [],
+      detalles: {},
     },
   ]);
 
@@ -69,6 +87,8 @@ export default function ReceptionScreen({
       costoTotal: "0.00",
       precioDiferido: false,
       codigosSeleccionados: [],
+      menudencias: [],
+      detalles: {},
     };
     setBoletas([...boletas, nuevaBoleta]);
   };
@@ -90,10 +110,171 @@ export default function ReceptionScreen({
       boletas.map((boleta) => {
         if (boleta.id === boletaId) {
           const codigosActuales = boleta.codigosSeleccionados;
-          const nuevosCodigos = codigosActuales.includes(codigo)
-            ? codigosActuales.filter((c) => c !== codigo)
-            : [...codigosActuales, codigo];
-          return { ...boleta, codigosSeleccionados: nuevosCodigos };
+          const isSelected = codigosActuales.includes(codigo);
+          let nuevosCodigos;
+          let nuevosDetalles = { ...boleta.detalles };
+
+          if (isSelected) {
+            nuevosCodigos = codigosActuales.filter((c) => c !== codigo);
+            // Opcional: limpiar detalles al deseleccionar
+            // delete nuevosDetalles[codigo];
+          } else {
+            nuevosCodigos = [...codigosActuales, codigo];
+            // Inicializar en 0 si no existe
+            if (!nuevosDetalles[codigo]) {
+              nuevosDetalles[codigo] = { cajas: 0, unidades: 0, pesajes: [] };
+            }
+          }
+          return {
+            ...boleta,
+            codigosSeleccionados: nuevosCodigos,
+            detalles: nuevosDetalles,
+          };
+        }
+        return boleta;
+      }),
+    );
+  };
+
+  const updateCantidadBoleta = (
+    boletaId: string,
+    codigo: string,
+    field: "cajas" | "unidades" | "precio",
+    value: number | string,
+  ) => {
+    setBoletas(
+      boletas.map((boleta) => {
+        if (boleta.id === boletaId) {
+          const detalleActual = boleta.detalles[codigo] || {
+            cajas: 0,
+            unidades: 0,
+          };
+          return {
+            ...boleta,
+            detalles: {
+              ...boleta.detalles,
+              [codigo]: {
+                ...detalleActual,
+                [field]: value,
+              },
+            },
+          };
+        }
+        return boleta;
+      }),
+    );
+  };
+
+  const toggleMenudenciaEnBoleta = (boletaId: string, codigo: string) => {
+    setBoletas(
+      boletas.map((boleta) => {
+        if (boleta.id === boletaId) {
+          const menudenciasActuales = boleta.menudencias;
+          const nuevasMenudencias = menudenciasActuales.includes(codigo)
+            ? menudenciasActuales.filter((c) => c !== codigo)
+            : [...menudenciasActuales, codigo];
+          return { ...boleta, menudencias: nuevasMenudencias };
+        }
+        return boleta;
+      }),
+    );
+  };
+
+  const handleAgregarPesaje = (boletaId: string, codigo: string) => {
+    setBoletas(
+      boletas.map((boleta) => {
+        if (boleta.id === boletaId) {
+          const detalleActual = boleta.detalles[codigo] || {
+            cajas: 0,
+            unidades: 0,
+            pesajes: [],
+          };
+          const nuevosPesajes = [
+            ...(detalleActual.pesajes || []),
+            {
+              id: Date.now().toString() + Math.random().toString(),
+              cajas: 0,
+              unidades: 0,
+              kg: 0,
+            },
+          ];
+          return {
+            ...boleta,
+            detalles: {
+              ...boleta.detalles,
+              [codigo]: {
+                ...detalleActual,
+                pesajes: nuevosPesajes,
+              },
+            },
+          };
+        }
+        return boleta;
+      }),
+    );
+  };
+
+  const handleUpdatePesaje = (
+    boletaId: string,
+    codigo: string,
+    pesajeId: string,
+    field: "cajas" | "unidades" | "kg",
+    value: number,
+  ) => {
+    setBoletas(
+      boletas.map((boleta) => {
+        if (boleta.id === boletaId) {
+          const detalleActual = boleta.detalles[codigo];
+          if (!detalleActual || !detalleActual.pesajes) return boleta;
+
+          const nuevosPesajes = detalleActual.pesajes.map((pesaje) => {
+            if (pesaje.id === pesajeId) {
+              return { ...pesaje, [field]: value };
+            }
+            return pesaje;
+          });
+
+          return {
+            ...boleta,
+            detalles: {
+              ...boleta.detalles,
+              [codigo]: {
+                ...detalleActual,
+                pesajes: nuevosPesajes,
+              },
+            },
+          };
+        }
+        return boleta;
+      }),
+    );
+  };
+
+  const handleRemovePesaje = (
+    boletaId: string,
+    codigo: string,
+    pesajeId: string,
+  ) => {
+    setBoletas(
+      boletas.map((boleta) => {
+        if (boleta.id === boletaId) {
+          const detalleActual = boleta.detalles[codigo];
+          if (!detalleActual || !detalleActual.pesajes) return boleta;
+
+          const nuevosPesajes = detalleActual.pesajes.filter(
+            (pesaje) => pesaje.id !== pesajeId,
+          );
+
+          return {
+            ...boleta,
+            detalles: {
+              ...boleta.detalles,
+              [codigo]: {
+                ...detalleActual,
+                pesajes: nuevosPesajes,
+              },
+            },
+          };
         }
         return boleta;
       }),
@@ -128,6 +309,11 @@ export default function ReceptionScreen({
         onEliminarBoleta={handleEliminarBoleta}
         onUpdateBoleta={updateBoleta}
         onToggleCodigoEnBoleta={toggleCodigoEnBoleta}
+        onToggleMenudenciaEnBoleta={toggleMenudenciaEnBoleta}
+        onUpdateCantidadBoleta={updateCantidadBoleta}
+        onAgregarPesaje={handleAgregarPesaje}
+        onUpdatePesaje={handleUpdatePesaje}
+        onRemovePesaje={handleRemovePesaje}
       />
 
       {/* Modal de Resumen de Recepción */}
