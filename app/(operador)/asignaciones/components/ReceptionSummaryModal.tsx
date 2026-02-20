@@ -31,7 +31,7 @@ export default function ReceptionSummaryModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="🚚 Resumen de Recepción"
+      title="Resumen de Recepción"
       size="xl"
     >
       {/* Contenedor con altura fija y scroll */}

@@ -46,9 +46,6 @@ export default function ProductAssignment({
   const { addProductAssignment, loading: loadingProduct } =
     useAddProductAssignment();
 
-  // Estados adicionales para campos requeridos
-  const [codigoTicket, setCodigoTicket] = useState("");
-
   const isLoading =
     loadingAssignment || loadingStage || loadingTicket || loadingProduct;
 
@@ -141,11 +138,6 @@ export default function ProductAssignment({
       return;
     }
 
-    if (!codigoTicket.trim()) {
-      alert("Debe ingresar un código de ticket");
-      return;
-    }
-
     try {
       // Paso 1: Crear Assignment
       const assignmentId = await addAssignment({
@@ -186,10 +178,10 @@ export default function ProductAssignment({
 
       // Paso 3: Crear Ticket
       const ticketId = await addTicket({
-        code: codigoTicket,
-        deferred_payment: precioDiferido ? "true" : "false",
-        total_payment: precioTotal,
-        product_payment: precioTotal,
+        code: "0", // Código temporal, se actualizará después
+        deferred_payment: "false",
+        total_payment: "0", // Se puede calcular después con base en los productos asignados
+        product_payment: "0",
         AssignmentStage_id: assignmentStageId.toString(),
       });
 
@@ -219,7 +211,6 @@ export default function ProductAssignment({
 
       // Limpiar formulario después del éxito
       setProductosData({});
-      setCodigoTicket("");
       setPrecio("");
       setPrecioDiferido(false);
 
@@ -296,17 +287,6 @@ export default function ProductAssignment({
                   onChange={setPrecioDiferido}
                 />
               </div>
-            </div>
-
-            {/* Código de Ticket */}
-            <div>
-              <InputField
-                label="CÓDIGO DE TICKET"
-                type="text"
-                value={codigoTicket}
-                onChange={(e) => setCodigoTicket(e.target.value)}
-                placeholder="Ingrese código del ticket"
-              />
             </div>
           </div>
 
