@@ -39,6 +39,7 @@ interface Boleta {
   codigosSeleccionados: string[];
   menudencias: string[];
   detalles: Record<string, BoletaDetail>;
+  tiposContenedor: Record<string, "caja" | "pallet" | "contenedor">;
 }
 
 interface ReceptionScreenProps {
@@ -72,6 +73,7 @@ export default function ReceptionScreen({
       codigosSeleccionados: [],
       menudencias: [],
       detalles: {},
+      tiposContenedor: {},
     },
   ]);
 
@@ -89,6 +91,7 @@ export default function ReceptionScreen({
       codigosSeleccionados: [],
       menudencias: [],
       detalles: {},
+      tiposContenedor: {},
     };
     setBoletas([...boletas, nuevaBoleta]);
   };
@@ -157,6 +160,27 @@ export default function ReceptionScreen({
                 ...detalleActual,
                 [field]: value,
               },
+            },
+          };
+        }
+        return boleta;
+      }),
+    );
+  };
+
+  const updateTipoContenedorBoleta = (
+    boletaId: string,
+    codigo: string,
+    tipo: "caja" | "pallet" | "contenedor",
+  ) => {
+    setBoletas(
+      boletas.map((boleta) => {
+        if (boleta.id === boletaId) {
+          return {
+            ...boleta,
+            tiposContenedor: {
+              ...boleta.tiposContenedor,
+              [codigo]: tipo,
             },
           };
         }
@@ -311,6 +335,7 @@ export default function ReceptionScreen({
         onToggleCodigoEnBoleta={toggleCodigoEnBoleta}
         onToggleMenudenciaEnBoleta={toggleMenudenciaEnBoleta}
         onUpdateCantidadBoleta={updateCantidadBoleta}
+        onUpdateTipoContenedorBoleta={updateTipoContenedorBoleta}
         onAgregarPesaje={handleAgregarPesaje}
         onUpdatePesaje={handleUpdatePesaje}
         onRemovePesaje={handleRemovePesaje}

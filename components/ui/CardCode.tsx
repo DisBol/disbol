@@ -28,6 +28,7 @@ export interface PesajeData {
   cajas: number;
   unidades: number;
   kg: number;
+  contenedor?: string;
 }
 
 export interface CardCodeProps
@@ -57,6 +58,8 @@ export interface CardCodeProps
       color?: "default" | "success" | "danger" | "warning";
     }>;
   };
+  // Optional containers config
+  containers?: Array<{ value: string; label: string }>;
   // Optional differences info
   differences?: {
     cajas?: number;
@@ -70,8 +73,8 @@ export interface CardCodeProps
   onAgregarPesaje?: () => void;
   onUpdatePesaje?: (
     id: string,
-    field: "cajas" | "unidades" | "kg",
-    value: number,
+    field: "cajas" | "unidades" | "kg" | "contenedor",
+    value: number | string,
   ) => void;
   onRemovePesaje?: (id: string) => void;
 }
@@ -93,6 +96,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       onPrecioChange,
       weightInfo,
       differences,
+      containers,
       readOnly = false,
       onRemove,
       pesajes,
@@ -417,8 +421,36 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                             className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
                           />
                         </div>
-                        <div className="w-5 h-5 flex items-center justify-center border border-gray-300 rounded bg-white text-red-500">
+                        <div className="relative w-5 h-5 flex items-center justify-center border border-gray-300 rounded bg-white text-red-500 hover:bg-red-50 transition-colors">
                           <BoxOutlineIcon />
+                          <select
+                            value={pesaje.contenedor || "cajas"}
+                            onChange={(e) =>
+                              onUpdatePesaje?.(
+                                pesaje.id,
+                                "contenedor",
+                                e.target.value,
+                              )
+                            }
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            title="Seleccionar contenedor"
+                          >
+                            {containers && containers.length > 0 ? (
+                              containers.map((c) => (
+                                <option key={c.value} value={c.value}>
+                                  {c.label}
+                                </option>
+                              ))
+                            ) : (
+                              <>
+                                <option value="cajas">Cajas</option>
+                                <option value="bolsas">Bolsas</option>
+                                <option value="jabitas">Jabitas</option>
+                                <option value="gavetas">Gavetas</option>
+                                <option value="unidades">Unidades</option>
+                              </>
+                            )}
+                          </select>
                         </div>
                       </div>
                       <div className="flex gap-1 items-end">
