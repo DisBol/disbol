@@ -59,9 +59,7 @@ const HistoryAssignment = forwardRef<
       <div className="max-w-full">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-          <h1 className="text-lg font-bold text-gray-900">
-            Historial de Asignaciones
-          </h1>
+          <h1 className="text-lg font-bold text-gray-900"></h1>
 
           {/* Filtros */}
           <HistoryAssignmentFilters

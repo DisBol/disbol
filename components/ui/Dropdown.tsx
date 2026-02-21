@@ -1,17 +1,21 @@
+"use client";
+
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const dropdownVariants = cva(
-  "w-full appearance-none outline-none font-medium subpixel-antialiased ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8 cursor-pointer text-left block bg-no-repeat",
+  "inline-flex items-center justify-between w-full font-medium subpixel-antialiased transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {
-        solid: "",
-        bordered: "border-2 bg-transparent",
+        solid: "border-transparent",
+        bordered: "border bg-transparent",
         light: "bg-transparent",
-        flat: "",
+        flat: "border-transparent",
         faded: "border border-gray-200 bg-gray-50",
+        iconOnly:
+          "p-0 bg-transparent border-transparent w-auto hover:bg-transparent",
       },
       color: {
         info: "text-blue-600",
@@ -21,11 +25,13 @@ const dropdownVariants = cva(
         success: "text-green-600",
         warning: "text-yellow-600",
         danger: "text-red-600",
+        iconDefault: "text-gray-500",
       },
       size: {
-        sm: "h-8 text-xs pl-2 pr-6",
-        md: "h-10 text-sm pl-3 pr-8",
-        lg: "h-12 text-base pl-4 pr-10",
+        sm: "h-8 text-xs px-2",
+        md: "h-10 text-sm px-3",
+        lg: "h-12 text-base px-4",
+        none: "",
       },
       radius: {
         none: "rounded-none",
@@ -42,87 +48,9 @@ const dropdownVariants = cva(
         class: "bg-gray-200 hover:bg-gray-300 text-gray-800",
       },
       {
-        variant: "solid",
-        color: "primary",
-        class:
-          "bg-pink-600 hover:bg-pink-500 text-white shadow-md shadow-pink-500/20",
-      },
-      {
-        variant: "solid",
-        color: "secondary",
-        class:
-          "bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-500/20",
-      },
-      {
-        variant: "solid",
-        color: "danger",
-        class:
-          "bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-500/20",
-      },
-      {
-        variant: "solid",
-        color: "success",
-        class:
-          "bg-green-600 hover:bg-green-500 text-white shadow-md shadow-green-500/20",
-      },
-      {
-        variant: "solid",
-        color: "warning",
-        class:
-          "bg-yellow-500 hover:bg-yellow-400 text-white shadow-md shadow-yellow-500/20",
-      },
-      {
-        variant: "solid",
-        color: "info",
-        class:
-          "bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/20",
-      },
-
-      {
         variant: "bordered",
         color: "default",
-        class: "border-gray-300 hover:bg-gray-100",
-      },
-      {
-        variant: "bordered",
-        color: "primary",
-        class: "border-pink-600 text-pink-600 hover:bg-pink-50",
-      },
-      {
-        variant: "bordered",
-        color: "danger",
-        class: "border-red-600 text-red-600 hover:bg-red-50",
-      },
-
-      {
-        variant: "flat",
-        color: "default",
-        class: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-      },
-      {
-        variant: "flat",
-        color: "primary",
-        class: "bg-pink-100 text-pink-700 hover:bg-pink-200",
-      },
-      {
-        variant: "flat",
-        color: "secondary",
-        class: "bg-purple-100 text-purple-700 hover:bg-purple-200",
-      },
-      {
-        variant: "flat",
-        color: "danger",
-        class: "bg-red-100 text-red-700 hover:bg-red-200",
-      },
-      {
-        variant: "flat",
-        color: "success",
-        class: "bg-green-100 text-green-700 hover:bg-green-200",
-      },
-      {
-        variant: "flat",
-        color: "info",
-        class: "bg-blue-100 text-blue-700 hover:bg-blue-200",
+        class: "border-gray-300 hover:bg-gray-100/50",
       },
     ],
     defaultVariants: {
@@ -136,14 +64,20 @@ const dropdownVariants = cva(
 
 export interface DropdownProps
   extends
-    Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "color" | "size">,
-    Omit<VariantProps<typeof dropdownVariants>, "size"> {
+    Omit<
+      React.ButtonHTMLAttributes<HTMLButtonElement>,
+      "color" | "onChange" | "value"
+    >,
+    VariantProps<typeof dropdownVariants> {
+  value?: string | number;
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   icon?: React.ReactNode;
+  iconOnly?: boolean;
   wrapperClassName?: string;
-  size?: VariantProps<typeof dropdownVariants>["size"];
+  children?: React.ReactNode;
 }
 
-const Dropdown = React.forwardRef<HTMLSelectElement, DropdownProps>(
+const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
   (
     {
       className,
@@ -152,50 +86,182 @@ const Dropdown = React.forwardRef<HTMLSelectElement, DropdownProps>(
       size,
       radius,
       icon,
+      iconOnly,
       wrapperClassName,
       children,
+      value,
+      onChange,
       ...props
     },
     ref,
   ) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    // Close on outside click
+    React.useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [isOpen]);
+
+    // Parse options from children
+    const options = React.Children.toArray(children)
+      .filter(
+        (child) =>
+          React.isValidElement(child) &&
+          (child.type === "option" ||
+            (child.props as any)?.value !== undefined),
+      )
+      .map((child: any) => ({
+        value: child.props.value,
+        label: child.props.children,
+      }));
+
+    const selectedOption = options.find(
+      (opt) => String(opt.value) === String(value),
+    );
+
+    const handleSelect = (optionValue: string | number) => {
+      if (onChange) {
+        onChange({
+          target: { value: optionValue } as any,
+        } as React.ChangeEvent<HTMLSelectElement>);
+      }
+      setIsOpen(false);
+    };
+
     return (
-      <div className={cn("relative inline-block w-full", wrapperClassName)}>
-        <select
+      <div
+        ref={dropdownRef}
+        className={cn(
+          "relative inline-block",
+          iconOnly ? "w-auto" : "w-full",
+          wrapperClassName,
+        )}
+      >
+        <button
           ref={ref}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
           className={cn(
-            dropdownVariants({ variant, color, size, radius }),
+            dropdownVariants({
+              variant: iconOnly ? "iconOnly" : variant,
+              color: iconOnly ? "iconDefault" : color,
+              size: iconOnly ? "none" : size,
+              radius,
+            }),
             className,
           )}
           {...props}
         >
-          {children}
-        </select>
-        <div
-          className={cn(
-            "absolute inset-y-0 flex items-center pointer-events-none",
-            size === "sm" ? "right-2" : size === "lg" ? "right-4" : "right-3",
-          )}
-        >
-          {icon || (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={cn(
-                "w-4 h-4 opacity-70",
-                size === "sm" && "w-3 h-3",
-                size === "lg" && "w-5 h-5",
-                variant === "solid" && color !== "default" ? "text-white" : "",
+          {iconOnly ? (
+            <div className="flex items-center justify-center p-1 rounded hover:bg-gray-100 transition-colors">
+              {icon || (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 text-gray-500"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               )}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            </div>
+          ) : (
+            <>
+              <span className="flex-1 text-left truncate">
+                {selectedOption?.label || "Select..."}
+              </span>
+              <div className="flex items-center justify-center ml-2 border-l border-gray-200/50 pl-2">
+                {icon || (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-4 h-4 opacity-50"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                )}
+              </div>
+            </>
           )}
-        </div>
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-50 min-w-[140px] p-1 mt-1 bg-white border border-gray-100 rounded-lg shadow-lg shadow-black/5 animate-in fade-in zoom-in-95 duration-150 -left-2 top-full origin-top-left">
+            <ul className="py-1">
+              {options.map((opt) => (
+                <li key={opt.value}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSelect(opt.value);
+                    }}
+                    className={cn(
+                      "flex items-center w-full px-3 py-1.5 text-xs font-medium text-left transition-colors rounded-md",
+                      String(opt.value) === String(value)
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-gray-100",
+                    )}
+                  >
+                    <span className="flex-1">{opt.label}</span>
+                    {String(opt.value) === String(value) && (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-3 h-3 ml-2 text-blue-600"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Hidden select to preserve native form submission if needed by the parent */}
+        <select value={value} aria-hidden="true" className="hidden" disabled>
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
     );
   },

@@ -14,6 +14,7 @@ export interface ProductQuantity {
   productId: string;
   ticketId: string;
   productAssignmentId: string; // Este es el ID que se usa para editar
+  posicion: number;
 }
 
 export interface Assignment {
@@ -21,6 +22,7 @@ export interface Assignment {
   fecha: string;
   proveedor: string;
   providerId: string; // ID del proveedor necesario para eliminar assignment
+  categoryId: string; // ID del grupo
   productos: ProductQuantity[];
 }
 
@@ -103,6 +105,7 @@ const transformApiDataToAssignments = (
           ),
           proveedor: item.Provider_name,
           providerId: item.Provider_id.toString(),
+          categoryId: item.Category_id.toString(),
           productos: [],
         };
       }
@@ -118,6 +121,7 @@ const transformApiDataToAssignments = (
         productId: item.Product_id.toString(),
         ticketId: item.Ticket_id.toString(),
         productAssignmentId: item.ProductAssignment_id.toString(),
+        posicion: item.AssignmentStage_position,
       });
 
       return acc;

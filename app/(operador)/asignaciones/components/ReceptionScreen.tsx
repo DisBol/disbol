@@ -5,6 +5,11 @@ import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
 import { Assignment, ProductQuantity } from "../stores/assignments-store";
+import { useAddAssignmentStage } from "../hooks/useAddAssignmentStage";
+import { useAddTicket } from "../hooks/useAddTicket";
+import { useAddProductAssignment } from "../hooks/useAddProductAssignment";
+import { useAddTicketsWeighing } from "../hooks/useAddTicketsWeighing";
+import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
 
 // Interfaces
 interface ProductReception {
@@ -14,6 +19,7 @@ interface ProductReception {
   kgBruto: number;
   kgNeto: number;
   kgRecibidos: number;
+  productId: string;
 }
 
 export interface PesajeData {
@@ -21,6 +27,7 @@ export interface PesajeData {
   cajas: number;
   unidades: number;
   kg: number;
+  contenedor?: string;
 }
 
 interface BoletaDetail {
@@ -51,17 +58,72 @@ export default function ReceptionScreen({
   assignment,
   onBack,
 }: ReceptionScreenProps) {
+  const { categories: categoriesWithProducts } = useProductsByCategory();
+
   // Transformar productos del assignment a formato de recepción
   const productos = useMemo<ProductReception[]>(() => {
-    return assignment.productos.map((producto: ProductQuantity) => ({
-      codigo: producto.codigo,
-      cajas: producto.cajas,
-      unidades: producto.unidades,
-      kgBruto: producto.kgBruto,
-      kgNeto: producto.kgNeto,
-      kgRecibidos: 0.0, // Valor inicial para kg recibidos
-    }));
-  }, [assignment.productos]);
+    const categoryIdStr = assignment.categoryId || "";
+    const category = categoriesWithProducts.find(
+      (c) => c.id.toString() === categoryIdStr,
+    );
+
+    const categoryProducts = category ? category.products : [];
+    const assignedProductsMap = new Map();
+
+    assignment.productos.forEach((p) => {
+      assignedProductsMap.set(p.productId.toString(), p);
+    });
+
+    // Construir la lista con los productos de la categoría y agregar los mapeados si existen
+    const allProducts: ProductReception[] = categoryProducts.map((cp) => {
+      const assigned = assignedProductsMap.get(cp.id.toString());
+      if (assigned) {
+        return {
+          codigo: assigned.codigo,
+          cajas: assigned.cajas,
+          unidades: assigned.unidades,
+          kgBruto: assigned.kgBruto,
+          kgNeto: assigned.kgNeto,
+          kgRecibidos: 0.0,
+          productId: assigned.productId,
+        };
+      }
+      return {
+        codigo: cp.name,
+        cajas: 0,
+        unidades: 0,
+        kgBruto: 0,
+        kgNeto: 0,
+        kgRecibidos: 0.0,
+        productId: cp.id.toString(),
+      };
+    });
+
+    // También incluir los productos asignados que por alguna razón no estén en la categoría
+    assignment.productos.forEach((p) => {
+      if (!allProducts.some((ap) => ap.productId === p.productId.toString())) {
+        allProducts.push({
+          codigo: p.codigo,
+          cajas: p.cajas,
+          unidades: p.unidades,
+          kgBruto: p.kgBruto,
+          kgNeto: p.kgNeto,
+          kgRecibidos: 0.0,
+          productId: p.productId,
+        });
+      }
+    });
+
+    return allProducts;
+  }, [assignment.productos, assignment.categoryId, categoriesWithProducts]);
+
+  const { addAssignmentStage } = useAddAssignmentStage();
+  const { addTicket } = useAddTicket();
+  const { addProductAssignment } = useAddProductAssignment();
+  const { addTicketsWeighing } = useAddTicketsWeighing();
+  const [currentAssignmentStageId, setCurrentAssignmentStageId] = useState<
+    string | null
+  >(null);
 
   const [boletas, setBoletas] = useState<Boleta[]>([
     {
@@ -242,8 +304,8 @@ export default function ReceptionScreen({
     boletaId: string,
     codigo: string,
     pesajeId: string,
-    field: "cajas" | "unidades" | "kg",
-    value: number,
+    field: "cajas" | "unidades" | "kg" | "contenedor",
+    value: number | string,
   ) => {
     setBoletas(
       boletas.map((boleta) => {
@@ -315,6 +377,90 @@ export default function ReceptionScreen({
     console.log("Recepción confirmada");
   };
 
+  const handleGuardarBoleta = async (boletaId: string) => {
+    const boleta = boletas.find((b) => b.id === boletaId);
+    if (!boleta) return;
+
+    try {
+      let stageId = currentAssignmentStageId;
+
+      if (!stageId) {
+        const newStageId = await addAssignmentStage({
+          position: "2",
+          in_container: 0,
+          out_container: 0,
+          units: 0,
+          container: 0,
+          payment: "0",
+          Assignment_id: assignment.id,
+        });
+
+        if (newStageId) {
+          stageId = newStageId.toString();
+          setCurrentAssignmentStageId(stageId);
+        } else {
+          console.error("Failed to create assignment stage");
+          return;
+        }
+      }
+
+      if (stageId) {
+        const newTicketId = await addTicket({
+          code: boleta.codigo || "0",
+          deferred_payment: boleta.precioDiferido ? "1" : "0",
+          total_payment: boleta.costoTotal || "0",
+          product_payment: boleta.costoPorKg || "0",
+          AssignmentStage_id: stageId,
+        });
+
+        if (newTicketId) {
+          console.log("Ticket created successfully", newTicketId);
+
+          for (const codigo of boleta.codigosSeleccionados) {
+            const detalle = boleta.detalles[codigo] || {
+              cajas: 0,
+              unidades: 0,
+            };
+            const productoData = productos.find((p) => p.codigo === codigo);
+
+            if (productoData && productoData.productId) {
+              const newProductAssignmentId = await addProductAssignment({
+                container: Number(detalle.cajas) || 0,
+                units: Number(detalle.unidades) || 0,
+                menudencia: "0",
+                net_weight: "0",
+                gross_weight: "0",
+                payment: "0",
+                Tickets_id: newTicketId.toString(),
+                Product_id: productoData.productId.toString(),
+              });
+
+              if (
+                newProductAssignmentId &&
+                detalle.pesajes &&
+                detalle.pesajes.length > 0
+              ) {
+                console.log(
+                  `Product assignment created: ${newProductAssignmentId}. Sending pesajes...`,
+                );
+                for (const pesaje of detalle.pesajes) {
+                  await addTicketsWeighing({
+                    weight: Number(pesaje.kg) || 0,
+                    units: Number(pesaje.unidades) || 0,
+                    container: Number(pesaje.cajas) || 0,
+                    ProductAssignment_id: newProductAssignmentId.toString(),
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error saving boleta", error);
+    }
+  };
+
   return (
     <div className="min-h-screen max-w-full">
       <ReceptionHeader
@@ -339,6 +485,7 @@ export default function ReceptionScreen({
         onAgregarPesaje={handleAgregarPesaje}
         onUpdatePesaje={handleUpdatePesaje}
         onRemovePesaje={handleRemovePesaje}
+        onGuardarBoleta={handleGuardarBoleta}
       />
 
       {/* Modal de Resumen de Recepción */}

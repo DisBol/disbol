@@ -6,6 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 import { BoxOutlineIcon } from "../icons/BoxOutlineIcon";
 import { BalanceIcon } from "../icons/Balance";
+import { Dropdown } from "./Dropdown";
 
 const cardCodeVariants = cva(
   "bg-white rounded-lg p-2 border border-gray-100 shadow-sm flex flex-col h-full transition-all hover:shadow-md",
@@ -421,9 +422,8 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                             className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
                           />
                         </div>
-                        <div className="relative w-5 h-5 flex items-center justify-center border border-gray-300 rounded bg-white text-red-500 hover:bg-red-50 transition-colors">
-                          <BoxOutlineIcon />
-                          <select
+                        <div className="flex items-center justify-center">
+                          <Dropdown
                             value={pesaje.contenedor || "cajas"}
                             onChange={(e) =>
                               onUpdatePesaje?.(
@@ -432,8 +432,12 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                                 e.target.value,
                               )
                             }
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            title="Seleccionar contenedor"
+                            iconOnly={true}
+                            icon={
+                              <div className="flex items-center justify-center w-5 h-5 text-red-500 bg-white border border-gray-300 rounded hover:bg-red-50 transition-colors">
+                                <BoxOutlineIcon size={12} />
+                              </div>
+                            }
                           >
                             {containers && containers.length > 0 ? (
                               containers.map((c) => (
@@ -450,7 +454,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                                 <option value="unidades">Unidades</option>
                               </>
                             )}
-                          </select>
+                          </Dropdown>
                         </div>
                       </div>
                       <div className="flex gap-1 items-end">

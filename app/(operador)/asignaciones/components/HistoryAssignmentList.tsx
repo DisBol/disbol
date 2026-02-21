@@ -309,26 +309,28 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-              {assignment.productos.map((producto) => {
-                const isEditing = editingAssignments.has(assignment.id);
-                const productKey = `${assignment.id}-${producto.codigo}`;
-                const isUpdating = updatingProducts.has(productKey);
+              {assignment.productos
+                .filter((producto) => producto.posicion === 1)
+                .map((producto) => {
+                  const isEditing = editingAssignments.has(assignment.id);
+                  const productKey = `${assignment.id}-${producto.codigo}`;
+                  const isUpdating = updatingProducts.has(productKey);
 
-                return (
-                  <EditableProductCard
-                    key={producto.codigo}
-                    product={producto}
-                    isEditing={isEditing}
-                    isUpdating={isUpdating}
-                    onLocalChange={(productCode, updates) =>
-                      handleLocalChange(assignment.id, productCode, updates)
-                    }
-                    onDelete={(productCode) =>
-                      handleDeleteProduct(assignment.id, productCode)
-                    }
-                  />
-                );
-              })}
+                  return (
+                    <EditableProductCard
+                      key={producto.codigo}
+                      product={producto}
+                      isEditing={isEditing}
+                      isUpdating={isUpdating}
+                      onLocalChange={(productCode, updates) =>
+                        handleLocalChange(assignment.id, productCode, updates)
+                      }
+                      onDelete={(productCode) =>
+                        handleDeleteProduct(assignment.id, productCode)
+                      }
+                    />
+                  );
+                })}
             </div>
           </div>
         </div>

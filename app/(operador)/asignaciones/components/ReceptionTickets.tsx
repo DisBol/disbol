@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -58,6 +57,11 @@ interface ReceptionTicketsProps {
     field: "cajas" | "unidades" | "precio",
     value: number | string,
   ) => void;
+  onUpdateTipoContenedorBoleta: (
+    boletaId: string,
+    codigo: string,
+    tipo: "caja" | "pallet" | "contenedor",
+  ) => void;
   onAgregarPesaje: (boletaId: string, codigo: string) => void;
   onUpdatePesaje: (
     boletaId: string,
@@ -67,6 +71,7 @@ interface ReceptionTicketsProps {
     value: number | string,
   ) => void;
   onRemovePesaje: (boletaId: string, codigo: string, pesajeId: string) => void;
+  onGuardarBoleta: (boletaId: string) => void;
 }
 
 export default function ReceptionTickets({
@@ -77,10 +82,13 @@ export default function ReceptionTickets({
   onEliminarBoleta,
   onUpdateBoleta,
   onToggleCodigoEnBoleta,
+  onToggleMenudenciaEnBoleta,
   onUpdateCantidadBoleta,
+  onUpdateTipoContenedorBoleta,
   onAgregarPesaje,
   onUpdatePesaje,
   onRemovePesaje,
+  onGuardarBoleta,
 }: ReceptionTicketsProps) {
   const { containers } = useContainer();
 
@@ -113,7 +121,12 @@ export default function ReceptionTickets({
                   Boleta #{index + 1}
                 </h3>
                 <div className="flex gap-2">
-                  <Button variant="success" color="success" size="sm">
+                  <Button
+                    variant="success"
+                    color="success"
+                    size="sm"
+                    onClick={() => onGuardarBoleta(boleta.id)}
+                  >
                     Guardar Boleta
                   </Button>
                   <Button
