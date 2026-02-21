@@ -9,7 +9,6 @@ import { useAddAssignmentStage } from "../hooks/useAddAssignmentStage";
 import { useAddTicket } from "../hooks/useAddTicket";
 import { useAddProductAssignment } from "../hooks/useAddProductAssignment";
 import { useAddTicketsWeighing } from "../hooks/useAddTicketsWeighing";
-import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
 
 // Interfaces
 interface ProductReception {
@@ -20,6 +19,7 @@ interface ProductReception {
   kgNeto: number;
   kgRecibidos: number;
   productId: string;
+  active: boolean; // Agregar estado activo
 }
 
 export interface PesajeData {
@@ -58,64 +58,22 @@ export default function ReceptionScreen({
   assignment,
   onBack,
 }: ReceptionScreenProps) {
-  const { categories: categoriesWithProducts } = useProductsByCategory();
-
   // Transformar productos del assignment a formato de recepción
   const productos = useMemo<ProductReception[]>(() => {
-    const categoryIdStr = assignment.categoryId || "";
-    const category = categoriesWithProducts.find(
-      (c) => c.id.toString() === categoryIdStr,
-    );
-
-    const categoryProducts = category ? category.products : [];
-    const assignedProductsMap = new Map();
-
-    assignment.productos.forEach((p) => {
-      assignedProductsMap.set(p.productId.toString(), p);
-    });
-
-    // Construir la lista con los productos de la categoría y agregar los mapeados si existen
-    const allProducts: ProductReception[] = categoryProducts.map((cp) => {
-      const assigned = assignedProductsMap.get(cp.id.toString());
-      if (assigned) {
-        return {
-          codigo: assigned.codigo,
-          cajas: assigned.cajas,
-          unidades: assigned.unidades,
-          kgBruto: assigned.kgBruto,
-          kgNeto: assigned.kgNeto,
-          kgRecibidos: 0.0,
-          productId: assigned.productId,
-        };
-      }
-      return {
-        codigo: cp.name,
-        cajas: 0,
-        unidades: 0,
-        kgBruto: 0,
-        kgNeto: 0,
+    // Mostrar todos los productos del assignment que tienen posición === 1 (activos e inactivos)
+    return assignment.productos
+      .filter((p) => p.posicion === 1)
+      .map((p) => ({
+        codigo: p.codigo,
+        cajas: p.cajas,
+        unidades: p.unidades,
+        kgBruto: p.kgBruto,
+        kgNeto: p.kgNeto,
         kgRecibidos: 0.0,
-        productId: cp.id.toString(),
-      };
-    });
-
-    // También incluir los productos asignados que por alguna razón no estén en la categoría
-    assignment.productos.forEach((p) => {
-      if (!allProducts.some((ap) => ap.productId === p.productId.toString())) {
-        allProducts.push({
-          codigo: p.codigo,
-          cajas: p.cajas,
-          unidades: p.unidades,
-          kgBruto: p.kgBruto,
-          kgNeto: p.kgNeto,
-          kgRecibidos: 0.0,
-          productId: p.productId,
-        });
-      }
-    });
-
-    return allProducts;
-  }, [assignment.productos, assignment.categoryId, categoriesWithProducts]);
+        productId: p.productId,
+        active: p.active,
+      }));
+  }, [assignment.productos]);
 
   const { addAssignmentStage } = useAddAssignmentStage();
   const { addTicket } = useAddTicket();
