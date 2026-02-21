@@ -386,13 +386,13 @@ export default function NewRequest() {
                   : "No hay productos disponibles para este grupo"}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-7 gap-3">
                 {availableProducts.map((producto) => {
                   const prodId = producto.id.toString();
                   // Obtener estado actual o valores por defecto
                   const state = productosData[prodId] || {
-                    cajas: "0",
-                    unidades: "0",
+                    cajas: "",
+                    unidades: "",
                     menudencia: true,
                   };
 
@@ -425,7 +425,7 @@ export default function NewRequest() {
           <Button
             className="w-full"
             leftIcon={<SaveIcon />}
-            size="lg"
+            size="md"
             onClick={handleRegister}
             disabled={isRegistering}
           >
