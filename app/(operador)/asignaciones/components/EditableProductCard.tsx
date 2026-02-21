@@ -41,7 +41,14 @@ const EditableProductCard: React.FC<EditableProductCardProps> = ({
   const handleFieldChange = (field: "cajas" | "unidades", value: string) => {
     const numericValue = parseInt(value) || 0;
     setLocalValues((prev) => ({ ...prev, [field]: value }));
-    onLocalChange(product.codigo, { [field]: numericValue });
+
+    // Si el producto está inactivo y se está editando, activarlo
+    const updates: Partial<ProductQuantity> = { [field]: numericValue };
+    if (!product.active && numericValue > 0) {
+      updates.active = true;
+    }
+
+    onLocalChange(product.codigo, updates);
   };
 
   const handleRemove = () => {
@@ -54,36 +61,38 @@ const EditableProductCard: React.FC<EditableProductCardProps> = ({
   };
 
   return (
-    <div className="relative group">
-      <CardCode
-        label={`Código ${product.codigo}`}
-        cajas={localValues.cajas}
-        unidades={localValues.unidades}
-        onCajasChange={
-          isEditing ? (value) => handleFieldChange("cajas", value) : undefined
-        }
-        onUnidadesChange={
-          isEditing
-            ? (value) => handleFieldChange("unidades", value)
-            : undefined
-        }
-        readOnly={!isEditing}
-        variant={isUpdating ? "active" : "default"}
-        weightInfo={{
-          adicional: [
-            {
-              label: "",
-              value: `${product.kgBruto.toFixed(2)} kg Bruto`,
-              color: "default",
-            },
-            {
-              label: "",
-              value: `${product.kgNeto.toFixed(2)} kg Neto`,
-              color: "default",
-            },
-          ],
-        }}
-      />
+    <div className={`relative group ${!product.active ? "opacity-60" : ""}`}>
+      <div className={!product.active ? "bg-gray-200 rounded-lg p-1" : ""}>
+        <CardCode
+          label={`Código ${product.codigo}`}
+          cajas={localValues.cajas}
+          unidades={localValues.unidades}
+          onCajasChange={
+            isEditing ? (value) => handleFieldChange("cajas", value) : undefined
+          }
+          onUnidadesChange={
+            isEditing
+              ? (value) => handleFieldChange("unidades", value)
+              : undefined
+          }
+          readOnly={!isEditing}
+          variant={isUpdating ? "active" : "default"}
+          weightInfo={{
+            adicional: [
+              {
+                label: "",
+                value: `${product.kgBruto.toFixed(2)} kg Bruto`,
+                color: "default",
+              },
+              {
+                label: "",
+                value: `${product.kgNeto.toFixed(2)} kg Neto`,
+                color: "default",
+              },
+            ],
+          }}
+        />
+      </div>
 
       {/* Botón de eliminar - solo visible en modo edición */}
       {isEditing && (

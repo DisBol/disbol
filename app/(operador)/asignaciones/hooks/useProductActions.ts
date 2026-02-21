@@ -54,6 +54,7 @@ export const useProductActions = () => {
         unidades?: number;
         kgBruto?: number;
         kgNeto?: number;
+        active?: boolean;
       },
     ) => {
       return executeProductOperation(assignmentId, productCode, async () => {
@@ -65,7 +66,8 @@ export const useProductActions = () => {
           net_weight: (updates.kgNeto ?? currentProduct.kgNeto).toString(),
           gross_weight: (updates.kgBruto ?? currentProduct.kgBruto).toString(),
           payment: "0",
-          active: "true",
+          active:
+            updates.active !== undefined ? updates.active.toString() : "true",
           Tickets_id: ticketId,
           Product_id: productId,
         };

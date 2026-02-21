@@ -121,6 +121,13 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
     if (!product) return;
 
     try {
+      // Actualizar inmediatamente el estado local a inactivo
+      updateProductInAssignment(assignmentId, productCode, {
+        cajas: 0,
+        unidades: 0,
+        active: false,
+      });
+
       await deleteProduct(
         assignmentId,
         product.productAssignmentId,
@@ -139,6 +146,9 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
     } catch (error) {
       console.error("Error deleting product:", error);
       alert("Error al eliminar el producto. Por favor, intente nuevamente.");
+
+      // Revertir cambios si hay error
+      onRefreshData();
     }
   };
 
@@ -311,6 +321,7 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
               {assignment.productos
                 .filter((producto) => producto.posicion === 1)
+                .sort((a, b) => Number(b.active) - Number(a.active)) // Activos primero
                 .map((producto) => {
                   const isEditing = editingAssignments.has(assignment.id);
                   const productKey = `${assignment.id}-${producto.codigo}`;
