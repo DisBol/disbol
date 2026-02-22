@@ -8,6 +8,7 @@ export async function AddProductRequest(
   net_weight: number,
   gross_weight: number,
   payment: number,
+  active: boolean,
   RequestStage_id: number,
   Product_id: number,
 ): Promise<AddProductrequestResponse> {
@@ -18,7 +19,7 @@ export async function AddProductRequest(
     net_weight,
     gross_weight,
     payment,
-    active: "true",
+    active: active ? "true" : "false",
     RequestStage_id,
     Product_id,
   });

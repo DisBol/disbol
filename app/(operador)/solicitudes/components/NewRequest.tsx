@@ -97,16 +97,19 @@ export default function NewRequest() {
       return;
     }
 
-    // B. Filtrar solo los productos que tienen cantidad > 0
-    const selectedProductsIds = Object.keys(productosData).filter((key) => {
-      const prod = productosData[key];
-      return parseInt(prod.cajas) > 0 || parseInt(prod.unidades) > 0;
+    // B. Preparar la lista de todos los productos disponibles en el grupo
+    // y validar que al menos uno tenga cantidad > 0
+    const hasAnyProduct = availableProducts.some((p) => {
+      const prod = productosData[p.id.toString()];
+      return prod && (parseInt(prod.cajas) > 0 || parseInt(prod.unidades) > 0);
     });
 
-    if (selectedProductsIds.length === 0) {
+    if (!hasAnyProduct) {
       alert("Seleccione al menos un producto.");
       return;
     }
+
+    const selectedProductsIds = availableProducts.map((p) => p.id.toString());
 
     try {
       // PASO 1: Crear la cabecera de la Solicitud (Request)
@@ -132,8 +135,10 @@ export default function NewRequest() {
 
       selectedProductsIds.forEach((id) => {
         const prod = productosData[id];
-        totalUnits += parseInt(prod.unidades || "0");
-        totalCajas += parseInt(prod.cajas || "0");
+        if (prod) {
+          totalUnits += parseInt(prod.unidades || "0");
+          totalCajas += parseInt(prod.cajas || "0");
+        }
       });
 
       // Enviamos los totales a la API
@@ -152,10 +157,15 @@ export default function NewRequest() {
 
       // PASO 5: Registrar cada Producto individualmente (Loop)
       for (const prodId of selectedProductsIds) {
-        const prodData = productosData[prodId];
-        const units = parseInt(prodData.unidades || "0");
-        const cajas = parseInt(prodData.cajas || "0");
+        const prodData = productosData[prodId] || {
+          unidades: "0",
+          cajas: "0",
+          menudencia: true,
+        };
+        const units = parseInt(prodData.unidades || "0") || 0;
+        const cajas = parseInt(prodData.cajas || "0") || 0;
         const menudencia = prodData.menudencia;
+        const isActive = units > 0 || cajas > 0;
 
         await addProduct(
           cajas,
@@ -164,6 +174,7 @@ export default function NewRequest() {
           0.0, // net_weight (por defecto 0 si no se captura)
           0.0, // gross_weight
           0.0, // payment
+          isActive, // active
           requestStage_id,
           parseInt(prodId),
         );
@@ -249,11 +260,11 @@ export default function NewRequest() {
     return selectedCategory ? selectedCategory.products : [];
   }, [grupo, categoriesWithProducts]);
 
-  // Actualiza el estado local (Inputs) de un producto específico
   const handleProductoChange = (
     codigo: string,
     field: keyof ProductState,
     value: string | boolean,
+    productName?: string,
   ) => {
     setProductosData((prev) => {
       // Obtener estado actual o inicializar
@@ -263,12 +274,40 @@ export default function NewRequest() {
         menudencia: true,
       };
 
+      const newState = { ...current, [field]: value };
+
+      // Lógica de autocompletado para códigos específicos
+      if (productName && typeof value === "string") {
+        const valNum = value === "" ? 0 : parseFloat(value);
+        let multiplier = 0;
+
+        if (productName.includes("104") || productName.includes("105")) {
+          multiplier = 15;
+        } else if (
+          productName.includes("106") ||
+          productName.includes("107") ||
+          productName.includes("108") ||
+          productName.includes("109")
+        ) {
+          multiplier = 12;
+        }
+
+        if (multiplier > 0) {
+          if (field === "cajas") {
+            newState.unidades = (valNum * multiplier).toString();
+          } else if (field === "unidades") {
+            // Eliminar decimales o redondear hasta 2
+            const result = valNum / multiplier;
+            newState.cajas = Number.isInteger(result)
+              ? result.toString()
+              : Number(result.toFixed(2)).toString();
+          }
+        }
+      }
+
       return {
         ...prev,
-        [codigo]: {
-          ...current,
-          [field]: value,
-        },
+        [codigo]: newState,
       };
     });
   };
@@ -403,10 +442,20 @@ export default function NewRequest() {
                       cajas={state.cajas}
                       unidades={state.unidades}
                       onCajasChange={(val) =>
-                        handleProductoChange(prodId, "cajas", val)
+                        handleProductoChange(
+                          prodId,
+                          "cajas",
+                          val,
+                          producto.name,
+                        )
                       }
                       onUnidadesChange={(val) =>
-                        handleProductoChange(prodId, "unidades", val)
+                        handleProductoChange(
+                          prodId,
+                          "unidades",
+                          val,
+                          producto.name,
+                        )
                       }
                       menudencia={state.menudencia}
                       onMenudenciaChange={(val) =>

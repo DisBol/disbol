@@ -13,6 +13,7 @@ export function useAddProductRequest() {
     net_weight: number,
     gross_weight: number,
     payment: number,
+    active: boolean,
     RequestStage_id: number,
     Product_id: number,
   ): Promise<AddProductrequestResponse> => {
@@ -26,6 +27,7 @@ export function useAddProductRequest() {
         net_weight,
         gross_weight,
         payment,
+        active,
         RequestStage_id,
         Product_id,
       );
