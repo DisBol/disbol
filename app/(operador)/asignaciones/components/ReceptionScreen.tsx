@@ -416,6 +416,7 @@ export default function ReceptionScreen({
               payment: paymentValue,
               Tickets_id: newTicketId.toString(),
               Product_id: productoData.productId.toString(),
+              active: "true",
             });
 
             if (
