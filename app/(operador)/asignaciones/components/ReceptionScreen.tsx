@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
-import { Assignment, ProductQuantity } from "../stores/assignments-store";
+import { Assignment } from "../stores/assignments-store";
 import { useAddAssignmentStage } from "../hooks/useAddAssignmentStage";
 import { useAddTicket } from "../hooks/useAddTicket";
 import { useAddProductAssignment } from "../hooks/useAddProductAssignment";
@@ -123,7 +123,16 @@ export default function ReceptionScreen({
     setBoletas(boletas.filter((b) => b.id !== boletaId));
   };
 
-  const updateBoleta = (boletaId: string, field: keyof Boleta, value: any) => {
+  const updateBoleta = (
+    boletaId: string,
+    field: keyof Boleta,
+    value:
+      | string
+      | boolean
+      | string[]
+      | Record<string, BoletaDetail>
+      | Record<string, "caja" | "pallet" | "contenedor">,
+  ) => {
     setBoletas(
       boletas.map((boleta) =>
         boleta.id === boletaId ? { ...boleta, [field]: value } : boleta,
@@ -138,7 +147,7 @@ export default function ReceptionScreen({
           const codigosActuales = boleta.codigosSeleccionados;
           const isSelected = codigosActuales.includes(codigo);
           let nuevosCodigos;
-          let nuevosDetalles = { ...boleta.detalles };
+          const nuevosDetalles = { ...boleta.detalles };
 
           if (isSelected) {
             nuevosCodigos = codigosActuales.filter((c) => c !== codigo);
