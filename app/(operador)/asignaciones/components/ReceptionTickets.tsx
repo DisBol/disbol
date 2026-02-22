@@ -90,7 +90,62 @@ export default function ReceptionTickets({
   onRemovePesaje,
   onGuardarBoleta,
 }: ReceptionTicketsProps) {
-  const { containers } = useContainer();
+  const { containers, containersData } = useContainer();
+
+  // Función para calcular el total_payment en tiempo real
+  const calculateTotalPayment = (boleta: Boleta): number => {
+    let totalPayment = 0;
+
+    if (!boleta.precioDiferido) {
+      // Precio NO diferido: total_payment = costoPorKg * suma de net_weight
+      const costoPorKg = Number(boleta.costoPorKg) || 0;
+      let totalNetWeight = 0;
+
+      for (const codigo of boleta.codigosSeleccionados) {
+        const detalle = boleta.detalles[codigo];
+        if (detalle?.pesajes) {
+          for (const pesaje of detalle.pesajes) {
+            // Calcular net_weight de cada pesaje
+            const selectedContainer = containersData?.find(
+              (container) => container.id.toString() === pesaje.contenedor,
+            );
+            const destare = selectedContainer?.destare || 0;
+            const grossWeight = Number(pesaje.kg) || 0;
+            const cantidadCajas = Number(pesaje.cajas) || 0;
+            const netWeight = grossWeight - destare * cantidadCajas;
+            totalNetWeight += netWeight;
+          }
+        }
+      }
+
+      totalPayment = costoPorKg * totalNetWeight;
+    } else {
+      // Precio diferido: total_payment = suma de (precio_producto * net_weight_producto)
+      for (const codigo of boleta.codigosSeleccionados) {
+        const detalle = boleta.detalles[codigo];
+        if (detalle?.pesajes) {
+          const precioProducto = Number(detalle.precio) || 0;
+          let netWeightProducto = 0;
+
+          for (const pesaje of detalle.pesajes) {
+            // Calcular net_weight de cada pesaje
+            const selectedContainer = containersData?.find(
+              (container) => container.id.toString() === pesaje.contenedor,
+            );
+            const destare = selectedContainer?.destare || 0;
+            const grossWeight = Number(pesaje.kg) || 0;
+            const cantidadCajas = Number(pesaje.cajas) || 0;
+            const netWeight = grossWeight - destare * cantidadCajas;
+            netWeightProducto += netWeight;
+          }
+
+          totalPayment += precioProducto * netWeightProducto;
+        }
+      }
+    }
+
+    return Math.round(totalPayment * 100) / 100; // Redondear a 2 decimales
+  };
 
   return (
     <Card className="p-4 md:p-6 mt-4">
@@ -172,7 +227,7 @@ export default function ReceptionTickets({
                     COSTO DE ESTA BOLETA
                   </span>
                   <div className="text-2xl font-bold text-red-500">
-                    Bs {boleta.costoTotal}
+                    Bs {calculateTotalPayment(boleta).toFixed(2)}
                   </div>
                 </div>
               </div>
