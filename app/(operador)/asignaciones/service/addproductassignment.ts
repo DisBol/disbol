@@ -8,6 +8,7 @@ export async function AddProductAssignment(
   net_weight: string,
   gross_weight: string,
   payment: string,
+  active: string,
   Tickets_id: string,
   Product_id: string,
 ): Promise<AddProductAssignmentResponse> {
@@ -18,7 +19,7 @@ export async function AddProductAssignment(
     net_weight,
     gross_weight,
     payment,
-    active: "true",
+    active,
     Tickets_id,
     Product_id,
   });

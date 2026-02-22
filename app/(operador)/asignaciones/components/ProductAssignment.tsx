@@ -127,12 +127,28 @@ export default function ProductAssignment({
       return;
     }
 
-    // Filtrar productos que tienen cantidades ingresadas
-    const productosConCantidades = Object.entries(productosData).filter(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ([_, data]) => data.cajas !== "" || data.unidades !== "",
-    );
+    // Obtener todos los productos disponibles y determinar cuáles tienen cantidades
+    const todosLosProductos = availableProducts.map((producto) => {
+      const productId = producto.id.toString();
+      const productData = productosData[productId] || {
+        cajas: "",
+        unidades: "",
+        menudencia: true,
+      };
 
+      const tieneCantidades =
+        productData.cajas !== "" || productData.unidades !== "";
+
+      return {
+        productId,
+        producto,
+        data: productData,
+        activo: tieneCantidades,
+      };
+    });
+
+    // Verificar que al menos un producto tenga cantidades
+    const productosConCantidades = todosLosProductos.filter((p) => p.activo);
     if (productosConCantidades.length === 0) {
       alert("Debe ingresar cantidades para al menos un producto");
       return;
@@ -148,15 +164,13 @@ export default function ProductAssignment({
         throw new Error("Error al crear la asignación");
       }
 
-      // Calcular totales
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const totalUnidades = productosConCantidades.reduce((sum, [_, data]) => {
-        return sum + (parseInt(data.unidades) || 0);
+      // Calcular totales solo de productos activos
+      const totalUnidades = productosConCantidades.reduce((sum, producto) => {
+        return sum + (parseInt(producto.data.unidades) || 0);
       }, 0);
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const totalCajas = productosConCantidades.reduce((sum, [_, data]) => {
-        return sum + (parseInt(data.cajas) || 0);
+      const totalCajas = productosConCantidades.reduce((sum, producto) => {
+        return sum + (parseInt(producto.data.cajas) || 0);
       }, 0);
 
       const precioTotal = precioDiferido ? "0" : precio || "0";
@@ -189,11 +203,19 @@ export default function ProductAssignment({
         throw new Error("Error al crear el ticket");
       }
 
-      // Paso 4: Crear ProductAssignment para cada producto
-      const promises = productosConCantidades.map(async ([productId, data]) => {
-        const productPrice = precioDiferido ? data.precio || "0" : precio;
-        const cajas = parseInt(data.cajas) || 0;
-        const unidades = parseInt(data.unidades) || 0;
+      // Paso 4: Crear ProductAssignment para TODOS los productos disponibles
+      const promises = todosLosProductos.map(async (producto) => {
+        const { productId, data, activo } = producto;
+
+        // Para productos activos: usar valores reales
+        // Para productos inactivos: usar valores en 0
+        const cajas = activo ? parseInt(data.cajas) || 0 : 0;
+        const unidades = activo ? parseInt(data.unidades) || 0 : 0;
+        const productPrice = activo
+          ? precioDiferido
+            ? data.precio || "0"
+            : precio
+          : "0";
 
         return addProductAssignment({
           container: cajas,
@@ -202,6 +224,7 @@ export default function ProductAssignment({
           net_weight: "0", // Valor por defecto - se puede modificar después
           gross_weight: "0", // Valor por defecto - se puede modificar después
           payment: productPrice || "0",
+          active: activo ? "true" : "false", // Nuevo parámetro para estado
           Tickets_id: ticketId.toString(),
           Product_id: productId,
         });
@@ -215,7 +238,7 @@ export default function ProductAssignment({
       setPrecioDiferido(false);
 
       alert(
-        `¡Asignación creada exitosamente! Productos asignados: ${productosConCantidades.length}`,
+        `¡Asignación creada exitosamente! Productos activos: ${productosConCantidades.length}, Productos inactivos: ${todosLosProductos.length - productosConCantidades.length}`,
       );
 
       // Notificar al componente padre que se refresque el historial
