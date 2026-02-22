@@ -10,6 +10,7 @@ export interface ProductQuantity {
   kgBruto: number;
   kgNeto: number;
   menudencia: string;
+  active: boolean; // Estado de activación del producto
   // Información necesaria para las APIs
   productId: string;
   ticketId: string;
@@ -118,6 +119,7 @@ const transformApiDataToAssignments = (
         kgBruto: parseFloat(item.ProductAssignment_gross_weight || "0"),
         kgNeto: parseFloat(item.ProductAssignment_net_weight || "0"),
         menudencia: item.ProductAssignment_menudencia,
+        active: item.ProductAssignment_active === "true",
         productId: item.Product_id.toString(),
         ticketId: item.Ticket_id.toString(),
         productAssignmentId: item.ProductAssignment_id.toString(),

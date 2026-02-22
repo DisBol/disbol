@@ -14,6 +14,7 @@ interface ProductReception {
   kgBruto: number;
   kgNeto: number;
   kgRecibidos: number;
+  active: boolean; // Agregar estado activo
 }
 
 interface ReceptionHeaderProps {
@@ -87,18 +88,26 @@ export default function ReceptionHeader({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
           {productos.map((producto) => (
-            <CardCode
+            <div
               key={producto.codigo}
-              label={`Código ${producto.codigo}`}
-              cajas={producto.cajas}
-              unidades={producto.unidades}
-              readOnly={true}
-              weightInfo={{
-                bruto: `${producto.kgBruto.toFixed(2)}`,
-                neto: `${producto.kgNeto.toFixed(2)}`,
-                recibidos: `${producto.kgRecibidos.toFixed(2)}`,
-              }}
-            />
+              className={`${!producto.active ? "opacity-60" : ""}`}
+            >
+              <div
+                className={!producto.active ? "bg-gray-200 rounded-lg p-1" : ""}
+              >
+                <CardCode
+                  label={`Código ${producto.codigo}`}
+                  cajas={producto.cajas}
+                  unidades={producto.unidades}
+                  readOnly={true}
+                  weightInfo={{
+                    bruto: `${producto.kgBruto.toFixed(2)}`,
+                    neto: `${producto.kgNeto.toFixed(2)}`,
+                    recibidos: `${producto.kgRecibidos.toFixed(2)}`,
+                  }}
+                />
+              </div>
+            </div>
           ))}
         </div>
       </div>
