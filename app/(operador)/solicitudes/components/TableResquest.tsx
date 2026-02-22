@@ -59,7 +59,6 @@ export default function TableResquest() {
     productRequestId: number,
     field: "units" | "containers" | "menudencia",
     value: string | boolean,
-    productName?: string,
   ) => {
     let finalValue: string | boolean | number = value;
     if (field === "units" || field === "containers") {
@@ -69,33 +68,6 @@ export default function TableResquest() {
     setEditedItems((prev) => {
       const current = prev[productRequestId] || ({} as any);
       const newState = { ...current, [field]: finalValue };
-
-      if (productName && typeof value === "string") {
-        const valNum = parseFloat(value) || 0;
-        let multiplier = 0;
-
-        if (productName.includes("104") || productName.includes("105")) {
-          multiplier = 15;
-        } else if (
-          productName.includes("106") ||
-          productName.includes("107") ||
-          productName.includes("108") ||
-          productName.includes("109")
-        ) {
-          multiplier = 12;
-        }
-
-        if (multiplier > 0) {
-          if (field === "containers") {
-            newState.units = valNum * multiplier;
-          } else if (field === "units") {
-            const result = valNum / multiplier;
-            newState.containers = Number.isInteger(result)
-              ? result
-              : Number(result.toFixed(2));
-          }
-        }
-      }
 
       return {
         ...prev,
@@ -462,12 +434,12 @@ export default function TableResquest() {
                                   : item.ProductRequest_menudencia === "true"
                               }
                               readOnly={!isEditing}
+                              productName={item.Product_name}
                               onCajasChange={(val) =>
                                 handleItemChange(
                                   item.ProductRequest_id,
                                   "containers",
                                   val,
-                                  item.Product_name,
                                 )
                               }
                               onUnidadesChange={(val) =>
@@ -475,7 +447,6 @@ export default function TableResquest() {
                                   item.ProductRequest_id,
                                   "units",
                                   val,
-                                  item.Product_name,
                                 )
                               }
                               onMenudenciaChange={(val) =>
