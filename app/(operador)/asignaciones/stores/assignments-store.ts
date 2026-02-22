@@ -2,6 +2,15 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { Datum } from "../interfaces/getassignmenthistory.interface";
 
+// Función para obtener la fecha actual en formato dd/mm/yyyy
+const getCurrentDate = (): string => {
+  const today = new Date();
+  const day = today.getDate().toString().padStart(2, "0");
+  const month = (today.getMonth() + 1).toString().padStart(2, "0");
+  const year = today.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 // Interfaces
 export interface ProductQuantity {
   codigo: string;
@@ -145,8 +154,8 @@ export const useAssignmentsStore = create<AssignmentsState>()(
 
       // Filtros iniciales
       filters: {
-        fechaInicio: "",
-        fechaFin: "",
+        fechaInicio: getCurrentDate(),
+        fechaFin: getCurrentDate(),
         proveedor: "",
       },
 
