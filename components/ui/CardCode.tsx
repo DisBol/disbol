@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { BoxOutlineIcon } from "../icons/BoxOutlineIcon";
 import { BalanceIcon } from "../icons/Balance";
 import { Dropdown } from "./Dropdown";
+import { useBalanza } from "@/hooks/useBalanza";
 
 const cardCodeVariants = cva(
   "bg-white rounded-lg p-2 border border-gray-100 shadow-sm flex flex-col h-full transition-all hover:shadow-md",
@@ -111,6 +112,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
     },
     ref,
   ) => {
+    const { connected: balanzaConnected, weight: balanzaWeight } = useBalanza();
     const handleCajasInput = (val: string) => {
       onCajasChange?.(val);
       const name = productName || (typeof label === "string" ? label : "");
@@ -532,9 +534,33 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                             className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
                           />
                         </div>
-                        <div className="w-5 h-5 flex items-center justify-center border border-gray-300 rounded bg-white text-red-500">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (balanzaConnected) {
+                              onUpdatePesaje?.(
+                                pesaje.id,
+                                "kg",
+                                Number(balanzaWeight),
+                              );
+                            }
+                          }}
+                          disabled={!balanzaConnected}
+                          className={`w-5 h-5 flex items-center justify-center border border-gray-300 rounded transition-all ${
+                            balanzaConnected
+                              ? "bg-white text-red-500 hover:bg-red-50 cursor-pointer"
+                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          }`}
+                          title={
+                            balanzaConnected
+                              ? `Tomar peso: ${balanzaWeight} kg`
+                              : "Balanza no conectada"
+                          }
+                        >
                           <BalanceIcon />
-                        </div>
+                        </button>
                       </div>
                     </div>
                   </div>
