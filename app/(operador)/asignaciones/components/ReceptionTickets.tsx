@@ -48,7 +48,11 @@ interface ReceptionTicketsProps {
   pesoTotalGeneral: string;
   onAgregarBoleta: () => void;
   onEliminarBoleta: (boletaId: string) => void;
-  onUpdateBoleta: (boletaId: string, field: keyof Boleta, value: any) => void;
+  onUpdateBoleta: (
+    boletaId: string,
+    field: keyof Boleta,
+    value: string | boolean | string[] | Record<string, BoletaDetail>,
+  ) => void;
   onToggleCodigoEnBoleta: (boletaId: string, codigo: string) => void;
   onToggleMenudenciaEnBoleta: (boletaId: string, codigo: string) => void;
   onUpdateCantidadBoleta: (
@@ -82,9 +86,9 @@ export default function ReceptionTickets({
   onEliminarBoleta,
   onUpdateBoleta,
   onToggleCodigoEnBoleta,
-  onToggleMenudenciaEnBoleta,
+  // onToggleMenudenciaEnBoleta,
   onUpdateCantidadBoleta,
-  onUpdateTipoContenedorBoleta,
+  // onUpdateTipoContenedorBoleta,
   onAgregarPesaje,
   onUpdatePesaje,
   onRemovePesaje,
@@ -252,9 +256,9 @@ export default function ReceptionTickets({
                     const isSelected = boleta.codigosSeleccionados.includes(
                       producto.codigo,
                     );
-                    const isMenudencia = boleta.menudencias?.includes(
-                      producto.codigo,
-                    );
+                    // const isMenudencia = boleta.menudencias?.includes(
+                    //   producto.codigo,
+                    // );
 
                     const detalle = boleta.detalles?.[producto.codigo] || {
                       cajas: 0,
