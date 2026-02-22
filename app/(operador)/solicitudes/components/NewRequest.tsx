@@ -264,7 +264,6 @@ export default function NewRequest() {
     codigo: string,
     field: keyof ProductState,
     value: string | boolean,
-    productName?: string,
   ) => {
     setProductosData((prev) => {
       // Obtener estado actual o inicializar
@@ -275,35 +274,6 @@ export default function NewRequest() {
       };
 
       const newState = { ...current, [field]: value };
-
-      // Lógica de autocompletado para códigos específicos
-      if (productName && typeof value === "string") {
-        const valNum = value === "" ? 0 : parseFloat(value);
-        let multiplier = 0;
-
-        if (productName.includes("104") || productName.includes("105")) {
-          multiplier = 15;
-        } else if (
-          productName.includes("106") ||
-          productName.includes("107") ||
-          productName.includes("108") ||
-          productName.includes("109")
-        ) {
-          multiplier = 12;
-        }
-
-        if (multiplier > 0) {
-          if (field === "cajas") {
-            newState.unidades = (valNum * multiplier).toString();
-          } else if (field === "unidades") {
-            // Eliminar decimales o redondear hasta 2
-            const result = valNum / multiplier;
-            newState.cajas = Number.isInteger(result)
-              ? result.toString()
-              : Number(result.toFixed(2)).toString();
-          }
-        }
-      }
 
       return {
         ...prev,
@@ -441,21 +411,12 @@ export default function NewRequest() {
                       label={producto.name}
                       cajas={state.cajas}
                       unidades={state.unidades}
+                      productName={producto.name}
                       onCajasChange={(val) =>
-                        handleProductoChange(
-                          prodId,
-                          "cajas",
-                          val,
-                          producto.name,
-                        )
+                        handleProductoChange(prodId, "cajas", val)
                       }
                       onUnidadesChange={(val) =>
-                        handleProductoChange(
-                          prodId,
-                          "unidades",
-                          val,
-                          producto.name,
-                        )
+                        handleProductoChange(prodId, "unidades", val)
                       }
                       menudencia={state.menudencia}
                       onMenudenciaChange={(val) =>

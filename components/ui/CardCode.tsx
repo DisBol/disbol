@@ -41,6 +41,8 @@ export interface CardCodeProps
   unidades: string | number;
   onCajasChange?: (val: string) => void;
   onUnidadesChange?: (val: string) => void;
+  // Optional productName for autocomplete rules
+  productName?: string;
   // Optional Menudencia Checkbox
   menudencia?: boolean;
   onMenudenciaChange?: (checked: boolean) => void;
@@ -90,6 +92,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       unidades,
       onCajasChange,
       onUnidadesChange,
+      productName,
       menudencia,
       onMenudenciaChange,
       showPrecio = false,
@@ -108,6 +111,56 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
     },
     ref,
   ) => {
+    const handleCajasInput = (val: string) => {
+      onCajasChange?.(val);
+      const name = productName || (typeof label === "string" ? label : "");
+      if (!name) return;
+
+      const valNum = val === "" ? 0 : parseFloat(val);
+      let multiplier = 0;
+      if (name.includes("104") || name.includes("105")) {
+        multiplier = 15;
+      } else if (
+        name.includes("106") ||
+        name.includes("107") ||
+        name.includes("108") ||
+        name.includes("109")
+      ) {
+        multiplier = 12;
+      }
+
+      if (multiplier > 0) {
+        onUnidadesChange?.((valNum * multiplier).toString());
+      }
+    };
+
+    const handleUnidadesInput = (val: string) => {
+      onUnidadesChange?.(val);
+      const name = productName || (typeof label === "string" ? label : "");
+      if (!name) return;
+
+      const valNum = val === "" ? 0 : parseFloat(val);
+      let multiplier = 0;
+      if (name.includes("104") || name.includes("105")) {
+        multiplier = 15;
+      } else if (
+        name.includes("106") ||
+        name.includes("107") ||
+        name.includes("108") ||
+        name.includes("109")
+      ) {
+        multiplier = 12;
+      }
+
+      if (multiplier > 0) {
+        const result = valNum / multiplier;
+        const cajasCalc = Number.isInteger(result)
+          ? result.toString()
+          : Number(result.toFixed(2)).toString();
+        onCajasChange?.(cajasCalc);
+      }
+    };
+
     return (
       <div
         ref={ref}
@@ -154,7 +207,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                 type="number"
                 min="0"
                 value={cajas}
-                onChange={(e) => onCajasChange?.(e.target.value)}
+                onChange={(e) => handleCajasInput(e.target.value)}
                 className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
                 placeholder="0"
               />
@@ -174,7 +227,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                 type="number"
                 min="0"
                 value={unidades}
-                onChange={(e) => onUnidadesChange?.(e.target.value)}
+                onChange={(e) => handleUnidadesInput(e.target.value)}
                 className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
                 placeholder="0"
               />
