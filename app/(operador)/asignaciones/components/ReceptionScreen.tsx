@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
@@ -12,6 +12,7 @@ import { useAddTicketsWeighing } from "../hooks/useAddTicketsWeighing";
 import { useUpdateProductAssignment } from "../hooks/useUpdateProductAssignment";
 import { useUpdateTicket } from "../hooks/useUpdateTicket";
 import { useContainer } from "../../configuraciones/hooks/contenedores/useContainer";
+import { useGetTicketsHistory } from "../hooks/useGetTicketsHistory";
 
 // Interfaces
 interface ProductReception {
@@ -38,10 +39,13 @@ interface BoletaDetail {
   unidades: number;
   precio?: string;
   pesajes?: PesajeData[];
+  kgBruto?: number;
+  kgNeto?: number;
 }
 
 interface Boleta {
   id: string;
+  ticketId?: string;
   codigo: string;
   costoPorKg: string;
   costoTotal: string;
@@ -99,6 +103,115 @@ export default function ReceptionScreen({
       tiposContenedor: {},
     },
   ]);
+
+  const { fetchTicketsHistory } = useGetTicketsHistory();
+
+  const existingTicketIds = useMemo(() => {
+    return Array.from(
+      new Set(
+        assignment.productos
+          .map((p) => p.ticketId)
+          .filter((id) => id && id !== "0" && id !== "null"),
+      ),
+    );
+  }, [assignment.productos]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadTickets = async () => {
+      // Solo cargar si no se han cargado antes (boletas === 1 && boleta esta vacia)
+      if (existingTicketIds.length > 0) {
+        const allLoadedBoletas: Boleta[] = [];
+
+        for (const id of existingTicketIds) {
+          const data = await fetchTicketsHistory(Number(id));
+          if (data && data.data && data.data.length > 0) {
+            const ticketRows = data.data;
+            const firstRow = ticketRows[0];
+
+            const codigosSeleccionados: string[] = [];
+            const detalles: Record<string, BoletaDetail> = {};
+
+            ticketRows.forEach((row) => {
+              if (!codigosSeleccionados.includes(row.Product_name)) {
+                codigosSeleccionados.push(row.Product_name);
+
+                const isDeferred =
+                  String(firstRow.Tickets_deferred_payment) === "1" ||
+                  String(firstRow.Tickets_deferred_payment) === "true";
+
+                detalles[row.Product_name] = {
+                  cajas: Number(row.ProductAssignment_container) || 0,
+                  unidades: Number(row.ProductAssignment_units) || 0,
+                  precio: isDeferred
+                    ? row.ProductAssignment_payment?.toString() || "0"
+                    : row.Tickets_product_payment?.toString() || "0",
+                  pesajes: [],
+                  kgBruto: Number(row.ProductAssignment_gross_weight) || 0,
+                  kgNeto: Number(row.ProductAssignment_net_weight) || 0,
+                };
+              }
+              if (row.TicketsWeighing_id) {
+                detalles[row.Product_name].pesajes?.push({
+                  id: row.TicketsWeighing_id.toString(),
+                  cajas: Number(row.TicketsWeighing_container) || 0,
+                  unidades: Number(row.TicketsWeighing_units) || 0,
+                  kg: Number(row.TicketsWeighing_gross_weight) || 0,
+                  contenedor:
+                    row.TicketsWeighing_Container_id?.toString() || "",
+                });
+              }
+            });
+
+            allLoadedBoletas.push({
+              id: id,
+              ticketId: id,
+              codigo: firstRow.Tickets_code || "",
+              costoPorKg: firstRow.Tickets_product_payment?.toString() || "0",
+              costoTotal: firstRow.Tickets_product_payment?.toString() || "0",
+              precioDiferido:
+                String(firstRow.Tickets_deferred_payment) === "1" ||
+                String(firstRow.Tickets_deferred_payment) === "true",
+              codigosSeleccionados,
+              menudencias: [],
+              detalles,
+              tiposContenedor: {},
+            });
+          }
+        }
+
+        if (isMounted && allLoadedBoletas.length > 0) {
+          // Si el estado de boletas actual es sólo 1 vacío, reemplazarlo
+          setBoletas((prev) => {
+            if (
+              prev.length === 1 &&
+              !prev[0].codigo &&
+              prev[0].codigosSeleccionados.length === 0
+            ) {
+              return allLoadedBoletas;
+            }
+            // Si el usuario ya estuvo editando boletas, no sobrecribirlas aquí
+            return prev;
+          });
+        }
+      }
+    };
+
+    // Ejecutar loadTickets la primera vez
+    if (
+      boletas.length === 1 &&
+      !boletas[0].codigo &&
+      boletas[0].codigosSeleccionados.length === 0 &&
+      existingTicketIds.length > 0
+    ) {
+      loadTickets();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingTicketIds]);
 
   const [costoTotalGeneral] = useState("0.00");
   const [pesoTotalGeneral] = useState("0.00");
