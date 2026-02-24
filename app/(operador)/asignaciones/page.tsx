@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useAssignmentsStore } from "./stores/assignments-store";
 import { RouteProtection } from "@/components/shared/RouteProtection";
 import ProductAssignment from "./components/ProductAssignment";
 import HistoryAssignment, {
@@ -10,6 +11,16 @@ import HistoryAssignment, {
 export default function AsignacionesPage() {
   const [showReception, setShowReception] = useState(false);
   const historyRef = useRef<HistoryAssignmentRef>(null);
+  const hideReceptionScreen = useAssignmentsStore(
+    (state) => state.hideReceptionScreen,
+  );
+
+  // Limpiar el estado de recepción al salir de la página
+  useEffect(() => {
+    return () => {
+      hideReceptionScreen();
+    };
+  }, [hideReceptionScreen]);
 
   const handleAssignmentCreated = () => {
     // Refrescar el historial después de crear una asignación
