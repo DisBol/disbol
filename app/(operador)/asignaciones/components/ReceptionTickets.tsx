@@ -29,10 +29,13 @@ interface BoletaDetail {
   unidades: number;
   precio?: string;
   pesajes?: PesajeData[];
+  kgBruto?: number;
+  kgNeto?: number;
 }
 
 interface Boleta {
   id: string;
+  ticketId?: string;
   codigo: string;
   costoPorKg: string;
   costoTotal: string;
@@ -186,7 +189,7 @@ export default function ReceptionTickets({
                     size="sm"
                     onClick={() => onGuardarBoleta(boleta.id)}
                   >
-                    Guardar Boleta
+                    {boleta.ticketId ? "Editar Boleta" : "Guardar Boleta"}
                   </Button>
                   <Button
                     variant="danger"
@@ -261,8 +264,8 @@ export default function ReceptionTickets({
                     // );
 
                     const detalle = boleta.detalles?.[producto.codigo] || {
-                      cajas: 0,
-                      unidades: 0,
+                      cajas: "" as unknown as number,
+                      unidades: "" as unknown as number,
                     };
 
                     return (
@@ -313,11 +316,12 @@ export default function ReceptionTickets({
                                   val,
                                 )
                               }
+                              productName={producto.codigo}
                               variant="active"
                               // Don't pass menudencia props to hide the checkbox at bottom
                               weightInfo={{
-                                bruto: `${producto.kgBruto.toFixed(2)}`,
-                                neto: `${producto.kgNeto.toFixed(2)}`,
+                                bruto: `${(detalle.kgBruto !== undefined ? detalle.kgBruto : producto.kgBruto).toFixed(2)}`,
+                                neto: `${(detalle.kgNeto !== undefined ? detalle.kgNeto : producto.kgNeto).toFixed(2)}`,
                               }}
                               className="pointer-events-auto h-full"
                               pesajes={detalle.pesajes}

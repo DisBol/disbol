@@ -12,6 +12,7 @@ interface UseAddProductAssignmentParams {
   net_weight: string;
   gross_weight: string;
   payment: string;
+  active: string;
   Tickets_id: string;
   Product_id: string;
 }
@@ -45,6 +46,7 @@ export const useAddProductAssignment = (): UseAddProductAssignmentReturn => {
             params.net_weight,
             params.gross_weight,
             params.payment,
+            params.active,
             params.Tickets_id,
             params.Product_id,
           );
