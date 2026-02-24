@@ -264,8 +264,8 @@ export default function ReceptionTickets({
                     // );
 
                     const detalle = boleta.detalles?.[producto.codigo] || {
-                      cajas: 0,
-                      unidades: 0,
+                      cajas: "" as unknown as number,
+                      unidades: "" as unknown as number,
                     };
 
                     return (
@@ -316,6 +316,7 @@ export default function ReceptionTickets({
                                   val,
                                 )
                               }
+                              productName={producto.codigo}
                               variant="active"
                               // Don't pass menudencia props to hide the checkbox at bottom
                               weightInfo={{

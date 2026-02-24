@@ -111,52 +111,75 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
     },
     ref,
   ) => {
-    const handleCajasInput = (val: string) => {
-      onCajasChange?.(val);
-      const name = productName || (typeof label === "string" ? label : "");
-      if (!name) return;
+    // ── Estado local para evitar que el re-render del padre pise lo que se escribe ──
+    const toStr = (v: string | number) =>
+      v === 0 || v === "" || v === "0" ? "" : String(v);
 
-      const valNum = val === "" ? 0 : parseFloat(val);
-      let multiplier = 0;
-      if (name.includes("104") || name.includes("105")) {
-        multiplier = 15;
-      } else if (
+    const [inputCajas, setInputCajas] = React.useState<string>(() =>
+      toStr(cajas),
+    );
+    const [inputUnidades, setInputUnidades] = React.useState<string>(() =>
+      toStr(unidades),
+    );
+
+    // Sincroniza desde el padre SOLO cuando el valor cambia externamente
+    // (ej: autocomplete desde el otro campo), sin crear bucles.
+    React.useEffect(() => {
+      const fromParent = parseFloat(String(cajas)) || 0;
+      const fromLocal = parseFloat(inputCajas) || 0;
+      if (fromParent !== fromLocal) {
+        setInputCajas(fromParent === 0 ? "" : String(fromParent));
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cajas]);
+
+    React.useEffect(() => {
+      const fromParent = parseFloat(String(unidades)) || 0;
+      const fromLocal = parseFloat(inputUnidades) || 0;
+      if (fromParent !== fromLocal) {
+        setInputUnidades(fromParent === 0 ? "" : String(fromParent));
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [unidades]);
+
+    // ── Helpers para calcular el multiplicador según código de producto ──
+    const getMultiplier = () => {
+      const name = productName || (typeof label === "string" ? label : "");
+      if (!name) return 0;
+      if (name.includes("104") || name.includes("105")) return 15;
+      if (
         name.includes("106") ||
         name.includes("107") ||
         name.includes("108") ||
         name.includes("109")
-      ) {
-        multiplier = 12;
-      }
+      )
+        return 12;
+      return 0;
+    };
 
+    const handleCajasInput = (val: string) => {
+      setInputCajas(val); // muestra inmediatamente
+      onCajasChange?.(val); // notifica al padre
+      const multiplier = getMultiplier();
       if (multiplier > 0) {
-        onUnidadesChange?.((valNum * multiplier).toString());
+        const valNum = val === "" ? 0 : parseFloat(val);
+        const resultado = (valNum * multiplier).toString();
+        setInputUnidades(valNum === 0 ? "" : resultado);
+        onUnidadesChange?.(resultado);
       }
     };
 
     const handleUnidadesInput = (val: string) => {
-      onUnidadesChange?.(val);
-      const name = productName || (typeof label === "string" ? label : "");
-      if (!name) return;
-
-      const valNum = val === "" ? 0 : parseFloat(val);
-      let multiplier = 0;
-      if (name.includes("104") || name.includes("105")) {
-        multiplier = 15;
-      } else if (
-        name.includes("106") ||
-        name.includes("107") ||
-        name.includes("108") ||
-        name.includes("109")
-      ) {
-        multiplier = 12;
-      }
-
+      setInputUnidades(val); // muestra inmediatamente
+      onUnidadesChange?.(val); // notifica al padre
+      const multiplier = getMultiplier();
       if (multiplier > 0) {
+        const valNum = val === "" ? 0 : parseFloat(val);
         const result = valNum / multiplier;
         const cajasCalc = Number.isInteger(result)
           ? result.toString()
           : Number(result.toFixed(2)).toString();
+        setInputCajas(valNum === 0 ? "" : cajasCalc);
         onCajasChange?.(cajasCalc);
       }
     };
@@ -206,7 +229,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               <input
                 type="number"
                 min="0"
-                value={cajas}
+                value={inputCajas}
                 onChange={(e) => handleCajasInput(e.target.value)}
                 className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
                 placeholder="0"
@@ -226,7 +249,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               <input
                 type="number"
                 min="0"
-                value={unidades}
+                value={inputUnidades}
                 onChange={(e) => handleUnidadesInput(e.target.value)}
                 className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
                 placeholder="0"
