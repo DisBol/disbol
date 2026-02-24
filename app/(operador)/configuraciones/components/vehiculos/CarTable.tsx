@@ -48,7 +48,7 @@ export default function ProviderCard({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs sm:text-sm">ID</TableHead>
+                <TableHead className="text-xs sm:text-sm">MONET</TableHead>
                 <TableHead className="text-xs sm:text-sm">Placa</TableHead>
                 <TableHead className="text-xs sm:text-sm">Nombre</TableHead>
                 <TableHead className="text-xs sm:text-sm">Estado</TableHead>

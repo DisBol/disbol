@@ -29,3 +29,4 @@ export const monnetService = new MonnetService();
 
 export * from "./getToken";
 export * from "./getGeofences";
+export * from "./vehicleGetAll";
