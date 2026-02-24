@@ -5,6 +5,7 @@ import { Select } from "@/components/ui/SelecMultipe";
 import { Button } from "@/components/ui/Button";
 import { useAddCar } from "../../hooks/vehiculos/useAddCar";
 import { useUpdateCar } from "../../hooks/vehiculos/useUpdateCar";
+import { useVehicleGetAll } from "../../hooks/monnet/usevehicleGetAll";
 
 interface FormProviderProps {
   onSave: (data: any) => void;
@@ -12,18 +13,22 @@ interface FormProviderProps {
   initialData?: any | null;
 }
 
-const monnetOptions = [
-  { label: "Sincronizar con monnet", value: "sync" },
-  { label: "GPS-001", value: "gps-001" },
-  { label: "GPS-002", value: "gps-002" },
-];
-
 export default function ProviderForm({
   onSave,
   onCancel,
   initialData,
 }: FormProviderProps) {
   const { addCar, isLoading: isAdding, error: addError } = useAddCar();
+  const {
+    vehicles,
+    isLoading: isLoadingVehicles,
+    error: vehiclesError,
+  } = useVehicleGetAll();
+
+  const monnetOptions = vehicles.map((v) => ({
+    label: v.nombre,
+    value: v.patente,
+  }));
   const {
     updateCar,
     isLoading: isUpdating,
@@ -134,11 +139,18 @@ export default function ProviderForm({
                   options={monnetOptions}
                   selectedValues={monet ? [monet] : []}
                   onSelect={(option) => setMonet(option.value)}
-                  placeholder="Sincronizar con monnet"
+                  placeholder={
+                    isLoadingVehicles
+                      ? "Cargando vehículos GPS..."
+                      : vehiclesError
+                        ? "Error al cargar GPS"
+                        : "Seleccionar vehículo GPS"
+                  }
                   radius="md"
                   size="lg"
                   className="h-10 px-3 text-sm w-full"
                   variant={errors.monet ? "error" : undefined}
+                  disabled={isLoadingVehicles}
                 />
                 {errors.monet && (
                   <span className="text-xs text-danger mt-0.5">
