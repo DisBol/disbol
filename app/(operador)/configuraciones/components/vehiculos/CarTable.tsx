@@ -1,7 +1,7 @@
 "use client";
-import { DeleteIcon } from "@/components/icons/DeleteIcon";
-import { EditIcon } from "@/components/icons/EditIcon";
-import { Chip } from "@/components/ui/Chip";
+import { DeleteIcon } from "../../../../../components/icons/DeleteIcon";
+import { EditIcon } from "../../../../../components/icons/EditIcon";
+import { Chip } from "../../../../../components/ui/Chip";
 import {
   TableWrapper,
   Table,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from "@/components/ui/Table";
+} from "../../../../../components/ui/Table";
 import { useCar } from "../../hooks/vehiculos/useCar";
 import { useUpdateCar } from "../../hooks/vehiculos/useUpdateCar";
 
@@ -27,6 +27,7 @@ export default function ProviderCard({
   const { cars, isLoading } = useCar();
   const { updateCar } = useUpdateCar();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDeactivate = async (car: any) => {
     if (confirm(`¿Estás seguro de que deseas eliminar ${car.name}?`)) {
       await updateCar(car.id, car.name, car.idCar, car.license, "false");
