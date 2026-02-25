@@ -1,11 +1,15 @@
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+} from "../../../../../components/ui/Card";
+import { Button } from "../../../../../components/ui/Button";
 import {
   CategoryView,
   ProductView,
 } from "../../hooks/productos/useProductsByCategory";
 import { ProductGrid } from "./ProductGrid";
-import { EditIcon } from "@/components/icons/EditIcon";
+import { EditIcon } from "../../../../../components/icons/EditIcon2";
 
 interface Props {
   category: CategoryView;

@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
-import { EditIcon } from "@/components/icons/EditIcon";
+import { Button } from "../../../../components/ui/Button";
+import { Chip } from "../../../../components/ui/Chip";
+import { EditIcon } from "../../../../components/icons/EditIcon2";
 import EditableProductCard from "./EditableProductCard";
 import {
   Assignment,
