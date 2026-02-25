@@ -1,7 +1,23 @@
 "use client";
-
-import { useState } from "react";
 import dynamic from "next/dynamic";
+import { ReactNode } from "react";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface KpiCardProps {
+  label: string;
+  value: string;
+  delta: string | null;
+  icon: ReactNode;
+  bgIcon: string;
+}
+
+interface BarRowProps {
+  label: string;
+  value: number;
+  maxValue: number;
+  displayValue: string;
+  accent?: string;
+}
 
 // ── Icon helpers ──────────────────────────────────────────────────────────────
 const CheckCircleIcon = () => (
@@ -109,7 +125,7 @@ const ActivityIcon = () => (
 );
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, delta, icon, bgIcon }) {
+function KpiCard({ label, value, delta, icon, bgIcon }: KpiCardProps) {
   const isPositiveDelta = delta && delta.startsWith("+");
   const isNegativeDelta = delta && delta.startsWith("-");
 
@@ -138,7 +154,13 @@ function KpiCard({ label, value, delta, icon, bgIcon }) {
 }
 
 // ── Bar Row ───────────────────────────────────────────────────────────────────
-function BarRow({ label, value, maxValue, displayValue, accent = "#E11D48" }) {
+function BarRow({
+  label,
+  value,
+  maxValue,
+  displayValue,
+  accent = "#E11D48",
+}: BarRowProps) {
   const pct = Math.min((value / maxValue) * 100, 100);
   return (
     <div className="flex flex-col gap-1.5">
@@ -168,7 +190,7 @@ const VehicleTrackingMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[400px] w-full bg-slate-100 animate-pulse rounded-xl mt-4"></div>
+      <div className="h-100 w-full bg-slate-100 animate-pulse rounded-xl mt-4"></div>
     ),
   },
 );
