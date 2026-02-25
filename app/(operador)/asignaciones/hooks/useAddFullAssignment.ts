@@ -119,6 +119,7 @@ export const useAddFullAssignment = (): UseAddFullAssignmentReturn => {
           payment: params.product_assignment_payment,
           Tickets_id: createdTicketId.toString(),
           Product_id: params.Product_id,
+          active: "true",
         });
 
         if (!createdProductAssignmentId) {
