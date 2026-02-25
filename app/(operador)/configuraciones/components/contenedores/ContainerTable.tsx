@@ -1,6 +1,6 @@
 "use client";
 import { DeleteIcon } from "../../../../../components/icons/DeleteIcon";
-import { EditIcon } from "../../../../../components/icons/EditIcon";
+import { EditIcon } from "../../../../../components/icons/EditIcon2";
 import { Chip } from "../../../../../components/ui/Chip";
 import {
   TableWrapper,

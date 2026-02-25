@@ -1,4 +1,4 @@
-import { EditIcon } from "../../../../../components/icons/EditIcon";
+import { EditIcon } from "../../../../../components/icons/EditIcon2";
 import { ProductView } from "../../hooks/productos/useProductsByCategory";
 import { DeleteIcon } from "../../../../../components/icons/DeleteIcon";
 

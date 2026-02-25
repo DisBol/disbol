@@ -9,7 +9,7 @@ import {
   ProductView,
 } from "../../hooks/productos/useProductsByCategory";
 import { ProductGrid } from "./ProductGrid";
-import { EditIcon } from "../../../../../components/icons/EditIcon";
+import { EditIcon } from "../../../../../components/icons/EditIcon2";
 
 interface Props {
   category: CategoryView;
