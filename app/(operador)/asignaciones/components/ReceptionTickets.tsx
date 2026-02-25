@@ -182,24 +182,26 @@ export default function ReceptionTickets({
                 <h3 className="text-lg font-bold text-red-500">
                   Boleta #{index + 1}
                 </h3>
-                <div className="flex gap-2">
-                  <Button
-                    variant="success"
-                    color="success"
-                    size="sm"
-                    onClick={() => onGuardarBoleta(boleta.id)}
-                  >
-                    {boleta.ticketId ? "Editar Boleta" : "Guardar Boleta"}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    color="danger"
-                    size="sm"
-                    onClick={() => onEliminarBoleta(boleta.id)}
-                  >
-                    Eliminar Boleta
-                  </Button>
-                </div>
+                {!boleta.ticketId && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="success"
+                      color="success"
+                      size="sm"
+                      onClick={() => onGuardarBoleta(boleta.id)}
+                    >
+                      Guardar Boleta
+                    </Button>
+                    <Button
+                      variant="danger"
+                      color="danger"
+                      size="sm"
+                      onClick={() => onEliminarBoleta(boleta.id)}
+                    >
+                      Eliminar Boleta
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
