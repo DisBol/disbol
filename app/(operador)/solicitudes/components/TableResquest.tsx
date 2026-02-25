@@ -65,13 +65,15 @@ export default function TableResquest() {
       finalValue = parseInt(value as string) || 0;
     }
 
-    setEditedItems((prev) => ({
-      ...prev,
-      [productRequestId]: {
-        ...prev[productRequestId],
-        [field]: finalValue as never,
-      },
-    }));
+    setEditedItems((prev) => {
+      const current = prev[productRequestId] || ({} as any);
+      const newState = { ...current, [field]: finalValue };
+
+      return {
+        ...prev,
+        [productRequestId]: newState as never,
+      };
+    });
   };
 
   const { updateProductRequest } = useUpdateProductrequest();
@@ -94,8 +96,8 @@ export default function TableResquest() {
 
           return updateProductRequest(
             id,
-            itemToDelete.ProductRequest_containers,
-            itemToDelete.ProductRequest_units,
+            0, // containers
+            0, // units
             itemToDelete.ProductRequest_menudencia === "true",
             0, // net_weight (default)
             0, // gross_weight (default)
@@ -117,6 +119,11 @@ export default function TableResquest() {
           );
           if (!itemToUpdate) return Promise.resolve(false);
 
+          const wasActive =
+            String((itemToUpdate as any).ProductRequest_active) === "true";
+          const isActive =
+            wasActive || values.containers > 0 || values.units > 0;
+
           return updateProductRequest(
             Number(productRequestId),
             values.containers,
@@ -125,7 +132,7 @@ export default function TableResquest() {
             0, // net_weight (default)
             0, // gross_weight (default)
             0, // payment (default)
-            true, // active: true
+            isActive, // active
             1, // RequestStage_id (default)
             itemToUpdate.Product_id,
           );
@@ -379,10 +386,35 @@ export default function TableResquest() {
                           const editedItem =
                             editedItems[item.ProductRequest_id];
 
+                          const isOriginallyInactive =
+                            String(item.ProductRequest_active) === "false";
+                          const hasValidEditedValues =
+                            isEditing &&
+                            editedItem &&
+                            (editedItem.containers > 0 || editedItem.units > 0);
+                          const isInactive =
+                            isOriginallyInactive && !hasValidEditedValues;
+
                           return (
                             <CardCode
                               key={`${request.Request_id}-${item.Product_id}-${idx}`}
-                              label={item.Product_name}
+                              className={
+                                isInactive ? "opacity-60 grayscale" : ""
+                              }
+                              label={
+                                isInactive ? (
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[10px] text-red-500 font-bold leading-none mb-0.5">
+                                      INACTIVO
+                                    </span>
+                                    <span className="line-through text-gray-500">
+                                      {item.Product_name}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  item.Product_name
+                                )
+                              }
                               cajas={
                                 isEditing
                                   ? (editedItem?.containers ??
@@ -402,6 +434,7 @@ export default function TableResquest() {
                                   : item.ProductRequest_menudencia === "true"
                               }
                               readOnly={!isEditing}
+                              productName={item.Product_name}
                               onCajasChange={(val) =>
                                 handleItemChange(
                                   item.ProductRequest_id,
@@ -424,7 +457,7 @@ export default function TableResquest() {
                                 )
                               }
                               onRemove={
-                                isEditing
+                                isEditing && !isInactive
                                   ? () =>
                                       handleRemoveItem(item.ProductRequest_id)
                                   : undefined
