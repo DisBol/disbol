@@ -4,6 +4,7 @@ import { BoxOutline2Icon } from "@/components/icons/BoxOutline2";
 import { BoxOutlineIcon } from "@/components/icons/BoxOutlineIcon";
 import { TruckIcon } from "@/components/icons/TruckIcon";
 import { User16Icon } from "@/components/icons/User16Icon";
+import { BalanzaIcon } from "@/components/icons/BalanzaIcon";
 import { RouteProtection } from "@/components/shared/RouteProtection";
 import Products from "./components/productos/Products";
 import Providers from "./components/proveedores/Providers";
@@ -11,6 +12,7 @@ import Clients from "./components/clientes/Clients";
 import Cars from "./components/vehiculos/Car";
 import Containers from "./components/contenedores/Container";
 import Users from "./components/usuarios/Users";
+import Balanza from "./components/balanza/Balanza";
 
 export default function Configuracion() {
   const tabsConfig = [
@@ -20,6 +22,7 @@ export default function Configuracion() {
     { id: "vehiculos", label: "Vehículos", icon: TruckIcon },
     { id: "contenedores", label: "Contenedores", icon: BoxOutline2Icon },
     { id: "usuarios", label: "Usuarios", icon: User16Icon },
+    { id: "balanza", label: "Balanza", icon: BalanzaIcon },
   ];
 
   return (
@@ -66,6 +69,10 @@ export default function Configuracion() {
 
           <TabsContent value="usuarios" animation="slide">
             <Users />
+          </TabsContent>
+
+          <TabsContent value="balanza" animation="slide">
+            <Balanza />
           </TabsContent>
         </Tabs>
       </div>

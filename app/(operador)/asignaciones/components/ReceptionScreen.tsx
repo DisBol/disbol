@@ -595,27 +595,29 @@ export default function ReceptionScreen({
         }
 
         // Actualizar total_payment del ticket
+        let finalTotalPayment = 0;
         if (!boleta.precioDiferido) {
           // Precio NO diferido: total_payment = product_payment * totalNetWeight
           const productPayment = Number(boleta.costoPorKg) || 0;
-          const calculatedTotalPayment =
-            productPayment * totalNetWeightAllProducts;
+          finalTotalPayment = productPayment * totalNetWeightAllProducts;
 
           await updateTicket({
             id: newTicketId.toString(),
             code: boleta.codigo || "0",
             deferred_payment: "0",
-            total_payment: calculatedTotalPayment.toString(),
+            total_payment: finalTotalPayment.toString(),
             product_payment: boleta.costoPorKg || "0",
             active: "true",
             AssignmentStage_id: Number(stageId),
           });
 
           console.log(
-            `Ticket total_payment updated (NO diferido): ${calculatedTotalPayment} (${productPayment} * ${totalNetWeightAllProducts})`,
+            `Ticket total_payment updated (NO diferido): ${finalTotalPayment} (${Number(boleta.costoPorKg)} * ${totalNetWeightAllProducts})`,
           );
         } else {
           // Precio diferido: total_payment = suma de (payment * net_weight) de todos los productAssignment
+          finalTotalPayment = totalPaymentWeightSum;
+
           await updateTicket({
             id: newTicketId.toString(),
             code: boleta.codigo || "0",
@@ -631,26 +633,49 @@ export default function ReceptionScreen({
           );
         }
 
-        // Limpiar la boleta de memoria después del éxito
-        const nuevasBoletas = boletas.filter((b) => b.id !== boletaId);
+        // Actualizar la boleta en el estado local con el ticketId y datos calculados
+        // para mostrar los datos en tiempo real sin recargar la lista
+        setBoletas((prev) =>
+          prev.map((b) => {
+            if (b.id !== boletaId) return b;
 
-        // Si no hay boletas restantes, crear una nueva automáticamente
-        if (nuevasBoletas.length === 0) {
-          nuevasBoletas.push({
-            id: (Date.now() + 1).toString(), // +1 para evitar ID duplicado
-            codigo: "",
-            costoPorKg: "0.00",
-            costoTotal: "0.00",
-            precioDiferido: false,
-            codigosSeleccionados: [],
-            menudencias: [],
-            detalles: {},
-            tiposContenedor: {},
-          });
-        }
+            // Recalcular kgBruto y kgNeto por código para mostrarlos en UI
+            const detallesActualizados = { ...b.detalles };
+            for (const codigo of b.codigosSeleccionados) {
+              const detalle = detallesActualizados[codigo];
+              if (!detalle || !detalle.pesajes) continue;
+              let totalBruto = 0;
+              let totalNeto = 0;
+              for (const pesaje of detalle.pesajes) {
+                const selectedContainer = containersData?.find(
+                  (c) => c.id.toString() === pesaje.contenedor,
+                );
+                const destare = selectedContainer?.destare || 0;
+                const grossWeight = Number(pesaje.kg) || 0;
+                const cantidadCajas = Number(pesaje.cajas) || 0;
+                totalBruto += grossWeight;
+                totalNeto += grossWeight - destare * cantidadCajas;
+              }
+              detallesActualizados[codigo] = {
+                ...detalle,
+                kgBruto: totalBruto,
+                kgNeto: totalNeto,
+              };
+            }
 
-        setBoletas(nuevasBoletas);
-        console.log("Boleta guardada y eliminada de memoria exitosamente");
+            return {
+              ...b,
+              ticketId: newTicketId.toString(),
+              id: newTicketId.toString(),
+              costoTotal: finalTotalPayment.toString(),
+              detalles: detallesActualizados,
+            };
+          }),
+        );
+
+        console.log(
+          "Boleta guardada y actualizada en tiempo real exitosamente",
+        );
       }
     } catch (error) {
       console.error("Error saving boleta", error);
