@@ -1,7 +1,7 @@
 "use client";
-import { DeleteIcon } from "@/components/icons/DeleteIcon";
-import { EditIcon } from "@/components/icons/EditIcon";
-import { Chip } from "@/components/ui/Chip";
+import { DeleteIcon } from "../../../../../components/icons/DeleteIcon";
+import { EditIcon } from "../../../../../components/icons/EditIcon";
+import { Chip } from "../../../../../components/ui/Chip";
 import {
   TableWrapper,
   Table,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from "@/components/ui/Table";
+} from "../../../../../components/ui/Table";
 import {
   ProviderView,
   useCategoryProvider,

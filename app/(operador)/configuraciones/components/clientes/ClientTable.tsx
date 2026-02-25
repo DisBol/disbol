@@ -1,7 +1,7 @@
 "use client";
-import { DeleteIcon } from "@/components/icons/DeleteIcon";
-import { EditIcon } from "@/components/icons/EditIcon";
-import { Chip } from "@/components/ui/Chip";
+import { DeleteIcon } from "../../../../../components/icons/DeleteIcon";
+import { EditIcon } from "../../../../../components/icons/EditIcon";
+import { Chip } from "../../../../../components/ui/Chip";
 import {
   TableWrapper,
   Table,
@@ -10,8 +10,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from "@/components/ui/Table";
-import { SelectField } from "@/components/ui/SelectInput";
+} from "../../../../../components/ui/Table";
+import { SelectField } from "../../../../../components/ui/SelectInput";
 import { useState } from "react";
 import { useClients } from "../../hooks/clientes/useClients";
 import { useClientGroups } from "../../hooks/clientes/useClientsGroups";
