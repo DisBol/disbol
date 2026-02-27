@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { ReactNode } from "react";
+import { RouteProtection } from "@/components/shared/RouteProtection";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface KpiCardProps {
@@ -277,57 +278,59 @@ export default function Dashboard() {
   const maxPedido = Math.max(...pedidos.map((p) => p.value));
 
   return (
-    <div className="min-h-screen bg-slate-50 p-3 md:p-6 font-sans">
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        {kpis.map((kpi, i) => (
-          <KpiCard key={i} {...kpi} />
-        ))}
-      </div>
+    <RouteProtection requiredTransaction="Dashboard">
+      <div className="min-h-screen bg-slate-50 p-3 md:p-6 font-sans">
+        {/* KPI Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {kpis.map((kpi, i) => (
+            <KpiCard key={i} {...kpi} />
+          ))}
+        </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Ventas por Cliente */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
-          <h2 className="text-sm font-bold text-slate-800 mb-3">
-            Ventas por Cliente
-          </h2>
-          <div className="flex flex-col gap-5">
-            {ventas.map((v, i) => (
-              <BarRow
-                key={i}
-                label={v.label}
-                value={v.value}
-                maxValue={maxVenta}
-                displayValue={v.displayValue}
-              />
-            ))}
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {/* Ventas por Cliente */}
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <h2 className="text-sm font-bold text-slate-800 mb-3">
+              Ventas por Cliente
+            </h2>
+            <div className="flex flex-col gap-5">
+              {ventas.map((v, i) => (
+                <BarRow
+                  key={i}
+                  label={v.label}
+                  value={v.value}
+                  maxValue={maxVenta}
+                  displayValue={v.displayValue}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Pedidos por Categoría */}
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <h2 className="text-sm font-bold text-slate-800 mb-3">
+              Pedidos por Categoría (Hoy)
+            </h2>
+            <div className="flex flex-col gap-4">
+              {pedidos.map((p, i) => (
+                <BarRow
+                  key={i}
+                  label={p.label}
+                  value={p.value}
+                  maxValue={maxPedido}
+                  displayValue={p.displayValue}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Pedidos por Categoría */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
-          <h2 className="text-sm font-bold text-slate-800 mb-3">
-            Pedidos por Categoría (Hoy)
-          </h2>
-          <div className="flex flex-col gap-4">
-            {pedidos.map((p, i) => (
-              <BarRow
-                key={i}
-                label={p.label}
-                value={p.value}
-                maxValue={maxPedido}
-                displayValue={p.displayValue}
-              />
-            ))}
-          </div>
+        {/* Vehicle Tracking Map */}
+        <div className="mt-4">
+          <VehicleTrackingMap />
         </div>
       </div>
-
-      {/* Vehicle Tracking Map */}
-      <div className="mt-4">
-        <VehicleTrackingMap />
-      </div>
-    </div>
+    </RouteProtection>
   );
 }
