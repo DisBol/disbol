@@ -102,8 +102,13 @@ const transformApiDataToAssignments = (
 ): Assignment[] => {
   if (!apiData || apiData.length === 0) return [];
 
+  // Filtrar solo productos con posición 1 antes de agrupar
+  const filteredData = apiData.filter(
+    (item) => item.AssignmentStage_position === 1,
+  );
+
   // Agrupar por Assignment_id
-  const groupedData = apiData.reduce(
+  const groupedData = filteredData.reduce(
     (acc, item) => {
       const assignmentId = item.Assignment_id.toString();
 

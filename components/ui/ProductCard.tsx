@@ -135,13 +135,13 @@ export default function ProductCard({
           >
             {formatDifference(diferencias.unidades, "unid.")}
           </div>
-          {showWeights && (
+          {/* {showWeights && (
             <div
               className={`text-[10px] font-medium ${getDifferenceColor(diferencias.kgBruto)}`}
             >
               {formatDifference(diferencias.kgBruto, "kg")}
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>
