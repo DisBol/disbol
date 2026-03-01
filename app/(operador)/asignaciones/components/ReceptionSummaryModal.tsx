@@ -4,6 +4,8 @@ import React from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import ProductCard from "@/components/ui/ProductCard";
+import { Assignment } from "../stores/assignments-store";
+import { Datum } from "../interfaces/getassignmenthistory.interface";
 
 interface ProductReception {
   codigo: string;
@@ -19,6 +21,8 @@ interface ReceptionSummaryModalProps {
   onClose: () => void;
   onConfirm: () => void;
   productos: ProductReception[];
+  assignment: Assignment;
+  rawData: Datum[] | null;
 }
 
 export default function ReceptionSummaryModal({
@@ -26,6 +30,8 @@ export default function ReceptionSummaryModal({
   onClose,
   onConfirm,
   productos,
+  assignment,
+  rawData,
 }: ReceptionSummaryModalProps) {
   return (
     <Modal
@@ -43,30 +49,43 @@ export default function ReceptionSummaryModal({
 
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             {productos.map((producto) => {
-              // Simular datos recibidos (en producción vendrían de las boletas)
-              const recibidos = {
-                cajas:
-                  producto.cajas === 0 ? 0 : Math.max(0, producto.cajas - 1),
-                unidades:
-                  producto.unidades === 0
-                    ? 0
-                    : Math.max(0, producto.unidades - 1),
-                kgBruto:
-                  producto.kgBruto === 0
-                    ? 0
-                    : Math.max(0, producto.kgBruto - 5),
-                kgNeto:
-                  producto.kgNeto === 0
-                    ? 0
-                    : Math.max(0, producto.kgNeto - 4.5),
-              };
+              // Buscar en rawData los productos con posición 2 del assignment actual
+              const productosRecibidos =
+                rawData?.filter(
+                  (item) =>
+                    item.Assignment_id.toString() === assignment.id &&
+                    item.Product_name === producto.codigo &&
+                    item.AssignmentStage_position === 2,
+                ) || [];
+
+              const recibidos =
+                productosRecibidos.length > 0
+                  ? {
+                      cajas: productosRecibidos[0].ProductAssignment_container,
+                      unidades: productosRecibidos[0].ProductAssignment_units,
+                      kgBruto: parseFloat(
+                        productosRecibidos[0].ProductAssignment_gross_weight ||
+                          "0",
+                      ),
+                      kgNeto: parseFloat(
+                        productosRecibidos[0].ProductAssignment_net_weight ||
+                          "0",
+                      ),
+                    }
+                  : {
+                      // Si no se encuentra producto con posición 2, mostrar ceros
+                      cajas: 0,
+                      unidades: 0,
+                      kgBruto: 0,
+                      kgNeto: 0,
+                    };
 
               return (
                 <ProductCard
                   key={producto.codigo}
                   producto={producto}
                   recibidos={recibidos}
-                  showWeights={true}
+                  // showWeights={true}
                 />
               );
             })}

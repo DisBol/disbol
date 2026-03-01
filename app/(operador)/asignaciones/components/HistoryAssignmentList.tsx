@@ -320,7 +320,10 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
               {assignment.productos
-                .filter((producto) => producto.posicion === 1)
+                .filter((producto) => {
+                  // Solo mostrar productos con posición 1 (primera etapa)
+                  return Number(producto.posicion) === 1;
+                })
                 .sort((a, b) => Number(b.active) - Number(a.active)) // Activos primero
                 .map((producto) => {
                   const isEditing = editingAssignments.has(assignment.id);

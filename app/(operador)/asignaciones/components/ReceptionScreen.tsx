@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
-import { Assignment } from "../stores/assignments-store";
+import { Assignment, useAssignmentsStore } from "../stores/assignments-store";
 import { useAddAssignmentStage } from "../hooks/useAddAssignmentStage";
 import { useAddTicket } from "../hooks/useAddTicket";
 import { useAddProductAssignment } from "../hooks/useAddProductAssignment";
@@ -65,6 +65,9 @@ export default function ReceptionScreen({
   assignment,
   onBack,
 }: ReceptionScreenProps) {
+  // Obtener rawData del store para acceder a productos de posición 2
+  const { rawData } = useAssignmentsStore();
+
   // Transformar productos del assignment a formato de recepción
   const productos = useMemo<ProductReception[]>(() => {
     // Mostrar todos los productos del assignment que tienen posición === 1 (activos e inactivos)
@@ -715,6 +718,8 @@ export default function ReceptionScreen({
         onClose={() => setShowResumenModal(false)}
         onConfirm={handleConfirmarRecepcion}
         productos={productos}
+        assignment={assignment}
+        rawData={rawData}
       />
     </div>
   );
