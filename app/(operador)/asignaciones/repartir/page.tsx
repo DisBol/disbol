@@ -1,5 +1,4 @@
-import React from "react";
-import Repartir from "../components/repartir/repartir";
+import Repartir from "../components/repartir/Distribute";
 
 export default function RepartirPage() {
   return <Repartir />;

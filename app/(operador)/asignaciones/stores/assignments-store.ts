@@ -56,6 +56,14 @@ interface AssignmentsState {
   showReception: boolean;
   selectedAssignment: Assignment | null;
 
+  // Pantalla de planificación
+  showPlanning: boolean;
+  planningAssignment: Assignment | null;
+
+  // Pantalla de distribución/repartir
+  showDistribute: boolean;
+  distributeAssignment: Assignment | null;
+
   // Estado de edición
   editingAssignments: Set<string>;
   updatingProducts: Set<string>;
@@ -72,6 +80,10 @@ interface AssignmentsState {
   // Acciones de navegación
   showReceptionScreen: (assignment: Assignment) => void;
   hideReceptionScreen: () => void;
+  showPlanningScreen: (assignment: Assignment) => void;
+  hidePlanningScreen: () => void;
+  showDistributeScreen: (assignment: Assignment) => void;
+  hideDistributeScreen: () => void;
 
   // Acciones de edición
   startEditingAssignment: (assignmentId: string) => void;
@@ -168,6 +180,14 @@ export const useAssignmentsStore = create<AssignmentsState>()(
       showReception: false,
       selectedAssignment: null,
 
+      // Estado de planificación
+      showPlanning: false,
+      planningAssignment: null,
+
+      // Estado de distribución
+      showDistribute: false,
+      distributeAssignment: null,
+
       // Estado de edición
       editingAssignments: new Set(),
       updatingProducts: new Set(),
@@ -207,6 +227,10 @@ export const useAssignmentsStore = create<AssignmentsState>()(
             error: null,
             showReception: false,
             selectedAssignment: null,
+            showPlanning: false,
+            planningAssignment: null,
+            showDistribute: false,
+            distributeAssignment: null,
             editingAssignments: new Set(),
             updatingProducts: new Set(),
             pendingChanges: new Map(),
@@ -234,6 +258,46 @@ export const useAssignmentsStore = create<AssignmentsState>()(
           },
           false,
           "hideReceptionScreen",
+        ),
+
+      showPlanningScreen: (assignment) =>
+        set(
+          {
+            showPlanning: true,
+            planningAssignment: assignment,
+          },
+          false,
+          "showPlanningScreen",
+        ),
+
+      hidePlanningScreen: () =>
+        set(
+          {
+            showPlanning: false,
+            planningAssignment: null,
+          },
+          false,
+          "hidePlanningScreen",
+        ),
+
+      showDistributeScreen: (assignment) =>
+        set(
+          {
+            showDistribute: true,
+            distributeAssignment: assignment,
+          },
+          false,
+          "showDistributeScreen",
+        ),
+
+      hideDistributeScreen: () =>
+        set(
+          {
+            showDistribute: false,
+            distributeAssignment: null,
+          },
+          false,
+          "hideDistributeScreen",
         ),
 
       // Acciones de edición
@@ -266,13 +330,13 @@ export const useAssignmentsStore = create<AssignmentsState>()(
             assignments: state.assignments.map((assignment) =>
               assignment.id === assignmentId
                 ? {
-                    ...assignment,
-                    productos: assignment.productos.map((product) =>
-                      product.codigo === productCode
-                        ? { ...product, ...updates }
-                        : product,
-                    ),
-                  }
+                  ...assignment,
+                  productos: assignment.productos.map((product) =>
+                    product.codigo === productCode
+                      ? { ...product, ...updates }
+                      : product,
+                  ),
+                }
                 : assignment,
             ),
           }),

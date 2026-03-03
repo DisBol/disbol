@@ -4,6 +4,8 @@ import React, { forwardRef, useImperativeHandle } from "react";
 import ReceptionScreen from "./ReceptionScreen";
 import HistoryAssignmentFilters from "./HistoryAssignmentFilters";
 import HistoryAssignmentList from "./HistoryAssignmentList";
+import Planning from "./planificar/Planning";
+import Distribute from "./repartir/Distribute";
 import { useAssignmentsStore, Assignment } from "../stores/assignments-store";
 import { useAssignmentFilters } from "../hooks/useAssignmentFilters";
 
@@ -25,6 +27,13 @@ const HistoryAssignment = forwardRef<
     selectedAssignment,
     showReceptionScreen,
     hideReceptionScreen,
+    showPlanning,
+    planningAssignment,
+    hidePlanningScreen,
+    showDistribute,
+    distributeAssignment,
+    hideDistributeScreen,
+    rawData,
   } = useAssignmentsStore();
 
   const { assignments, loading, error, applyFilters } = useAssignmentFilters();
@@ -43,6 +52,36 @@ const HistoryAssignment = forwardRef<
     hideReceptionScreen();
     onReceptionStateChange?.(false);
   };
+
+  const handleBackFromPlanning = () => {
+    hidePlanningScreen();
+  };
+
+  const handleBackFromDistribute = () => {
+    hideDistributeScreen();
+  };
+
+  // Si estamos mostrando la pantalla de distribución, renderizarla
+  if (showDistribute && distributeAssignment) {
+    return (
+      <Distribute
+        assignment={distributeAssignment}
+        rawData={rawData}
+        onClose={handleBackFromDistribute}
+      />
+    );
+  }
+
+  // Si estamos mostrando la pantalla de planificación, renderizarla
+  if (showPlanning && planningAssignment) {
+    return (
+      <Planning
+        assignment={planningAssignment}
+        rawData={rawData}
+        onClose={handleBackFromPlanning}
+      />
+    );
+  }
 
   // Si estamos mostrando la pantalla de recepción, renderizarla
   if (showReception && selectedAssignment) {
