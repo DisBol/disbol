@@ -14,6 +14,8 @@ export default function AsignacionesPage() {
   const hideReceptionScreen = useAssignmentsStore(
     (state) => state.hideReceptionScreen,
   );
+  const showPlanning = useAssignmentsStore((state) => state.showPlanning);
+  const showDistribute = useAssignmentsStore((state) => state.showDistribute);
 
   // Limpiar el estado de recepción al salir de la página
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function AsignacionesPage() {
   return (
     <RouteProtection requiredTransaction="Asignaciones">
       <div className="min-h-screen bg-gray-50 pb-12">
-        {!showReception && (
+        {!showReception && !showPlanning && !showDistribute && (
           <ProductAssignment onAssignmentCreated={handleAssignmentCreated} />
         )}
         <HistoryAssignment
