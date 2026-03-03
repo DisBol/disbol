@@ -214,7 +214,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             </svg>
           </button>
         )}
-        <h3 className="font-bold text-gray-900 text-xs mb-1 text-center">
+        <h3 className="font-bold text-gray-900 text-[10px] mb-1 text-center whitespace-nowrap tracking-tight">
           {label}
         </h3>
 
