@@ -16,7 +16,6 @@ interface ClientCode {
   unidades: number;
   restante: number;
 }
-
 interface Cliente {
   name: string;
   estado: string;
@@ -24,7 +23,6 @@ interface Cliente {
   totalCajas: number;
   totalUnid: number;
 }
-
 interface TotalGroupProps {
   name: string;
   status: "guardado" | "pendiente";
@@ -35,6 +33,12 @@ interface TotalGroupProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   onSaveGroup?: () => void;
+  onUpdateClientCode?: (
+    clientIndex: number,
+    codeIndex: number,
+    field: "cajas" | "unidades",
+    value: number,
+  ) => void;
 }
 
 export default function TotalGroup({
@@ -47,6 +51,7 @@ export default function TotalGroup({
   isExpanded,
   onToggleExpand,
   onSaveGroup,
+  onUpdateClientCode,
 }: TotalGroupProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm transition-all">
@@ -56,17 +61,14 @@ export default function TotalGroup({
         onClick={onToggleExpand}
       >
         {/* Left group name */}
-        <div className="w-[100px] shrink-0 text-center lg:text-center">
+        <div className="w-25 shrink-0 text-center lg:text-center">
           <span className="font-bold text-[#e11d48] text-xs">{name}</span>
         </div>
 
         {/* Center Code Cards */}
         <div className="flex flex-wrap gap-1.5 flex-1 items-stretch">
           {codes.map((code, codeIdx) => (
-            <div
-              key={codeIdx}
-              className="w-[80px] shrink-0 pointer-events-none"
-            >
+            <div key={codeIdx} className="w-20 shrink-0 pointer-events-none">
               <CardCode
                 label={code.label}
                 cajas={code.cajas}
@@ -77,12 +79,12 @@ export default function TotalGroup({
           ))}
 
           {/* TOTAL Card */}
-          <div className="w-[80px] shrink-0">
+          <div className="w-20 shrink-0">
             <div className="bg-[#f59e0b] rounded-lg p-1.5 shadow-sm flex flex-col h-full border border-[#f59e0b]">
               <h3 className="font-bold text-white text-[9px] mb-1.5 text-center uppercase tracking-wide">
                 TOTAL
               </h3>
-              <div className="space-y-1 flex-1 flex flex-col justify-end">
+              <div className="space-y-1 flex-1 flex flex-col justify-start pt-1">
                 <div>
                   <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
                     CAJAS
@@ -160,7 +162,7 @@ export default function TotalGroup({
                 className="flex flex-col lg:flex-row items-center bg-white border border-gray-100 rounded-xl p-3 gap-4 shadow-sm"
               >
                 {/* Client Info */}
-                <div className="w-[100px] shrink-0">
+                <div className="w-25 shrink-0">
                   <h5 className="font-bold text-[#e11d48] text-[12px]">
                     {cliente.name}
                   </h5>
@@ -175,43 +177,85 @@ export default function TotalGroup({
                 {/* Client Code Cards */}
                 <div className="flex flex-wrap gap-1.5 flex-1 items-stretch">
                   {cliente.codes.map((code, clientCodeIdx) => (
-                    <div key={clientCodeIdx} className="w-[80px] shrink-0">
-                      <CardCode
-                        label={
-                          <div className="flex flex-col items-center">
-                            <span>{code.label}</span>
-                            <span className="text-[7px] font-normal text-gray-400 mt-0.5 break-words">
-                              Solicitado: {code.solicitado}
-                            </span>
+                    <div key={clientCodeIdx} className="w-20 shrink-0">
+                      <div className="bg-white rounded-lg p-1.5 shadow-sm flex flex-col h-full border border-gray-200">
+                        <div className="flex flex-col items-center mb-1.5">
+                          <h3 className="font-bold text-gray-900 text-[9px] text-center uppercase tracking-wide">
+                            {code.label}
+                          </h3>
+                          <span className="text-[7px] font-normal text-gray-500 mt-0.5 text-center">
+                            Solicitado: {code.solicitado}
+                          </span>
+                        </div>
+                        <div className="space-y-1 flex-1 flex flex-col justify-end">
+                          <div>
+                            <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
+                              CAJAS
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={code.cajas}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                onUpdateClientCode?.(
+                                  clienteIdx,
+                                  clientCodeIdx,
+                                  "cajas",
+                                  value,
+                                );
+                              }}
+                              className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                            />
                           </div>
-                        }
-                        cajas={code.cajas}
-                        unidades={code.unidades}
-                        weightInfo={{
-                          adicional: [
-                            {
-                              label: "Restante:",
-                              value: String(code.restante),
-                              color:
+                          <div>
+                            <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
+                              UNID.
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={code.unidades}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                onUpdateClientCode?.(
+                                  clienteIdx,
+                                  clientCodeIdx,
+                                  "unidades",
+                                  value,
+                                );
+                              }}
+                              className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
+                              RESTANTE
+                            </label>
+                            <div
+                              className={`w-full px-1 py-0.5 rounded text-[9px] font-bold text-center h-5 flex items-center justify-center shadow-inner ${
                                 code.restante < 0
-                                  ? "danger"
+                                  ? "bg-red-100 text-red-700"
                                   : code.restante > 0
-                                    ? "success"
-                                    : "default",
-                            },
-                          ],
-                        }}
-                      />
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-gray-50 text-gray-900"
+                              }`}
+                            >
+                              {code.restante}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
 
                   {/* Client TOTAL Card */}
-                  <div className="w-[80px] shrink-0">
+                  <div className="w-20 shrink-0">
                     <div className="bg-[#f59e0b] rounded-lg p-1.5 shadow-sm flex flex-col h-full border border-[#f59e0b]">
                       <h3 className="font-bold text-white text-[9px] mb-1.5 text-center uppercase tracking-wide">
                         TOTAL
                       </h3>
-                      <div className="space-y-1 flex-1 flex flex-col justify-end">
+                      <div className="space-y-1 flex-1 flex flex-col justify-start pt-3">
                         <div>
                           <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
                             CAJAS
