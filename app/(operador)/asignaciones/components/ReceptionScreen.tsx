@@ -153,7 +153,7 @@ export default function ReceptionScreen({
                   pesajes: [],
                   kgBruto: Number(row.ProductAssignment_gross_weight) || 0,
                   kgNeto: Number(row.ProductAssignment_net_weight) || 0,
-                  _isEdited: true // Marcar como editado porque vienen de la BD
+                  _isEdited: true, // Marcar como editado porque vienen de la BD
                 };
               }
               if (row.TicketsWeighing_id) {
@@ -281,14 +281,14 @@ export default function ReceptionScreen({
               const productoData = productos.find((p) => p.codigo === codigo);
               console.log(`📥 Inicializando detalle para ${codigo} con:`, {
                 cajasOriginales: productoData?.cajas,
-                unidadesOriginales: productoData?.unidades
+                unidadesOriginales: productoData?.unidades,
               });
-              
-              nuevosDetalles[codigo] = { 
-                cajas: productoData?.cajas || 0, 
-                unidades: productoData?.unidades || 0, 
+
+              nuevosDetalles[codigo] = {
+                cajas: productoData?.cajas || 0,
+                unidades: productoData?.unidades || 0,
                 pesajes: [],
-                _isEdited: false // IMPORTANTE: marcar como NO editado inicialmente
+                _isEdited: false, // IMPORTANTE: marcar como NO editado inicialmente
               };
             }
           }
@@ -310,16 +310,21 @@ export default function ReceptionScreen({
     value: number | string,
   ) => {
     // Log para rastrear el origen de las llamadas
-    console.log(`🔥 Usuario editó ${field} para producto ${codigo}: ${value} (marcando como editado)`);
-    console.trace('🔍 Origen de la llamada updateCantidadBoleta:');
-    
+    console.log(
+      `🔥 Usuario editó ${field} para producto ${codigo}: ${value} (marcando como editado)`,
+    );
+    console.trace("🔍 Origen de la llamada updateCantidadBoleta:");
+
     setBoletas((prevBoletas) => {
       const nuevasBoletas = prevBoletas.map((boleta) => {
         if (boleta.id === boletaId) {
           const detalleActual = boleta.detalles[codigo];
-          
-          console.log(`🔥 Detalle actual antes de actualizar ${codigo}:`, detalleActual);
-          
+
+          console.log(
+            `🔥 Detalle actual antes de actualizar ${codigo}:`,
+            detalleActual,
+          );
+
           // Si no existe el detalle, inicializar con valores del producto original
           if (!detalleActual) {
             const productoData = productos.find((p) => p.codigo === codigo);
@@ -327,22 +332,22 @@ export default function ReceptionScreen({
               cajas: productoData?.cajas || 0,
               unidades: productoData?.unidades || 0,
               pesajes: [],
-              _isEdited: false
+              _isEdited: false,
             };
-            
+
             const nuevoDetalle = {
               ...detalleInicial,
               [field]: field === "precio" ? String(value) : Number(value),
-              _isEdited: true // Marcar como editado cuando el usuario cambia un valor
+              _isEdited: true, // Marcar como editado cuando el usuario cambia un valor
             };
-            
+
             console.log(`🔥 Detalle creado para ${codigo}:`, {
               inicial: detalleInicial,
               final: nuevoDetalle,
               fieldEditado: field,
-              valorNuevo: value
+              valorNuevo: value,
             });
-            
+
             return {
               ...boleta,
               detalles: {
@@ -356,17 +361,17 @@ export default function ReceptionScreen({
           const nuevoDetalle = {
             ...detalleActual,
             [field]: field === "precio" ? String(value) : Number(value),
-            _isEdited: true // Marcar como editado cuando el usuario cambia un valor
+            _isEdited: true, // Marcar como editado cuando el usuario cambia un valor
           };
-          
+
           console.log(`🔥 Detalle actualizado para ${codigo}:`, {
             anterior: detalleActual,
             nuevo: nuevoDetalle,
             campo: field,
             valor: value,
-            valorAnterior: detalleActual[field as keyof typeof detalleActual]
+            valorAnterior: detalleActual[field as keyof typeof detalleActual],
           });
-          
+
           return {
             ...boleta,
             detalles: {
@@ -377,12 +382,15 @@ export default function ReceptionScreen({
         }
         return boleta;
       });
-      
+
       // Log del estado final
-      const boletaActualizada = nuevasBoletas.find(b => b.id === boletaId);
+      const boletaActualizada = nuevasBoletas.find((b) => b.id === boletaId);
       const detalleActualizado = boletaActualizada?.detalles[codigo];
-      console.log(`🔥 Estado final COMPLETO del detalle para ${codigo}:`, detalleActualizado);
-      
+      console.log(
+        `🔥 Estado final COMPLETO del detalle para ${codigo}:`,
+        detalleActualizado,
+      );
+
       return nuevasBoletas;
     });
   };
@@ -437,7 +445,7 @@ export default function ReceptionScreen({
       boletas.map((boleta) => {
         if (boleta.id === boletaId) {
           const detalleActual = boleta.detalles[codigo];
-          
+
           // Si no existe el detalle, inicializarlo con valores del producto original
           let baseDetalle;
           if (!detalleActual) {
@@ -446,7 +454,7 @@ export default function ReceptionScreen({
               cajas: productoData?.cajas || 0,
               unidades: productoData?.unidades || 0,
               pesajes: [],
-              _isEdited: false
+              _isEdited: false,
             };
           } else {
             baseDetalle = detalleActual;
@@ -564,7 +572,7 @@ export default function ReceptionScreen({
       // 1. Se usan los valores originales del producto cuando no hay detalles editados
       // 2. Se agregan logs para debug de valores
       // 3. Se valida que los valores sean consistentes
-      
+
       // Siempre crear un nuevo assignment stage
       const newStageId = await addAssignmentStage({
         position: "2",
@@ -602,48 +610,56 @@ export default function ReceptionScreen({
           const productoData = productos.find((p) => p.codigo === codigo);
 
           if (productoData && productoData.productId) {
-            // LÓGICA CORREGIDA: 
+            // LÓGICA CORREGIDA:
             // - Si existe detalle Y fue editado por el usuario (_isEdited = true): usar valores editados
             // - Si NO existe detalle O NO fue editado: usar valores originales del producto
             const usarValoresEditados = detalle && detalle._isEdited === true;
-            
-            const cajasValue = usarValoresEditados 
-              ? Number(detalle.cajas) || 0 
+
+            const cajasValue = usarValoresEditados
+              ? Number(detalle.cajas) || 0
               : Number(productoData.cajas) || 0;
-              
-            const unidadesValue = usarValoresEditados 
-              ? Number(detalle.unidades) || 0 
+
+            const unidadesValue = usarValoresEditados
+              ? Number(detalle.unidades) || 0
               : Number(productoData.unidades) || 0;
 
             // Debug logs específicos para encontrar el problema
             console.log(`🚨 ANÁLISIS DETALLADO para ${codigo}:`, {
-              '1_detalleCompleto': detalle,
-              '2_detalleExiste': !!detalle,
-              '3_fueEditado': detalle?._isEdited,
-              '4_usarValoresEditados': usarValoresEditados,
-              '5_detalle_cajas_RAW': detalle?.cajas,
-              '6_detalle_unidades_RAW': detalle?.unidades,
-              '7_producto_cajas_ORIGINAL': productoData.cajas,
-              '8_producto_unidades_ORIGINAL': productoData.unidades,
-              '9_cajasValue_FINAL': cajasValue,
-              '10_unidadesValue_FINAL': unidadesValue,
-              '11_fuenteDatos': usarValoresEditados ? 'VALORES EDITADOS (detalle)' : 'VALORES ORIGINALES (producto)'
+              "1_detalleCompleto": detalle,
+              "2_detalleExiste": !!detalle,
+              "3_fueEditado": detalle?._isEdited,
+              "4_usarValoresEditados": usarValoresEditados,
+              "5_detalle_cajas_RAW": detalle?.cajas,
+              "6_detalle_unidades_RAW": detalle?.unidades,
+              "7_producto_cajas_ORIGINAL": productoData.cajas,
+              "8_producto_unidades_ORIGINAL": productoData.unidades,
+              "9_cajasValue_FINAL": cajasValue,
+              "10_unidadesValue_FINAL": unidadesValue,
+              "11_fuenteDatos": usarValoresEditados
+                ? "VALORES EDITADOS (detalle)"
+                : "VALORES ORIGINALES (producto)",
             });
 
             // Validar que los valores no sean 0 si es importante para el negocio
             if (cajasValue <= 0 && unidadesValue <= 0) {
-              console.warn(`❌ Producto ${codigo} tiene valores 0 en cajas y unidades. Verificar si esto es correcto.`);
+              console.warn(
+                `❌ Producto ${codigo} tiene valores 0 en cajas y unidades. Verificar si esto es correcto.`,
+              );
             }
 
             // Validación adicional antes de enviar a la API
-            console.log(`🎯 VERIFICACIÓN FINAL antes de crear ProductAssignment para ${codigo}:`, {
-              cajasEnviadas: cajasValue,
-              unidadesEnviadas: unidadesValue,
-              detalle_cajas_actual: detalle?.cajas,
-              detalle_unidades_actual: detalle?.unidades,
-              son_iguales_cajas: cajasValue === Number(detalle?.cajas),
-              son_iguales_unidades: unidadesValue === Number(detalle?.unidades)
-            });
+            console.log(
+              `🎯 VERIFICACIÓN FINAL antes de crear ProductAssignment para ${codigo}:`,
+              {
+                cajasEnviadas: cajasValue,
+                unidadesEnviadas: unidadesValue,
+                detalle_cajas_actual: detalle?.cajas,
+                detalle_unidades_actual: detalle?.unidades,
+                son_iguales_cajas: cajasValue === Number(detalle?.cajas),
+                son_iguales_unidades:
+                  unidadesValue === Number(detalle?.unidades),
+              },
+            );
 
             // Determinar el payment según si es precio diferido o no
             const paymentValue = boleta.precioDiferido
@@ -806,13 +822,13 @@ export default function ReceptionScreen({
         console.log(
           "Boleta guardada y actualizada en tiempo real exitosamente",
         );
-        
+
         console.log("Resumen final de la boleta guardada:", {
           boletaId: boleta.id,
           ticketId: newTicketId.toString(),
           totalNetWeight: totalNetWeightAllProducts,
           finalTotalPayment,
-          productosGuardados: boleta.codigosSeleccionados.length
+          productosGuardados: boleta.codigosSeleccionados.length,
         });
       }
     } catch (error) {
