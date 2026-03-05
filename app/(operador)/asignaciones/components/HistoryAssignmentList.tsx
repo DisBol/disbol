@@ -39,6 +39,8 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
     revertPendingChanges,
     getPendingChanges,
     updateProductInAssignment,
+    showPlanningScreen,
+    showDistributeScreen,
   } = useAssignmentsStore();
 
   const { updateProduct, deleteProduct } = useProductActions();
@@ -241,6 +243,7 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                 color="danger"
                 size="sm"
                 className="min-w-22.5"
+                onClick={() => showDistributeScreen(assignment)}
               >
                 Repartir
               </Button>
@@ -249,6 +252,7 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                 color="warning"
                 size="sm"
                 className="min-w-22.5"
+                onClick={() => showPlanningScreen(assignment)}
               >
                 Planificar
               </Button>

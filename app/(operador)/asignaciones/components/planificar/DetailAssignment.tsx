@@ -27,7 +27,7 @@ export default function DetailAssignment({
     <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 shadow-sm">
       <div className="flex flex-col xl:flex-row items-start gap-4">
         {/* Left info & buttons */}
-        <div className="flex flex-col gap-3 xl:w-[280px] shrink-0 pb-3 xl:pb-0">
+        <div className="flex flex-col gap-3 xl:w-70 shrink-0 pb-3 xl:pb-0">
           <div className="flex flex-col space-y-2 mt-1">
             <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
               PROVEEDOR: <span className="text-gray-900 ml-1">{proveedor}</span>
@@ -70,7 +70,7 @@ export default function DetailAssignment({
           </h3>
           <div className="flex flex-wrap gap-1.5 xl:ml-2">
             {detalles.map((d, i) => (
-              <div key={i} className="w-[80px] shrink-0">
+              <div key={i} className="w-20 shrink-0">
                 <CardCode
                   label={d.label}
                   cajas={d.cajas}
