@@ -7,6 +7,8 @@ import { Assignment } from "../../stores/assignments-store";
 import { Datum } from "../../interfaces/getassignmenthistory.interface";
 import { useGetRequestForPlanning } from "../../hooks/planificar/useGetRequestForPlanning";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
+import { useAddRequestStage } from "../../../solicitudes/hooks/useAddrequeststage";
+import { useUpdateProductrequest } from "../../../solicitudes/hooks/useUpdateProducterequest";
 
 interface PlanningProps {
   assignment?: Assignment | null;
@@ -51,6 +53,11 @@ export default function Planificar({
 }: PlanningProps) {
   // Hook para obtener datos de planificación
   const { data: requestData, loading, error } = useGetRequestForPlanning();
+
+  // Hooks para guardar datos
+  const { addStage, loading: loadingStage } = useAddRequestStage();
+  const { updateProductRequest, loading: loadingUpdate } =
+    useUpdateProductrequest();
 
   // Estado editable para los grupos
   const [editableGroups, setEditableGroups] = useState<EditableGroupData[]>([]);
@@ -152,7 +159,119 @@ export default function Planificar({
     [recalculateGroupTotals],
   );
 
-  // Procesar datos dinámicamente
+  // Función para guardar un grupo con position 2
+  const handleSaveGroup = useCallback(
+    async (groupIndex: number) => {
+      try {
+        const group = editableGroups[groupIndex];
+        if (!group) return;
+
+        // Obtener los RequestDatum originales para este grupo
+        if (!requestData?.data) return;
+
+        const groupRequestData = requestData.data.filter(
+          (item) => item.ClientGroup_name === group.name,
+        );
+
+        if (groupRequestData.length === 0) return;
+
+        // Track de cambios para actualizar el estado
+        const updates: Array<{
+          clientIndex: number;
+          codeIndex: number;
+          requestItems: RequestDatum[];
+        }> = [];
+
+        // Procesar cada cliente del grupo
+        for (
+          let clientIdx = 0;
+          clientIdx < group.clientes.length;
+          clientIdx++
+        ) {
+          const cliente = group.clientes[clientIdx];
+          const clientRequestData = groupRequestData.filter(
+            (item) => item.Client_name === cliente.name,
+          );
+
+          if (clientRequestData.length === 0) continue;
+
+          // Obtener Request_id (igual para todos los items del cliente)
+          const Request_id = clientRequestData[0].Request_id;
+
+          // Crear RequestStage con position 2
+          const stageResponse = await addStage(
+            2, // position 2
+            0, // in_container
+            0, // out_container
+            0, // units
+            0, // container
+            0, // payment
+            Request_id,
+          );
+
+          if (!stageResponse) {
+            console.error(`Error creating stage for Request_id ${Request_id}`);
+            continue;
+          }
+
+          const RequestStage_id = stageResponse.data[0]?.requeststage_id;
+
+          // Actualizar cada ProductRequest del cliente con los nuevos valores
+          for (let codeIdx = 0; codeIdx < cliente.codes.length; codeIdx++) {
+            const code = cliente.codes[codeIdx];
+
+            // Encontrar el ProductRequest_id correspondiente
+            const productItem = clientRequestData.find(
+              (item) => item.Product_name === code.label,
+            );
+
+            if (!productItem) continue;
+
+            try {
+              await updateProductRequest(
+                productItem.ProductRequest_id,
+                code.cajas, // containers
+                code.unidades, // units
+                productItem.ProductRequest_menudencia === "true",
+                0, // net_weight
+                0, // gross_weight
+                0, // payment
+                true, // active
+                RequestStage_id,
+                productItem.Product_id,
+              );
+
+              updates.push({
+                clientIndex: clientIdx,
+                codeIndex: codeIdx,
+                requestItems: clientRequestData,
+              });
+            } catch (err) {
+              console.error(
+                `Error updating product request ${productItem.ProductRequest_id}`,
+                err,
+              );
+            }
+          }
+        }
+
+        // Actualizar estado del grupo a "guardado"
+        setEditableGroups((prevGroups) => {
+          const newGroups = [...prevGroups];
+          newGroups[groupIndex] = {
+            ...newGroups[groupIndex],
+            status: "guardado",
+          };
+          return newGroups;
+        });
+
+        console.log(`Group ${groupIndex} saved successfully`);
+      } catch (err) {
+        console.error("Error saving group:", err);
+      }
+    },
+    [editableGroups, requestData, addStage, updateProductRequest],
+  );
   const { detalles, processedGroups, proveedor, clienteOrigen } = useMemo((): {
     detalles: Array<{
       label: string;
@@ -451,9 +570,7 @@ export default function Planificar({
                   clientes={group.clientes}
                   isExpanded={expandedGroups.includes(groupIdx)}
                   onToggleExpand={() => toggleGroup(groupIdx)}
-                  onSaveGroup={() =>
-                    console.log(`Save group ${groupIdx} clicked`)
-                  }
+                  onSaveGroup={() => handleSaveGroup(groupIdx)}
                   onUpdateClientCode={(clientIndex, codeIndex, field, value) =>
                     updateClientCode(
                       groupIdx,
