@@ -46,14 +46,14 @@ export default function ReceptionHeader({
             </span>
           </div>
 
-          <div>
+          {/* <div>
             <span className="text-xs font-bold text-gray-500 uppercase block">
               CLIENTE:
             </span>
             <span className="text-md font-bold text-gray-900">
               Pollería El Rey
             </span>
-          </div>
+          </div> */}
 
           <div>
             <span className="text-xs font-bold text-gray-500 uppercase block">
