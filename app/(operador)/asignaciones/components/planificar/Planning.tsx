@@ -8,7 +8,7 @@ import { Datum } from "../../interfaces/getassignmenthistory.interface";
 import { useGetRequestForPlanning } from "../../hooks/planificar/useGetRequestForPlanning";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
 import { useAddRequestStage } from "../../../solicitudes/hooks/useAddrequeststage";
-import { useUpdateProductrequest } from "../../../solicitudes/hooks/useUpdateProducterequest";
+import { useAddProductRequest } from "../../../solicitudes/hooks/useAddproductrequest";
 
 interface PlanningProps {
   assignment?: Assignment | null;
@@ -56,8 +56,7 @@ export default function Planificar({
 
   // Hooks para guardar datos
   const { addStage, loading: loadingStage } = useAddRequestStage();
-  const { updateProductRequest, loading: loadingUpdate } =
-    useUpdateProductrequest();
+  const { addProduct, loading: loadingAdd } = useAddProductRequest();
 
   // Estado editable para los grupos
   const [editableGroups, setEditableGroups] = useState<EditableGroupData[]>([]);
@@ -228,11 +227,10 @@ export default function Planificar({
             if (!productItem) continue;
 
             try {
-              await updateProductRequest(
-                productItem.ProductRequest_id,
+              await addProduct(
                 code.cajas, // containers
                 code.unidades, // units
-                productItem.ProductRequest_menudencia === "true",
+                productItem.ProductRequest_menudencia === "true", // menudencia
                 0, // net_weight
                 0, // gross_weight
                 0, // payment
@@ -248,7 +246,7 @@ export default function Planificar({
               });
             } catch (err) {
               console.error(
-                `Error updating product request ${productItem.ProductRequest_id}`,
+                `Error adding product request for stage 2, product ${productItem.Product_id}`,
                 err,
               );
             }
@@ -270,7 +268,7 @@ export default function Planificar({
         console.error("Error saving group:", err);
       }
     },
-    [editableGroups, requestData, addStage, updateProductRequest],
+    [editableGroups, requestData, addStage, addProduct],
   );
   const { detalles, processedGroups, proveedor, clienteOrigen } = useMemo((): {
     detalles: Array<{
