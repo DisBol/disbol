@@ -8,6 +8,7 @@ import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedore
 import { useAddRequestWeighing } from "../../hooks/repartir/useAddRequestWeighing";
 import { useUpdateProductRequest } from "../../hooks/repartir/useUpdateProductRequest";
 import { useUpdateRequestStage } from "../../hooks/repartir/useUpdateRequeststage";
+import { useUpdateRequest } from "../../hooks/repartir/useUpdateRequest";
 
 interface Code {
   label: string;
@@ -21,6 +22,8 @@ interface ClienteData {
   name: string;
   estado: string;
   Request_id: number;
+  Client_id: number;
+  Provider_id: number;
   codes: Array<{
     label: string;
     solicitado: number;
@@ -48,6 +51,10 @@ interface DistributeGroupProps {
   isActive?: boolean;
   onStarted?: (isStarted: boolean) => void;
   encargado?: string;
+  // Notifica al padre: (guardados, total) para que sepa el progreso
+  onSavedCountChange?: (saved: number, total: number) => void;
+  vehiculo?: string;
+  chofer?: string;
 }
 
 export default function DistributeGroup({
@@ -63,38 +70,49 @@ export default function DistributeGroup({
   isActive = false,
   onStarted,
   encargado = "",
+  onSavedCountChange,
+  vehiculo = "",
+  chofer = "",
 }: DistributeGroupProps) {
   const { containers, containersData } = useContainer();
   const { addWeighing, loading: savingWeighing } = useAddRequestWeighing();
   const { updateProductRequest } = useUpdateProductRequest();
   const { updateRequestStage } = useUpdateRequestStage();
+  const { updateRequest } = useUpdateRequest();
   const [savingClient, setSavingClient] = useState<number | null>(null);
   const [savedClients, setSavedClients] = useState<Set<number>>(new Set());
   const [saveErrors, setSaveErrors] = useState<Record<number, string>>({});
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isStarted, setIsStarted] = useState(isActive);
   const [precioDiferido, setPrecioDiferido] = useState(false);
   const [precioVentaCliente, setPrecioVentaCliente] = useState<
     Record<number, string>
   >({});
-  const [menudencia, setMenudencia] = useState<Record<number, boolean>>({});
-  const [codes, setCodes] = useState<Code[]>(
-    initialCodes.map((code) => ({
-      ...code,
-      pesajes: code.pesajes || [],
-      precio: code.precio || "",
-    })),
+  const [menudenciaMap, setMenudenciaMap] = useState<Record<string, boolean>>(
+    {},
   );
+  const [pesajesMap, setPesajesMap] = useState<Record<string, PesajeData[]>>(
+    {},
+  );
+  const [preciosMap, setPreciosMap] = useState<Record<string, string>>({});
 
   // Sincroniza isStarted cuando cambia isActive desde el padre
   useEffect(() => {
     setIsStarted(isActive);
   }, [isActive]);
 
+  // Notifica al padre cada vez que cambia savedClients
+  useEffect(() => {
+    onSavedCountChange?.(savedClients.size, clientes.length);
+  }, [savedClients, clientes.length]);
+
   // Función para calcular el costo total de distribución por cliente
   // COSTO = Σ (peso_neto_producto × precio_venta)
   const calculateTotalDistribucion = useMemo(() => {
-    return (clienteCodes: Code[], precioVenta: string): number => {
+    return (
+      clienteIdx: number,
+      clienteCodes: ClienteData["codes"],
+      precioVenta: string,
+    ): number => {
       let total = 0;
 
       if (!precioDiferido) {
@@ -102,52 +120,54 @@ export default function DistributeGroup({
         const costo = Number(precioVenta) || 0;
         let totalNetWeight = 0;
 
-        for (const code of clienteCodes) {
-          if (code.pesajes) {
-            for (const pesaje of code.pesajes) {
-              const container = containersData?.find(
-                (c) => c.id.toString() === pesaje.contenedor,
-              );
-              const destare = container?.destare || 0;
-              const grossWeight = Number(pesaje.kg) || 0;
-              const cantidadCajas = Number(pesaje.cajas) || 0;
-              const netWeight = grossWeight - destare * cantidadCajas;
-              totalNetWeight += netWeight;
-            }
+        for (let codeIdx = 0; codeIdx < clienteCodes.length; codeIdx++) {
+          const pesajes = pesajesMap[`${clienteIdx}-${codeIdx}`] || [];
+          for (const pesaje of pesajes) {
+            const container = containersData?.find(
+              (c) => c.id.toString() === pesaje.contenedor,
+            );
+            const destare = container?.destare || 0;
+            const grossWeight = Number(pesaje.kg) || 0;
+            const cantidadCajas = Number(pesaje.cajas) || 0;
+            const netWeight = grossWeight - destare * cantidadCajas;
+            totalNetWeight += netWeight;
           }
         }
 
         total = costo * totalNetWeight;
       } else {
         // Con precio diferido: Σ (precio_codigo × net_weight_codigo)
-        for (const code of clienteCodes) {
-          if (code.pesajes) {
-            const precioProducto = Number(code.precio) || 0;
-            let netWeightProducto = 0;
+        for (let codeIdx = 0; codeIdx < clienteCodes.length; codeIdx++) {
+          const pesajes = pesajesMap[`${clienteIdx}-${codeIdx}`] || [];
+          const precioProducto =
+            Number(preciosMap[`${clienteIdx}-${codeIdx}`]) || 0;
+          let netWeightProducto = 0;
 
-            for (const pesaje of code.pesajes) {
-              const container = containersData?.find(
-                (c) => c.id.toString() === pesaje.contenedor,
-              );
-              const destare = container?.destare || 0;
-              const grossWeight = Number(pesaje.kg) || 0;
-              const cantidadCajas = Number(pesaje.cajas) || 0;
-              const netWeight = grossWeight - destare * cantidadCajas;
-              netWeightProducto += netWeight;
-            }
-
-            total += precioProducto * netWeightProducto;
+          for (const pesaje of pesajes) {
+            const container = containersData?.find(
+              (c) => c.id.toString() === pesaje.contenedor,
+            );
+            const destare = container?.destare || 0;
+            const grossWeight = Number(pesaje.kg) || 0;
+            const cantidadCajas = Number(pesaje.cajas) || 0;
+            const netWeight = grossWeight - destare * cantidadCajas;
+            netWeightProducto += netWeight;
           }
+
+          total += precioProducto * netWeightProducto;
         }
       }
 
       return Math.round(total * 100) / 100;
     };
-  }, [precioDiferido, containersData]);
+  }, [precioDiferido, containersData, pesajesMap, preciosMap]);
 
   // Calcula peso bruto y neto real de un código según sus pesajes registrados
-  const calcularPesos = (codeIdx: number): { bruto: string; neto: string } => {
-    const pesajes = codes[codeIdx]?.pesajes ?? [];
+  const calcularPesos = (
+    clienteIdx: number,
+    codeIdx: number,
+  ): { bruto: string; neto: string } => {
+    const pesajes = pesajesMap[`${clienteIdx}-${codeIdx}`] || [];
     if (pesajes.length === 0) return { bruto: "0.00", neto: "0.00" };
 
     let totalBruto = 0;
@@ -178,6 +198,11 @@ export default function DistributeGroup({
     clienteCodes: ClienteData["codes"],
     requestId: number,
   ) => {
+    if (!vehiculo || !chofer) {
+      alert("Por favor seleccione un vehículo y un chofer antes de guardar.");
+      return;
+    }
+
     setSaveErrors((prev) => {
       const n = { ...prev };
       delete n[clienteIdx];
@@ -189,12 +214,11 @@ export default function DistributeGroup({
     let totalContainers = 0; // acumulado de cajas de todos los productos
     let totalUnits = 0; // acumulado de unidades de todos los productos
 
-    for (const code of clienteCodes) {
+    for (const [codeIdx, code] of clienteCodes.entries()) {
       if (!code.ProductRequest_id) continue;
 
       // Obtener los pesajes registrados para este producto
-      const codeIdx = codes.findIndex((c) => c.label === code.label);
-      const pesajes = codeIdx !== -1 ? (codes[codeIdx]?.pesajes ?? []) : [];
+      const pesajes = pesajesMap[`${clienteIdx}-${codeIdx}`] || [];
 
       // Calcular peso bruto y neto totales para UpdateProductRequest
       let totalBruto = 0;
@@ -250,14 +274,18 @@ export default function DistributeGroup({
       }
 
       // --- UpdateProductRequest y UpdateRequestStage según modo de precio ---
+      const menudenciaVal =
+        (menudenciaMap[`${clienteIdx}-${codeIdx}`] ?? true) ? "1" : "0";
+
       if (precioDiferido) {
         // MODO PRECIO DIFERIDO: payment = precio específico del código
-        const precioDelCodigo = Number(codes[codeIdx]?.precio) || 0;
+        const precioDelCodigo =
+          Number(preciosMap[`${clienteIdx}-${codeIdx}`]) || 0;
         const result = await updateProductRequest(
           code.ProductRequest_id,
           code.cajas,
           code.unidades,
-          code.menudencia || "0",
+          menudenciaVal,
           Math.round(totalNeto * 100) / 100,
           Math.round(totalBruto * 100) / 100,
           precioDelCodigo,
@@ -276,7 +304,7 @@ export default function DistributeGroup({
           code.ProductRequest_id,
           code.cajas,
           code.unidades,
-          code.menudencia || "0",
+          menudenciaVal,
           Math.round(totalNeto * 100) / 100,
           Math.round(totalBruto * 100) / 100,
           0, // payment = 0
@@ -308,6 +336,19 @@ export default function DistributeGroup({
       if (!resultRS) allOk = false;
     }
 
+    if (allOk) {
+      // Llamar a UpdateRequest
+      const reqVal = await updateRequest(
+        requestId,
+        "1",
+        clientes[clienteIdx].Provider_id,
+        clientes[clienteIdx].Client_id,
+        Number(vehiculo) || 1,
+        Number(chofer) || 2,
+      );
+      if (!reqVal) allOk = false;
+    }
+
     setSavingClient(null);
     if (allOk) {
       setSavedClients((prev) => new Set(prev).add(clienteIdx));
@@ -319,17 +360,7 @@ export default function DistributeGroup({
     }
   };
 
-  useEffect(() => {
-    setCodes(
-      initialCodes.map((code) => ({
-        ...code,
-        pesajes: code.pesajes || [],
-        precio: code.precio || "",
-      })),
-    );
-  }, [initialCodes]);
-
-  const handleAgregarPesaje = (codeIdx: number) => {
+  const handleAgregarPesaje = (clienteIdx: number, codeIdx: number) => {
     const newPesaje: PesajeData = {
       id: `pesaje-${Date.now()}-${Math.random()}`,
       cajas: 0,
@@ -337,76 +368,113 @@ export default function DistributeGroup({
       kg: 0,
       contenedor: "1",
     };
-
-    const newCodes = [...codes];
-    if (!newCodes[codeIdx].pesajes) {
-      newCodes[codeIdx].pesajes = [];
-    }
-    newCodes[codeIdx].pesajes!.push(newPesaje);
-    setCodes(newCodes);
+    const key = `${clienteIdx}-${codeIdx}`;
+    setPesajesMap((prev) => ({
+      ...prev,
+      [key]: [...(prev[key] || []), newPesaje],
+    }));
   };
 
   const handleUpdatePesaje = (
+    clienteIdx: number,
     codeIdx: number,
     pesajeId: string,
     field: "cajas" | "unidades" | "kg" | "contenedor",
     value: number | string,
   ) => {
-    const newCodes = [...codes];
-    if (newCodes[codeIdx].pesajes) {
-      const pesajeIdx = newCodes[codeIdx].pesajes!.findIndex(
-        (p) => p.id === pesajeId,
-      );
-      if (pesajeIdx !== -1) {
-        newCodes[codeIdx].pesajes![pesajeIdx] = {
-          ...newCodes[codeIdx].pesajes![pesajeIdx],
-          [field]: value,
-        };
-        setCodes(newCodes);
-      }
-    }
+    const key = `${clienteIdx}-${codeIdx}`;
+    setPesajesMap((prev) => {
+      const list = prev[key] || [];
+      return {
+        ...prev,
+        [key]: list.map((p) =>
+          p.id === pesajeId ? { ...p, [field]: value } : p,
+        ),
+      };
+    });
   };
 
-  const handleRemovePesaje = (codeIdx: number, pesajeId: string) => {
-    const newCodes = [...codes];
-    if (newCodes[codeIdx].pesajes) {
-      newCodes[codeIdx].pesajes = newCodes[codeIdx].pesajes!.filter(
-        (p) => p.id !== pesajeId,
-      );
-      setCodes(newCodes);
-    }
+  const handleRemovePesaje = (
+    clienteIdx: number,
+    codeIdx: number,
+    pesajeId: string,
+  ) => {
+    const key = `${clienteIdx}-${codeIdx}`;
+    setPesajesMap((prev) => {
+      const list = prev[key] || [];
+      return {
+        ...prev,
+        [key]: list.filter((p) => p.id !== pesajeId),
+      };
+    });
   };
 
-  const handleUpdatePrecio = (codeIdx: number, precio: string) => {
-    const newCodes = [...codes];
-    newCodes[codeIdx] = {
-      ...newCodes[codeIdx],
-      precio,
-    };
-    setCodes(newCodes);
+  const handleUpdatePrecio = (
+    clienteIdx: number,
+    codeIdx: number,
+    precio: string,
+  ) => {
+    const key = `${clienteIdx}-${codeIdx}`;
+    setPreciosMap((prev) => ({ ...prev, [key]: precio }));
   };
 
-  const generateClientPDF = async (clienteNombre: string) => {
+  const generateClientPDF = async (
+    clienteNombre: string,
+    clienteIdx: number,
+  ) => {
     try {
+      const precioVenta = Number(precioVentaCliente[clienteIdx]) || 0;
+
+      // Calcular datos reales por código
+      let grandTotalBruto = 0;
+      let grandTotalNeto = 0;
+      let grandTotalBs = 0;
+
+      const clienteData = clientes[clienteIdx];
+      const productosTableRows = clienteData.codes
+        .map((code, idx) => {
+          const pesajes = pesajesMap[`${clienteIdx}-${idx}`] ?? [];
+          let bruto = 0;
+          let neto = 0;
+
+          for (const pesaje of pesajes) {
+            const grossWeight = Number(pesaje.kg) || 0;
+            const cantidadCajas = Number(pesaje.cajas) || 0;
+            const container = containersData?.find(
+              (c) => c.id.toString() === pesaje.contenedor,
+            );
+            const destare = container?.destare || 0;
+            bruto += grossWeight;
+            neto += grossWeight - destare * cantidadCajas;
+          }
+
+          // Precio del código: diferido usa precio por código, normal usa precio global
+          const precioProducto = precioDiferido
+            ? Number(preciosMap[`${clienteIdx}-${idx}`]) || 0
+            : precioVenta;
+
+          const totalBs = precioProducto * neto;
+
+          grandTotalBruto += bruto;
+          grandTotalNeto += neto;
+          grandTotalBs += totalBs;
+
+          return `<tr style="border-bottom: 1px solid #d1d5db;">
+              <td style="padding: 12px; text-align: center; font-size: 13px;">${code.label}</td>
+              <td style="padding: 12px; text-align: center; font-size: 13px;">${code.cajas}</td>
+              <td style="padding: 12px; text-align: center; font-size: 13px;">${code.unidades}</td>
+              <td style="padding: 12px; text-align: center; font-size: 13px;">${bruto.toFixed(2)}</td>
+              <td style="padding: 12px; text-align: center; font-size: 13px;">${neto.toFixed(2)}</td>
+              <td style="padding: 12px; text-align: right; font-size: 13px;">Bs ${totalBs.toFixed(2)}</td>
+            </tr>`;
+        })
+        .join("");
+
       const pdfContent = document.createElement("div");
       pdfContent.style.width = "900px";
       pdfContent.style.padding = "40px";
       pdfContent.style.backgroundColor = "#ffffff";
       pdfContent.style.fontFamily = "Arial, sans-serif";
-
-      const productosTableRows = codes
-        .map(
-          (code) =>
-            `<tr style="border-bottom: 1px solid #d1d5db;">
-              <td style="padding: 12px; text-align: center; font-size: 13px;">${code.label}</td>
-              <td style="padding: 12px; text-align: center; font-size: 13px;">${code.cajas}</td>
-              <td style="padding: 12px; text-align: center; font-size: 13px;">${code.unidades}</td>
-              <td style="padding: 12px; text-align: center; font-size: 13px;">0.00</td>
-              <td style="padding: 12px; text-align: center; font-size: 13px;">0.00</td>
-              <td style="padding: 12px; text-align: right; font-size: 13px;">Bs 0.00</td>
-            </tr>`,
-        )
-        .join("");
 
       pdfContent.innerHTML = `
         <div style="margin-bottom: 40px;">
@@ -418,6 +486,7 @@ export default function DistributeGroup({
             <p style="margin: 5px 0;"><strong>Cliente:</strong> ${clienteNombre}</p>
             <p style="margin: 5px 0;"><strong>Grupo:</strong> ${name}</p>
             <p style="margin: 5px 0;"><strong>Encargado:</strong> ${encargado || "No asignado"}</p>
+            ${!precioDiferido ? `<p style="margin: 5px 0;"><strong>Precio Venta:</strong> Bs ${precioVenta.toFixed(2)}/kg</p>` : ""}
           </div>
 
           <h2 style="font-size: 18px; font-weight: bold; color: #1e293b; margin: 25px 0 15px 0;">
@@ -438,8 +507,10 @@ export default function DistributeGroup({
             <tbody>
               ${productosTableRows}
               <tr style="background-color: #f9fafb; border: 1px solid #d1d5db; font-weight: bold;">
-                <td colspan="5" style="padding: 12px; text-align: right; border: 1px solid #d1d5db;">TOTAL</td>
-                <td style="padding: 12px; text-align: right; border: 1px solid #d1d5db;">Bs 0.00</td>
+                <td colspan="3" style="padding: 12px; text-align: right; border: 1px solid #d1d5db;">TOTAL</td>
+                <td style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">${grandTotalBruto.toFixed(2)}</td>
+                <td style="padding: 12px; text-align: center; border: 1px solid #d1d5db;">${grandTotalNeto.toFixed(2)}</td>
+                <td style="padding: 12px; text-align: right; border: 1px solid #d1d5db;">Bs ${grandTotalBs.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
@@ -492,12 +563,8 @@ export default function DistributeGroup({
 
             {/* Center Code Cards */}
             <div className="flex flex-wrap gap-2 flex-1 items-stretch py-1">
-              {codes.map((code, codeIdx) => (
-                <div
-                  key={codeIdx}
-                  className="w-20 shrink-0 cursor-pointer"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                >
+              {initialCodes.map((code, codeIdx) => (
+                <div key={codeIdx} className="w-20 shrink-0">
                   <CardCode
                     label={code.label}
                     cajas={code.cajas}
@@ -547,195 +614,13 @@ export default function DistributeGroup({
                 Empezar
               </button>
 
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-1 cursor-pointer text-gray-500 hover:text-gray-700 transition-colors"
-              >
+              <div className="flex items-center gap-1 text-gray-500">
                 <span className="text-[11px] font-medium whitespace-nowrap">
                   {clientesCount} {clientesCount === 1 ? "cliente" : "clientes"}
                 </span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
+              </div>
             </div>
           </div>
-
-          {/* Acordeón - Clientes Section */}
-          {isExpanded && clientes && clientes.length > 0 && (
-            <div className="border-t border-gray-200 bg-gray-50 px-4 py-4 space-y-4">
-              <h4 className="text-[11px] font-bold text-gray-500 mb-3 px-1">
-                Pedidos de Clientes:
-              </h4>
-              {clientes.map((cliente, clienteIdx) => (
-                <div key={clienteIdx}>
-                  <div className="mb-4 flex items-start justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-[#e11d48]">
-                        {cliente.name}
-                      </h3>
-                      <span className="text-[8px] font-bold bg-[#d1fae5] text-[#047857] px-1.5 py-0.5 rounded mt-1 inline-block">
-                        {cliente.estado}
-                      </span>
-                      {/* Costo total calculado en tiempo real */}
-                      <div className="mt-1">
-                        <span className="text-[10px] font-bold text-gray-500 uppercase block">
-                          COSTO DE ESTA DISTRIBUCIÓN
-                        </span>
-                        <span className="text-lg font-bold text-[#e11d48]">
-                          Bs{" "}
-                          {calculateTotalDistribucion(
-                            codes,
-                            precioVentaCliente[clienteIdx] || "",
-                          ).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          handleGuardarPesaje(
-                            clienteIdx,
-                            cliente.codes,
-                            cliente.Request_id,
-                          )
-                        }
-                        disabled={savingClient === clienteIdx || savingWeighing}
-                        className={`text-xs font-bold text-white px-3 py-2 rounded-lg transition-colors ${
-                          savedClients.has(clienteIdx)
-                            ? "bg-emerald-500 hover:bg-emerald-600"
-                            : "bg-[#e11d48] hover:bg-rose-700"
-                        } disabled:opacity-60 disabled:cursor-not-allowed`}
-                      >
-                        {savingClient === clienteIdx
-                          ? "Guardando..."
-                          : savedClients.has(clienteIdx)
-                            ? "✓ Guardado"
-                            : "Guardar"}
-                      </button>
-                      <button
-                        onClick={() => generateClientPDF(cliente.name)}
-                        className="text-xs font-bold text-[#e11d48] hover:text-rose-700 transition-colors"
-                      >
-                        Imprimir
-                      </button>
-                    </div>
-                  </div>
-
-                  {saveErrors[clienteIdx] && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {saveErrors[clienteIdx]}
-                    </p>
-                  )}
-
-                  <div className="mb-4">
-                    <span className="text-xs font-bold text-gray-500 block mb-2">
-                      PRECIO VENTA (Bs/Kg):
-                    </span>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {!precioDiferido && (
-                        <InputField
-                          placeholder="0.00"
-                          className="w-32 text-xs"
-                          value={precioVentaCliente[clienteIdx] || ""}
-                          onChange={(e) =>
-                            setPrecioVentaCliente((prev) => ({
-                              ...prev,
-                              [clienteIdx]: e.target.value,
-                            }))
-                          }
-                        />
-                      )}
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4"
-                          checked={precioDiferido}
-                          onChange={(e) => setPrecioDiferido(e.target.checked)}
-                        />
-                        <span className="text-xs text-gray-600">
-                          Precio diferido
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Códigos del cliente */}
-                  <div className="mb-4">
-                    <h4 className="text-xs font-bold text-gray-600 uppercase mb-3">
-                      Códigos en esta Distribución
-                    </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {cliente.codes.map((code, idx) => (
-                        <div key={idx} className="relative h-full">
-                          <CardCode
-                            label={
-                              <div className="flex items-center justify-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  className="w-3 h-3"
-                                  defaultChecked
-                                />
-                                <span className="text-[10px] font-bold">
-                                  {code.label}
-                                </span>
-                              </div>
-                            }
-                            cajas={code.cajas}
-                            unidades={code.unidades}
-                            readOnly={true}
-                            showPrecio={precioDiferido}
-                            precio={codes[idx]?.precio || ""}
-                            onPrecioChange={(val) =>
-                              handleUpdatePrecio(idx, val)
-                            }
-                            productName={code.label}
-                            variant="active"
-                            menudencia={menudencia[idx] || false}
-                            onMenudenciaChange={(checked) =>
-                              setMenudencia({
-                                ...menudencia,
-                                [idx]: checked,
-                              })
-                            }
-                            weightInfo={{
-                              bruto: calcularPesos(idx).bruto,
-                              neto: calcularPesos(idx).neto,
-                            }}
-                            className="pointer-events-auto h-full"
-                            pesajes={codes[idx]?.pesajes || []}
-                            onAgregarPesaje={() => handleAgregarPesaje(idx)}
-                            onUpdatePesaje={(pesajeId, field, value) =>
-                              handleUpdatePesaje(idx, pesajeId, field, value)
-                            }
-                            onRemovePesaje={(pesajeId) =>
-                              handleRemovePesaje(idx, pesajeId)
-                            }
-                            containers={containers}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {clienteIdx < clientes.length - 1 && (
-                    <hr className="border-gray-200 my-4" />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
         </>
       ) : (
         <>
@@ -757,7 +642,8 @@ export default function DistributeGroup({
                         <span className="text-lg font-bold text-[#e11d48]">
                           Bs{" "}
                           {calculateTotalDistribucion(
-                            codes,
+                            clienteIdx,
+                            cliente.codes,
                             precioVentaCliente[clienteIdx] || "",
                           ).toFixed(2)}
                         </span>
@@ -786,7 +672,9 @@ export default function DistributeGroup({
                             : "Guardar"}
                       </button>
                       <button
-                        onClick={() => generateClientPDF(cliente.name)}
+                        onClick={() =>
+                          generateClientPDF(cliente.name, clienteIdx)
+                        }
                         className="text-xs font-bold text-[#e11d48] hover:text-rose-700 transition-colors"
                       >
                         Imprimir
@@ -852,31 +740,41 @@ export default function DistributeGroup({
                             unidades={code.unidades}
                             readOnly={true}
                             showPrecio={precioDiferido}
-                            precio={codes[idx]?.precio || ""}
+                            precio={preciosMap[`${clienteIdx}-${idx}`] || ""}
                             onPrecioChange={(val) =>
-                              handleUpdatePrecio(idx, val)
+                              handleUpdatePrecio(clienteIdx, idx, val)
                             }
                             productName={code.label}
                             variant="active"
-                            menudencia={menudencia[idx] || true}
+                            menudencia={
+                              menudenciaMap[`${clienteIdx}-${idx}`] ?? true
+                            }
                             onMenudenciaChange={(checked) =>
-                              setMenudencia({
-                                ...menudencia,
-                                [idx]: checked,
-                              })
+                              setMenudenciaMap((prev) => ({
+                                ...prev,
+                                [`${clienteIdx}-${idx}`]: checked,
+                              }))
                             }
                             weightInfo={{
-                              bruto: calcularPesos(idx).bruto,
-                              neto: calcularPesos(idx).neto,
+                              bruto: calcularPesos(clienteIdx, idx).bruto,
+                              neto: calcularPesos(clienteIdx, idx).neto,
                             }}
                             className="pointer-events-auto h-full"
-                            pesajes={codes[idx]?.pesajes || []}
-                            onAgregarPesaje={() => handleAgregarPesaje(idx)}
+                            pesajes={pesajesMap[`${clienteIdx}-${idx}`] || []}
+                            onAgregarPesaje={() =>
+                              handleAgregarPesaje(clienteIdx, idx)
+                            }
                             onUpdatePesaje={(pesajeId, field, value) =>
-                              handleUpdatePesaje(idx, pesajeId, field, value)
+                              handleUpdatePesaje(
+                                clienteIdx,
+                                idx,
+                                pesajeId,
+                                field,
+                                value,
+                              )
                             }
                             onRemovePesaje={(pesajeId) =>
-                              handleRemovePesaje(idx, pesajeId)
+                              handleRemovePesaje(clienteIdx, idx, pesajeId)
                             }
                             containers={containers}
                           />

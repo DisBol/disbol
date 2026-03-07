@@ -182,8 +182,13 @@ export default function NewRequest() {
 
       // Finalización exitosa
       alert("Solicitud registrada con éxito!");
-      // Aquí podrías redirigir al usuario o limpiar el formulario
-      // router.push('/solicitudes');
+
+      // Limpiar formulario
+      setProveedor("");
+      setGrupo("");
+      setRuta("");
+      setCliente("");
+      setProductosData({});
     } catch (error) {
       console.error("Error en registro:", error);
       alert(

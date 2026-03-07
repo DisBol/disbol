@@ -31,6 +31,8 @@ interface DistributeAssignmentHeaderProps {
     deudaCajas: number;
     deudaDinero: number;
   }>;
+  // true cuando todos los clientes de todos los grupos han sido guardados
+  allSaved?: boolean;
 }
 
 export default function DistributeAssignmentHeader({
@@ -49,6 +51,7 @@ export default function DistributeAssignmentHeader({
   onVehiculoChange,
   onChoferChange,
   clientes = [],
+  allSaved = false,
 }: DistributeAssignmentHeaderProps) {
   const { cars } = useCar();
   const { drivers } = useGetEmployeeDriver();
@@ -61,7 +64,7 @@ export default function DistributeAssignmentHeader({
 
   // Convert cars to SelectOption format
   const vehiculoOptions: SelectOption[] = cars.map((car) => ({
-    value: car.idCar,
+    value: car.id.toString(),
     label: `${car.name} (${car.license})`,
   }));
 
@@ -268,7 +271,17 @@ export default function DistributeAssignmentHeader({
               </button>
               <button
                 onClick={onSave}
-                className="px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm bg-[#10b981] hover:bg-emerald-600 text-white transition-colors flex-1 min-w-35"
+                disabled={!allSaved}
+                title={
+                  !allSaved
+                    ? "Debe guardar todos los pesajes de cada cliente primero"
+                    : ""
+                }
+                className={`px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors flex-1 min-w-35 ${
+                  allSaved
+                    ? "bg-[#10b981] hover:bg-emerald-600 text-white cursor-pointer"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
               >
                 Guardar Pesaje
               </button>
@@ -359,7 +372,17 @@ export default function DistributeAssignmentHeader({
             </button>
             <button
               onClick={onSave}
-              className="px-4 py-2 rounded-lg text-[12px] font-bold shadow-sm bg-[#10b981] hover:bg-emerald-600 text-white transition-colors text-center flex-1"
+              disabled={!allSaved}
+              title={
+                !allSaved
+                  ? "Debe guardar todos los pesajes de cada cliente primero"
+                  : ""
+              }
+              className={`px-4 py-2 rounded-lg text-[12px] font-bold shadow-sm transition-colors text-center flex-1 ${
+                allSaved
+                  ? "bg-[#10b981] hover:bg-emerald-600 text-white cursor-pointer"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
             >
               Guardar
             </button>

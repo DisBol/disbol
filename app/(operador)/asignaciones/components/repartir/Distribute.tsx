@@ -21,6 +21,8 @@ interface GroupData {
     name: string;
     estado: string;
     Request_id: number;
+    Client_id: number;
+    Provider_id: number;
     codes: Array<{
       label: string;
       solicitado: number;
@@ -48,6 +50,10 @@ export default function Repartir({
   const [activeGroupIdx, setActiveGroupIdx] = useState<number | null>(null);
   const [vehiculo, setVehiculo] = useState<string>("");
   const [chofer, setChofer] = useState<string>("");
+  // Conteo de clientes guardados por grupo: { [groupIdx]: { saved, total } }
+  const [groupSavedCounts, setGroupSavedCounts] = useState<
+    Record<number, { saved: number; total: number }>
+  >({});
 
   // Procesar datos del hook y del assignment en paralelo
   const { detalles, proveedor, costoPorKg, precioDiferido, groups } =
@@ -162,6 +168,8 @@ export default function Repartir({
                   name: clientName,
                   estado: "pendiente",
                   Request_id: clientItems[0]?.Request_id ?? 0,
+                  Client_id: clientItems[0]?.Client_id ?? 0,
+                  Provider_id: clientItems[0]?.Provider_id ?? 0,
                   codes: clientCodes,
                   totalCajas,
                   totalUnid,
@@ -196,6 +204,22 @@ export default function Repartir({
         unidades: string;
       }> = [];
 
+      // Calculate the sum of what all groups are requesting for each product
+      const productTotals = new Map<
+        string,
+        { containers: number; units: number }
+      >();
+      builtGroups.forEach((group) => {
+        group.codes.forEach((code) => {
+          if (!productTotals.has(code.label)) {
+            productTotals.set(code.label, { containers: 0, units: 0 });
+          }
+          const pt = productTotals.get(code.label)!;
+          pt.containers += code.cajas;
+          pt.units += code.unidades;
+        });
+      });
+
       if (assignment && rawData) {
         const assignmentData = rawData.filter(
           (item) => item.Assignment_id.toString() === assignment.id,
@@ -213,22 +237,30 @@ export default function Repartir({
         });
 
         detallesArray = Array.from(productoMap.entries()).map(
-          ([code, pos2]) => ({
-            label: code,
-            cajas: pos2 ? `0/${pos2.ProductAssignment_container}` : "0/0",
-            unidades: pos2 ? `0/${pos2.ProductAssignment_units}` : "0/0",
-          }),
+          ([code, pos2]) => {
+            const requested = productTotals.get(code) || {
+              containers: 0,
+              units: 0,
+            };
+            return {
+              label: code,
+              cajas: pos2
+                ? `${requested.containers}/${pos2.ProductAssignment_container}`
+                : `${requested.containers}/0`,
+              unidades: pos2
+                ? `${requested.units}/${pos2.ProductAssignment_units}`
+                : `${requested.units}/0`,
+            };
+          },
         );
       } else if (builtGroups.length > 0) {
-        const allProducts = new Set<string>();
-        builtGroups.forEach((group) => {
-          group.codes.forEach((code) => allProducts.add(code.label));
-        });
-        detallesArray = Array.from(allProducts).map((productName) => ({
-          label: productName,
-          cajas: "0/0",
-          unidades: "0/0",
-        }));
+        detallesArray = Array.from(productTotals.entries()).map(
+          ([productName, totals]) => ({
+            label: productName,
+            cajas: `${totals.containers}/0`,
+            unidades: `${totals.units}/0`,
+          }),
+        );
       }
 
       return {
@@ -251,6 +283,25 @@ export default function Repartir({
 
   const displayGroups = editableGroups.length > 0 ? editableGroups : groups;
 
+  // allSaved = true cuando todos los clientes de todos los grupos están guardados
+  // Si hay un grupo activo: solo verificar los clientes de ESE grupo
+  // Si no hay grupo activo: verificar todos los grupos
+  const allSaved = (() => {
+    if (activeGroupIdx !== null) {
+      const g = groupSavedCounts[activeGroupIdx];
+      return g !== undefined && g.total > 0 && g.saved >= g.total;
+    }
+    const totalClientes = Object.values(groupSavedCounts).reduce(
+      (sum, g) => sum + g.total,
+      0,
+    );
+    const totalGuardados = Object.values(groupSavedCounts).reduce(
+      (sum, g) => sum + g.saved,
+      0,
+    );
+    return totalClientes > 0 && totalGuardados >= totalClientes;
+  })();
+
   return (
     <div className="w-full bg-gray-50">
       {/* Contenido de Distribute */}
@@ -269,6 +320,7 @@ export default function Repartir({
             }
           }}
           onSave={() => console.log("Save clicked")}
+          allSaved={allSaved}
           isStarted={activeGroupIdx !== null}
           groupName={
             activeGroupIdx !== null ? displayGroups[activeGroupIdx]?.name : ""
@@ -321,8 +373,16 @@ export default function Repartir({
                 totalUnid={displayGroups[activeGroupIdx].totalUnid}
                 costoPorKg={costoPorKg}
                 isActive={true}
+                vehiculo={vehiculo}
+                chofer={chofer}
                 onStarted={(isStarted) => {
                   setActiveGroupIdx(isStarted ? activeGroupIdx : null);
+                }}
+                onSavedCountChange={(saved, total) => {
+                  setGroupSavedCounts((prev) => ({
+                    ...prev,
+                    [activeGroupIdx!]: { saved, total },
+                  }));
                 }}
                 onCajasChange={(codeIdx, val) => {
                   const newGroups = [...editableGroups];
@@ -350,8 +410,16 @@ export default function Repartir({
                   totalUnid={group.totalUnid}
                   costoPorKg={costoPorKg}
                   isActive={false}
+                  vehiculo={vehiculo}
+                  chofer={chofer}
                   onStarted={(isStarted) => {
                     setActiveGroupIdx(isStarted ? groupIdx : null);
+                  }}
+                  onSavedCountChange={(saved, total) => {
+                    setGroupSavedCounts((prev) => ({
+                      ...prev,
+                      [groupIdx]: { saved, total },
+                    }));
                   }}
                   onCajasChange={(codeIdx, val) => {
                     const newGroups = [...editableGroups];
