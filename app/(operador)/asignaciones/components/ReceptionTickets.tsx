@@ -266,8 +266,8 @@ export default function ReceptionTickets({
                     // );
 
                     const detalle = boleta.detalles?.[producto.codigo] || {
-                      cajas: "" as unknown as number,
-                      unidades: "" as unknown as number,
+                      cajas: 0,
+                      unidades: 0,
                     };
 
                     return (
