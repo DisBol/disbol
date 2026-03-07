@@ -192,41 +192,53 @@ export default function TotalGroup({
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
                               CAJAS
                             </label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={code.cajas}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                onUpdateClientCode?.(
-                                  clienteIdx,
-                                  clientCodeIdx,
-                                  "cajas",
-                                  value,
-                                );
-                              }}
-                              className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
-                            />
+                            {status === "guardado" ? (
+                              <div className="w-full px-1 py-0.5 bg-gray-200 rounded text-[10px] font-bold text-gray-600 text-center h-5 flex items-center justify-center shadow-inner border border-gray-300">
+                                {code.cajas}
+                              </div>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                value={code.cajas}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  onUpdateClientCode?.(
+                                    clienteIdx,
+                                    clientCodeIdx,
+                                    "cajas",
+                                    value,
+                                  );
+                                }}
+                                className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                              />
+                            )}
                           </div>
                           <div>
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
                               UNID.
                             </label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={code.unidades}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                onUpdateClientCode?.(
-                                  clienteIdx,
-                                  clientCodeIdx,
-                                  "unidades",
-                                  value,
-                                );
-                              }}
-                              className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
-                            />
+                            {status === "guardado" ? (
+                              <div className="w-full px-1 py-0.5 bg-gray-200 rounded text-[10px] font-bold text-gray-600 text-center h-5 flex items-center justify-center shadow-inner border border-gray-300">
+                                {code.unidades}
+                              </div>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                value={code.unidades}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  onUpdateClientCode?.(
+                                    clienteIdx,
+                                    clientCodeIdx,
+                                    "unidades",
+                                    value,
+                                  );
+                                }}
+                                className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                              />
+                            )}
                           </div>
                           <div>
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">

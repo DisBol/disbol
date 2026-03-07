@@ -81,6 +81,9 @@ export interface CardCodeProps
     value: number | string,
   ) => void;
   onRemovePesaje?: (id: string) => void;
+  // Visual indicators for exceeded values
+  cajasExcedidas?: boolean;
+  unidadesExcedidas?: boolean;
 }
 
 const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
@@ -108,6 +111,8 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       onAgregarPesaje,
       onUpdatePesaje,
       onRemovePesaje,
+      cajasExcedidas = false,
+      unidadesExcedidas = false,
       ...props
     },
     ref,
@@ -224,7 +229,13 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               CAJAS
             </label>
             {readOnly ? (
-              <div className="w-full px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 text-center h-6 flex items-center justify-center">
+              <div
+                className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                  cajasExcedidas
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : "bg-white border-gray-200 text-gray-700"
+                }`}
+              >
                 {cajas}
               </div>
             ) : (
@@ -244,7 +255,13 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               UNID.
             </label>
             {readOnly ? (
-              <div className="w-full px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 text-center h-6 flex items-center justify-center">
+              <div
+                className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                  unidadesExcedidas
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : "bg-white border-gray-200 text-gray-700"
+                }`}
+              >
                 {unidades}
               </div>
             ) : (
