@@ -103,110 +103,76 @@ export const useAutomaticPlanning = () => {
         // Si no hay nada disponible en posición 2 (x/0), no distribuir
         if (cajasDisponibles === 0 && unidadesDisponibles === 0) return;
 
-        // Encontrar grupos que tienen este producto con solicitud > 0
-        const gruposConProducto = newGroups.filter((group) =>
-          group.clientes.some((cliente) =>
-            cliente.codes.some(
-              (code) => code.label === detalle.label && code.solicitado > 0,
-            ),
-          ),
-        );
+        // Calcular total solicitado para este producto (posición 1)
+        let totalCajasSolicitadas = 0;
+        let totalUnidadesSolicitadas = 0;
 
-        if (gruposConProducto.length === 0) return;
-
-        // Dividir equitativamente entre grupos que tienen clientes con solicitud > 0
-        const cajasPorGrupo = Math.floor(
-          cajasDisponibles / gruposConProducto.length,
-        );
-        const unidadesPorGrupo = Math.floor(
-          unidadesDisponibles / gruposConProducto.length,
-        );
-
-        // Calcular sobrantes para distribuir
-        let cajasRestantes = cajasDisponibles % gruposConProducto.length;
-        let unidadesRestantes = unidadesDisponibles % gruposConProducto.length;
-
-        gruposConProducto.forEach((group) => {
-          // Calcular asignación para este grupo (incluyendo sobrantes)
-          const cajasParaGrupo = cajasPorGrupo + (cajasRestantes > 0 ? 1 : 0);
-          const unidadesParaGrupo =
-            unidadesPorGrupo + (unidadesRestantes > 0 ? 1 : 0);
-
-          if (cajasRestantes > 0) cajasRestantes--;
-          if (unidadesRestantes > 0) unidadesRestantes--;
-
-          // Encontrar el índice del grupo en el array original
-          const groupIndex = newGroups.findIndex((g) => g.name === group.name);
-          if (groupIndex === -1) return;
-
-          // Encontrar clientes en este grupo que tienen el producto Y con solicitud > 0
-          const clientesConProducto = newGroups[groupIndex].clientes.filter(
-            (cliente) =>
-              cliente.codes.some(
-                (code) => code.label === detalle.label && code.solicitado > 0,
-              ),
-          );
-
-          if (clientesConProducto.length === 0) return;
-
-          // Dividir la asignación del grupo entre sus clientes CON SOLICITUD > 0
-          const cajasPorCliente = Math.floor(
-            cajasParaGrupo / clientesConProducto.length,
-          );
-          const unidadesPorCliente = Math.floor(
-            unidadesParaGrupo / clientesConProducto.length,
-          );
-
-          // Sobrantes a nivel de grupo
-          let cajasRestantesGrupo = cajasParaGrupo % clientesConProducto.length;
-          let unidadesRestantesGrupo =
-            unidadesParaGrupo % clientesConProducto.length;
-
-          clientesConProducto.forEach((cliente) => {
-            const clienteIndex = newGroups[groupIndex].clientes.findIndex(
-              (c) => c.name === cliente.name,
-            );
-            if (clienteIndex === -1) return;
-
-            const codeIndex = newGroups[groupIndex].clientes[
-              clienteIndex
-            ].codes.findIndex((code) => code.label === detalle.label);
-            if (codeIndex === -1) return;
-
-            // Solo asignar si el cliente realmente solicita > 0
-            const code =
-              newGroups[groupIndex].clientes[clienteIndex].codes[codeIndex];
-            if (code.solicitado > 0) {
-              // Calcular asignación para este cliente (incluyendo sobrantes)
-              const cajasParaCliente =
-                cajasPorCliente + (cajasRestantesGrupo > 0 ? 1 : 0);
-              const unidadesParaCliente =
-                unidadesPorCliente + (unidadesRestantesGrupo > 0 ? 1 : 0);
-
-              if (cajasRestantesGrupo > 0) cajasRestantesGrupo--;
-              if (unidadesRestantesGrupo > 0) unidadesRestantesGrupo--;
-
-              // Actualizar valores del cliente
-              const updatedCode = {
-                ...code,
-              };
-              updatedCode.cajas = cajasParaCliente;
-              updatedCode.unidades = unidadesParaCliente;
-              updatedCode.restante =
-                updatedCode.solicitado - updatedCode.unidades;
-
-              newGroups[groupIndex].clientes[clienteIndex].codes[codeIndex] =
-                updatedCode;
+        newGroups.forEach((group) => {
+          group.clientes.forEach((cliente) => {
+            const code = cliente.codes.find((c) => c.label === detalle.label);
+            if (code && code.solicitado > 0) {
+              totalCajasSolicitadas += code.solicitado;
+              totalUnidadesSolicitadas += code.solicitado;
             }
-            // Si solicitado === 0, ya está en 0 por el reset inicial
+          });
+        });
+
+        // Si no hay solicitudes para este producto, continuar
+        if (totalCajasSolicitadas === 0 && totalUnidadesSolicitadas === 0)
+          return;
+
+        // Calcular porcentajes de disponibilidad
+        const porcentajeCajas =
+          cajasDisponibles >= totalCajasSolicitadas
+            ? 1
+            : cajasDisponibles / totalCajasSolicitadas;
+
+        const porcentajeUnidades =
+          unidadesDisponibles >= totalUnidadesSolicitadas
+            ? 1
+            : unidadesDisponibles / totalUnidadesSolicitadas;
+
+        // Aplicar distribución proporcional a cada cliente
+        newGroups.forEach((group, groupIndex) => {
+          group.clientes.forEach((cliente, clienteIndex) => {
+            const codeIndex = cliente.codes.findIndex(
+              (c) => c.label === detalle.label,
+            );
+
+            if (codeIndex !== -1) {
+              const code =
+                newGroups[groupIndex].clientes[clienteIndex].codes[codeIndex];
+
+              if (code.solicitado > 0) {
+                // Calcular asignación proporcional
+                const cajasAsignadas =
+                  porcentajeCajas >= 1
+                    ? code.solicitado
+                    : Math.floor(code.solicitado * porcentajeCajas);
+
+                const unidadesAsignadas =
+                  porcentajeUnidades >= 1
+                    ? code.solicitado
+                    : Math.floor(code.solicitado * porcentajeUnidades);
+
+                // Asignar valores
+                code.cajas = cajasAsignadas;
+                code.unidades = unidadesAsignadas;
+                code.restante = code.solicitado - code.unidades;
+              }
+            }
           });
 
           // Recalcular totales del cliente
           newGroups[groupIndex].clientes.forEach((cliente, clienteIdx) => {
-            newGroups[groupIndex].clientes[clienteIdx].totalCajas =
-              cliente.codes.reduce((sum, c) => sum + c.cajas, 0);
-            newGroups[groupIndex].clientes[clienteIdx].totalUnid =
-              cliente.codes.reduce((sum, c) => sum + c.unidades, 0);
+            cliente.totalCajas = cliente.codes.reduce(
+              (sum, code) => sum + code.cajas,
+              0,
+            );
+            cliente.totalUnid = cliente.codes.reduce(
+              (sum, code) => sum + code.unidades,
+              0,
+            );
           });
 
           // Recalcular totales del grupo
