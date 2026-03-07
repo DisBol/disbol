@@ -41,6 +41,7 @@ interface BoletaDetail {
   pesajes?: PesajeData[];
   kgBruto?: number;
   kgNeto?: number;
+  _isEdited?: boolean; // Flag para saber si los valores han sido editados por el usuario
 }
 
 interface Boleta {
@@ -109,94 +110,83 @@ export default function ReceptionScreen({
 
   const { fetchTicketsHistory } = useGetTicketsHistory();
 
-  const existingTicketIds = useMemo(() => {
-    return Array.from(
-      new Set(
-        assignment.productos
-          .map((p) => p.ticketId)
-          .filter((id) => id && id !== "0" && id !== "null"),
-      ),
-    );
-  }, [assignment.productos]);
-
   useEffect(() => {
     let isMounted = true;
     const loadTickets = async () => {
-      // Solo cargar si no se han cargado antes (boletas === 1 && boleta esta vacia)
-      if (existingTicketIds.length > 0) {
-        const allLoadedBoletas: Boleta[] = [];
+      // Una sola llamada con el Assignment_id seleccionado
+      const data = await fetchTicketsHistory(Number(assignment.id));
+      if (!data || !data.data || data.data.length === 0) return;
 
-        for (const id of existingTicketIds) {
-          const data = await fetchTicketsHistory(Number(id));
-          if (data && data.data && data.data.length > 0) {
-            const ticketRows = data.data;
-            const firstRow = ticketRows[0];
+      // Agrupar filas por Tickets_id para construir una Boleta por ticket
+      const boletasMap = new Map<string, Boleta>();
 
-            const codigosSeleccionados: string[] = [];
-            const detalles: Record<string, BoletaDetail> = {};
+      data.data.forEach((row) => {
+        const ticketId = row.Tickets_id?.toString() ?? "";
+        if (!ticketId) return;
 
-            ticketRows.forEach((row) => {
-              if (!codigosSeleccionados.includes(row.Product_name)) {
-                codigosSeleccionados.push(row.Product_name);
+        if (!boletasMap.has(ticketId)) {
+          const isDeferred =
+            String(row.Tickets_deferred_payment) === "1" ||
+            String(row.Tickets_deferred_payment) === "true";
 
-                const isDeferred =
-                  String(firstRow.Tickets_deferred_payment) === "1" ||
-                  String(firstRow.Tickets_deferred_payment) === "true";
-
-                detalles[row.Product_name] = {
-                  cajas: Number(row.ProductAssignment_container) || 0,
-                  unidades: Number(row.ProductAssignment_units) || 0,
-                  precio: isDeferred
-                    ? row.ProductAssignment_payment?.toString() || "0"
-                    : row.Tickets_product_payment?.toString() || "0",
-                  pesajes: [],
-                  kgBruto: Number(row.ProductAssignment_gross_weight) || 0,
-                  kgNeto: Number(row.ProductAssignment_net_weight) || 0,
-                };
-              }
-              if (row.TicketsWeighing_id) {
-                detalles[row.Product_name].pesajes?.push({
-                  id: row.TicketsWeighing_id.toString(),
-                  cajas: Number(row.TicketsWeighing_container) || 0,
-                  unidades: Number(row.TicketsWeighing_units) || 0,
-                  kg: Number(row.TicketsWeighing_gross_weight) || 0,
-                  contenedor:
-                    row.TicketsWeighing_Container_id?.toString() || "",
-                });
-              }
-            });
-
-            allLoadedBoletas.push({
-              id: id,
-              ticketId: id,
-              codigo: firstRow.Tickets_code || "",
-              costoPorKg: firstRow.Tickets_product_payment?.toString() || "0",
-              costoTotal: firstRow.Tickets_product_payment?.toString() || "0",
-              precioDiferido:
-                String(firstRow.Tickets_deferred_payment) === "1" ||
-                String(firstRow.Tickets_deferred_payment) === "true",
-              codigosSeleccionados,
-              menudencias: [],
-              detalles,
-              tiposContenedor: {},
-            });
-          }
-        }
-
-        if (isMounted && allLoadedBoletas.length > 0) {
-          // Si el estado de boletas actual es sólo 1 vacío, reemplazarlo
-          setBoletas((prev) => {
-            if (
-              prev.length === 1 &&
-              !prev[0].codigo &&
-              prev[0].codigosSeleccionados.length === 0
-            ) {
-              return allLoadedBoletas;
-            }
-            // Si el usuario ya estuvo editando boletas, no sobrecribirlas aquí
-            return prev;
+          boletasMap.set(ticketId, {
+            id: ticketId,
+            ticketId: ticketId,
+            codigo: row.Tickets_code || "",
+            costoPorKg: row.Tickets_product_payment?.toString() || "0",
+            costoTotal: row.Tickets_product_payment?.toString() || "0",
+            precioDiferido: isDeferred,
+            codigosSeleccionados: [],
+            menudencias: [],
+            detalles: {},
+            tiposContenedor: {},
           });
         }
+
+        const boleta = boletasMap.get(ticketId)!;
+        const isDeferred =
+          String(row.Tickets_deferred_payment) === "1" ||
+          String(row.Tickets_deferred_payment) === "true";
+
+        if (!boleta.codigosSeleccionados.includes(row.Product_name)) {
+          boleta.codigosSeleccionados.push(row.Product_name);
+          boleta.detalles[row.Product_name] = {
+            cajas: Number(row.ProductAssignment_container) || 0,
+            unidades: Number(row.ProductAssignment_units) || 0,
+            precio: isDeferred
+              ? row.ProductAssignment_payment?.toString() || "0"
+              : row.Tickets_product_payment?.toString() || "0",
+            pesajes: [],
+            kgBruto: Number(row.ProductAssignment_gross_weight) || 0,
+            kgNeto: Number(row.ProductAssignment_net_weight) || 0,
+            _isEdited: true,
+          };
+        }
+
+        if (row.TicketsWeighing_id) {
+          boleta.detalles[row.Product_name].pesajes?.push({
+            id: row.TicketsWeighing_id.toString(),
+            cajas: Number(row.TicketsWeighing_container) || 0,
+            unidades: Number(row.TicketsWeighing_units) || 0,
+            kg: Number(row.TicketsWeighing_gross_weight) || 0,
+            contenedor: row.TicketsWeighing_Container_id?.toString() || "",
+          });
+        }
+      });
+
+      const allLoadedBoletas = Array.from(boletasMap.values());
+
+      if (isMounted && allLoadedBoletas.length > 0) {
+        setBoletas((prev) => {
+          if (
+            prev.length === 1 &&
+            !prev[0].codigo &&
+            prev[0].codigosSeleccionados.length === 0
+          ) {
+            return allLoadedBoletas;
+          }
+          return prev;
+        });
       }
     };
 
@@ -204,8 +194,7 @@ export default function ReceptionScreen({
     if (
       boletas.length === 1 &&
       !boletas[0].codigo &&
-      boletas[0].codigosSeleccionados.length === 0 &&
-      existingTicketIds.length > 0
+      boletas[0].codigosSeleccionados.length === 0
     ) {
       loadTickets();
     }
@@ -214,7 +203,7 @@ export default function ReceptionScreen({
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingTicketIds]);
+  }, [assignment.id]);
 
   const [costoTotalGeneral] = useState("0.00");
   const [pesoTotalGeneral] = useState("0.00");
@@ -266,14 +255,28 @@ export default function ReceptionScreen({
           const nuevosDetalles = { ...boleta.detalles };
 
           if (isSelected) {
+            console.log(`📤 DESELECCIONANDO producto ${codigo}`);
             nuevosCodigos = codigosActuales.filter((c) => c !== codigo);
-            // Opcional: limpiar detalles al deseleccionar
-            // delete nuevosDetalles[codigo];
+            // Al deseleccionar, remover el detalle completamente
+            delete nuevosDetalles[codigo];
           } else {
+            console.log(`📥 SELECCIONANDO producto ${codigo}`);
             nuevosCodigos = [...codigosActuales, codigo];
-            // Inicializar en 0 si no existe
+            // Al seleccionar por primera vez, NO crear detalle automáticamente
+            // Solo crear la estructura mínima para que el usuario pueda editarla
             if (!nuevosDetalles[codigo]) {
-              nuevosDetalles[codigo] = { cajas: 0, unidades: 0, pesajes: [] };
+              const productoData = productos.find((p) => p.codigo === codigo);
+              console.log(`📥 Inicializando detalle para ${codigo} con:`, {
+                cajasOriginales: productoData?.cajas,
+                unidadesOriginales: productoData?.unidades,
+              });
+
+              nuevosDetalles[codigo] = {
+                cajas: productoData?.cajas || 0,
+                unidades: productoData?.unidades || 0,
+                pesajes: [],
+                _isEdited: false, // IMPORTANTE: marcar como NO editado inicialmente
+              };
             }
           }
           return {
@@ -293,27 +296,90 @@ export default function ReceptionScreen({
     field: "cajas" | "unidades" | "precio",
     value: number | string,
   ) => {
-    setBoletas(
-      boletas.map((boleta) => {
+    // Log para rastrear el origen de las llamadas
+    console.log(
+      `🔥 Usuario editó ${field} para producto ${codigo}: ${value} (marcando como editado)`,
+    );
+    console.trace("🔍 Origen de la llamada updateCantidadBoleta:");
+
+    setBoletas((prevBoletas) => {
+      const nuevasBoletas = prevBoletas.map((boleta) => {
         if (boleta.id === boletaId) {
-          const detalleActual = boleta.detalles[codigo] || {
-            cajas: 0,
-            unidades: 0,
+          const detalleActual = boleta.detalles[codigo];
+
+          console.log(
+            `🔥 Detalle actual antes de actualizar ${codigo}:`,
+            detalleActual,
+          );
+
+          // Si no existe el detalle, inicializar con valores del producto original
+          if (!detalleActual) {
+            const productoData = productos.find((p) => p.codigo === codigo);
+            const detalleInicial = {
+              cajas: productoData?.cajas || 0,
+              unidades: productoData?.unidades || 0,
+              pesajes: [],
+              _isEdited: false,
+            };
+
+            const nuevoDetalle = {
+              ...detalleInicial,
+              [field]: field === "precio" ? String(value) : Number(value),
+              _isEdited: true, // Marcar como editado cuando el usuario cambia un valor
+            };
+
+            console.log(`🔥 Detalle creado para ${codigo}:`, {
+              inicial: detalleInicial,
+              final: nuevoDetalle,
+              fieldEditado: field,
+              valorNuevo: value,
+            });
+
+            return {
+              ...boleta,
+              detalles: {
+                ...boleta.detalles,
+                [codigo]: nuevoDetalle,
+              },
+            };
+          }
+
+          // Si existe el detalle, actualizar y marcar como editado
+          const nuevoDetalle = {
+            ...detalleActual,
+            [field]: field === "precio" ? String(value) : Number(value),
+            _isEdited: true, // Marcar como editado cuando el usuario cambia un valor
           };
+
+          console.log(`🔥 Detalle actualizado para ${codigo}:`, {
+            anterior: detalleActual,
+            nuevo: nuevoDetalle,
+            campo: field,
+            valor: value,
+            valorAnterior: detalleActual[field as keyof typeof detalleActual],
+          });
+
           return {
             ...boleta,
             detalles: {
               ...boleta.detalles,
-              [codigo]: {
-                ...detalleActual,
-                [field]: value,
-              },
+              [codigo]: nuevoDetalle,
             },
           };
         }
         return boleta;
-      }),
-    );
+      });
+
+      // Log del estado final
+      const boletaActualizada = nuevasBoletas.find((b) => b.id === boletaId);
+      const detalleActualizado = boletaActualizada?.detalles[codigo];
+      console.log(
+        `🔥 Estado final COMPLETO del detalle para ${codigo}:`,
+        detalleActualizado,
+      );
+
+      return nuevasBoletas;
+    });
   };
 
   const updateTipoContenedorBoleta = (
@@ -365,13 +431,24 @@ export default function ReceptionScreen({
     setBoletas(
       boletas.map((boleta) => {
         if (boleta.id === boletaId) {
-          const detalleActual = boleta.detalles[codigo] || {
-            cajas: 0,
-            unidades: 0,
-            pesajes: [],
-          };
+          const detalleActual = boleta.detalles[codigo];
+
+          // Si no existe el detalle, inicializarlo con valores del producto original
+          let baseDetalle;
+          if (!detalleActual) {
+            const productoData = productos.find((p) => p.codigo === codigo);
+            baseDetalle = {
+              cajas: productoData?.cajas || 0,
+              unidades: productoData?.unidades || 0,
+              pesajes: [],
+              _isEdited: false,
+            };
+          } else {
+            baseDetalle = detalleActual;
+          }
+
           const nuevosPesajes = [
-            ...(detalleActual.pesajes || []),
+            ...(baseDetalle.pesajes || []),
             {
               id: Date.now().toString() + Math.random().toString(),
               cajas: 0,
@@ -385,7 +462,7 @@ export default function ReceptionScreen({
             detalles: {
               ...boleta.detalles,
               [codigo]: {
-                ...detalleActual,
+                ...baseDetalle,
                 pesajes: nuevosPesajes,
               },
             },
@@ -478,6 +555,11 @@ export default function ReceptionScreen({
     if (!boleta) return;
 
     try {
+      // MEJORAS IMPLEMENTADAS:
+      // 1. Se usan los valores originales del producto cuando no hay detalles editados
+      // 2. Se agregan logs para debug de valores
+      // 3. Se valida que los valores sean consistentes
+
       // Siempre crear un nuevo assignment stage
       const newStageId = await addAssignmentStage({
         position: "2",
@@ -511,21 +593,69 @@ export default function ReceptionScreen({
         let totalPaymentWeightSum = 0; // Acumular payment * net_weight para precio diferido
 
         for (const codigo of boleta.codigosSeleccionados) {
-          const detalle = boleta.detalles[codigo] || {
-            cajas: 0,
-            unidades: 0,
-          };
+          const detalle = boleta.detalles[codigo];
           const productoData = productos.find((p) => p.codigo === codigo);
 
           if (productoData && productoData.productId) {
+            // LÓGICA CORREGIDA:
+            // - Si existe detalle Y fue editado por el usuario (_isEdited = true): usar valores editados
+            // - Si NO existe detalle O NO fue editado: usar valores originales del producto
+            const usarValoresEditados = detalle && detalle._isEdited === true;
+
+            const cajasValue = usarValoresEditados
+              ? Number(detalle.cajas) || 0
+              : Number(productoData.cajas) || 0;
+
+            const unidadesValue = usarValoresEditados
+              ? Number(detalle.unidades) || 0
+              : Number(productoData.unidades) || 0;
+
+            // Debug logs específicos para encontrar el problema
+            console.log(`🚨 ANÁLISIS DETALLADO para ${codigo}:`, {
+              "1_detalleCompleto": detalle,
+              "2_detalleExiste": !!detalle,
+              "3_fueEditado": detalle?._isEdited,
+              "4_usarValoresEditados": usarValoresEditados,
+              "5_detalle_cajas_RAW": detalle?.cajas,
+              "6_detalle_unidades_RAW": detalle?.unidades,
+              "7_producto_cajas_ORIGINAL": productoData.cajas,
+              "8_producto_unidades_ORIGINAL": productoData.unidades,
+              "9_cajasValue_FINAL": cajasValue,
+              "10_unidadesValue_FINAL": unidadesValue,
+              "11_fuenteDatos": usarValoresEditados
+                ? "VALORES EDITADOS (detalle)"
+                : "VALORES ORIGINALES (producto)",
+            });
+
+            // Validar que los valores no sean 0 si es importante para el negocio
+            if (cajasValue <= 0 && unidadesValue <= 0) {
+              console.warn(
+                `❌ Producto ${codigo} tiene valores 0 en cajas y unidades. Verificar si esto es correcto.`,
+              );
+            }
+
+            // Validación adicional antes de enviar a la API
+            console.log(
+              `🎯 VERIFICACIÓN FINAL antes de crear ProductAssignment para ${codigo}:`,
+              {
+                cajasEnviadas: cajasValue,
+                unidadesEnviadas: unidadesValue,
+                detalle_cajas_actual: detalle?.cajas,
+                detalle_unidades_actual: detalle?.unidades,
+                son_iguales_cajas: cajasValue === Number(detalle?.cajas),
+                son_iguales_unidades:
+                  unidadesValue === Number(detalle?.unidades),
+              },
+            );
+
             // Determinar el payment según si es precio diferido o no
             const paymentValue = boleta.precioDiferido
-              ? detalle.precio || "0"
+              ? detalle?.precio || "0"
               : "0";
 
             const newProductAssignmentId = await addProductAssignment({
-              container: Number(detalle.cajas) || 0,
-              units: Number(detalle.unidades) || 0,
+              container: cajasValue,
+              units: unidadesValue,
               menudencia: "0",
               net_weight: "0",
               gross_weight: "0",
@@ -583,8 +713,8 @@ export default function ReceptionScreen({
               // Actualizar el ProductAssignment con las sumas totales
               await updateProductAssignment({
                 id: newProductAssignmentId.toString(),
-                container: Number(detalle.cajas) || 0,
-                units: Number(detalle.unidades) || 0,
+                container: cajasValue,
+                units: unidadesValue,
                 menudencia: "0",
                 net_weight: totalNetWeight.toString(),
                 gross_weight: totalGrossWeight.toString(),
@@ -679,6 +809,14 @@ export default function ReceptionScreen({
         console.log(
           "Boleta guardada y actualizada en tiempo real exitosamente",
         );
+
+        console.log("Resumen final de la boleta guardada:", {
+          boletaId: boleta.id,
+          ticketId: newTicketId.toString(),
+          totalNetWeight: totalNetWeightAllProducts,
+          finalTotalPayment,
+          productosGuardados: boleta.codigosSeleccionados.length,
+        });
       }
     } catch (error) {
       console.error("Error saving boleta", error);

@@ -81,6 +81,9 @@ export interface CardCodeProps
     value: number | string,
   ) => void;
   onRemovePesaje?: (id: string) => void;
+  // Visual indicators for exceeded values
+  cajasExcedidas?: boolean;
+  unidadesExcedidas?: boolean;
 }
 
 const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
@@ -108,6 +111,8 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       onAgregarPesaje,
       onUpdatePesaje,
       onRemovePesaje,
+      cajasExcedidas = false,
+      unidadesExcedidas = false,
       ...props
     },
     ref,
@@ -214,7 +219,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             </svg>
           </button>
         )}
-        <h3 className="font-bold text-gray-900 text-xs mb-1 text-center">
+        <h3 className="font-bold text-gray-900 text-[10px] mb-1 text-center whitespace-nowrap tracking-tight">
           {label}
         </h3>
 
@@ -224,7 +229,13 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               CAJAS
             </label>
             {readOnly ? (
-              <div className="w-full px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 text-center h-6 flex items-center justify-center">
+              <div
+                className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                  cajasExcedidas
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : "bg-white border-gray-200 text-gray-700"
+                }`}
+              >
                 {cajas}
               </div>
             ) : (
@@ -244,7 +255,13 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               UNID.
             </label>
             {readOnly ? (
-              <div className="w-full px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 text-center h-6 flex items-center justify-center">
+              <div
+                className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                  unidadesExcedidas
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : "bg-white border-gray-200 text-gray-700"
+                }`}
+              >
                 {unidades}
               </div>
             ) : (
@@ -265,19 +282,13 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               <label className="block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
                 PRECIO
               </label>
-              {readOnly ? (
-                <div className="w-full px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 text-center h-6 flex items-center justify-center">
-                  {precio}
-                </div>
-              ) : (
-                <input
-                  type="text"
-                  value={precio}
-                  onChange={(e) => onPrecioChange?.(e.target.value)}
-                  className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
-                  placeholder="0.00"
-                />
-              )}
+              <input
+                type="text"
+                value={precio}
+                onChange={(e) => onPrecioChange?.(e.target.value)}
+                className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
+                placeholder="0.00"
+              />
             </div>
           )}
 
@@ -389,7 +400,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             )}
 
             {/* Agregar Pesaje Button */}
-            {onAgregarPesaje && !readOnly && (
+            {onAgregarPesaje && (
               <div className="mt-2 w-full px-1">
                 <button
                   type="button"
@@ -420,7 +431,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             )}
 
             {/* Pesajes List */}
-            {pesajes && pesajes.length > 0 && !readOnly && (
+            {pesajes && pesajes.length > 0 && (
               <div className="mt-2 space-y-2 px-1">
                 {pesajes.map((pesaje, idx) => (
                   <div
