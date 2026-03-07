@@ -9,6 +9,8 @@ interface DetailAssignmentProps {
     label: string;
     cajas: string;
     unidades: string;
+    cajasExcedidas?: boolean;
+    unidadesExcedidas?: boolean;
   }>;
   onCancel?: () => void;
   onAutomaticPlanning?: () => void;
@@ -75,6 +77,8 @@ export default function DetailAssignment({
                   label={d.label}
                   cajas={d.cajas}
                   unidades={d.unidades}
+                  cajasExcedidas={d.cajasExcedidas}
+                  unidadesExcedidas={d.unidadesExcedidas}
                   readOnly={true}
                 />
               </div>
