@@ -265,19 +265,13 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               <label className="block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
                 PRECIO
               </label>
-              {readOnly ? (
-                <div className="w-full px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 text-center h-6 flex items-center justify-center">
-                  {precio}
-                </div>
-              ) : (
-                <input
-                  type="text"
-                  value={precio}
-                  onChange={(e) => onPrecioChange?.(e.target.value)}
-                  className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
-                  placeholder="0.00"
-                />
-              )}
+              <input
+                type="text"
+                value={precio}
+                onChange={(e) => onPrecioChange?.(e.target.value)}
+                className="w-full px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-6 text-left transition-colors"
+                placeholder="0.00"
+              />
             </div>
           )}
 
@@ -389,7 +383,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             )}
 
             {/* Agregar Pesaje Button */}
-            {onAgregarPesaje && !readOnly && (
+            {onAgregarPesaje && (
               <div className="mt-2 w-full px-1">
                 <button
                   type="button"
@@ -420,7 +414,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             )}
 
             {/* Pesajes List */}
-            {pesajes && pesajes.length > 0 && !readOnly && (
+            {pesajes && pesajes.length > 0 && (
               <div className="mt-2 space-y-2 px-1">
                 {pesajes.map((pesaje, idx) => (
                   <div
