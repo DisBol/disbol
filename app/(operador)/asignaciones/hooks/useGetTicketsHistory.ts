@@ -7,12 +7,12 @@ export const useGetTicketsHistory = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTicketsHistory = async (
-    Tickets_id: number,
+    Assignment_id: number,
   ): Promise<GetTicketsHistoryResponse | null> => {
     setLoading(true);
     setError(null);
     try {
-      const response = await GetTicketHistory(Tickets_id);
+      const response = await GetTicketHistory(Assignment_id);
       return response;
     } catch (err: any) {
       console.error("Error fetching tickets history:", err);

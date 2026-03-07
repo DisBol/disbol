@@ -110,95 +110,83 @@ export default function ReceptionScreen({
 
   const { fetchTicketsHistory } = useGetTicketsHistory();
 
-  const existingTicketIds = useMemo(() => {
-    return Array.from(
-      new Set(
-        assignment.productos
-          .map((p) => p.ticketId)
-          .filter((id) => id && id !== "0" && id !== "null"),
-      ),
-    );
-  }, [assignment.productos]);
-
   useEffect(() => {
     let isMounted = true;
     const loadTickets = async () => {
-      // Solo cargar si no se han cargado antes (boletas === 1 && boleta esta vacia)
-      if (existingTicketIds.length > 0) {
-        const allLoadedBoletas: Boleta[] = [];
+      // Una sola llamada con el Assignment_id seleccionado
+      const data = await fetchTicketsHistory(Number(assignment.id));
+      if (!data || !data.data || data.data.length === 0) return;
 
-        for (const id of existingTicketIds) {
-          const data = await fetchTicketsHistory(Number(id));
-          if (data && data.data && data.data.length > 0) {
-            const ticketRows = data.data;
-            const firstRow = ticketRows[0];
+      // Agrupar filas por Tickets_id para construir una Boleta por ticket
+      const boletasMap = new Map<string, Boleta>();
 
-            const codigosSeleccionados: string[] = [];
-            const detalles: Record<string, BoletaDetail> = {};
+      data.data.forEach((row) => {
+        const ticketId = row.Tickets_id?.toString() ?? "";
+        if (!ticketId) return;
 
-            ticketRows.forEach((row) => {
-              if (!codigosSeleccionados.includes(row.Product_name)) {
-                codigosSeleccionados.push(row.Product_name);
+        if (!boletasMap.has(ticketId)) {
+          const isDeferred =
+            String(row.Tickets_deferred_payment) === "1" ||
+            String(row.Tickets_deferred_payment) === "true";
 
-                const isDeferred =
-                  String(firstRow.Tickets_deferred_payment) === "1" ||
-                  String(firstRow.Tickets_deferred_payment) === "true";
-
-                detalles[row.Product_name] = {
-                  cajas: Number(row.ProductAssignment_container) || 0,
-                  unidades: Number(row.ProductAssignment_units) || 0,
-                  precio: isDeferred
-                    ? row.ProductAssignment_payment?.toString() || "0"
-                    : row.Tickets_product_payment?.toString() || "0",
-                  pesajes: [],
-                  kgBruto: Number(row.ProductAssignment_gross_weight) || 0,
-                  kgNeto: Number(row.ProductAssignment_net_weight) || 0,
-                  _isEdited: true, // Marcar como editado porque vienen de la BD
-                };
-              }
-              if (row.TicketsWeighing_id) {
-                detalles[row.Product_name].pesajes?.push({
-                  id: row.TicketsWeighing_id.toString(),
-                  cajas: Number(row.TicketsWeighing_container) || 0,
-                  unidades: Number(row.TicketsWeighing_units) || 0,
-                  kg: Number(row.TicketsWeighing_gross_weight) || 0,
-                  contenedor:
-                    row.TicketsWeighing_Container_id?.toString() || "",
-                });
-              }
-            });
-
-            allLoadedBoletas.push({
-              id: id,
-              ticketId: id,
-              codigo: firstRow.Tickets_code || "",
-              costoPorKg: firstRow.Tickets_product_payment?.toString() || "0",
-              costoTotal: firstRow.Tickets_product_payment?.toString() || "0",
-              precioDiferido:
-                String(firstRow.Tickets_deferred_payment) === "1" ||
-                String(firstRow.Tickets_deferred_payment) === "true",
-              codigosSeleccionados,
-              menudencias: [],
-              detalles,
-              tiposContenedor: {},
-            });
-          }
-        }
-
-        if (isMounted && allLoadedBoletas.length > 0) {
-          // Si el estado de boletas actual es sólo 1 vacío, reemplazarlo
-          setBoletas((prev) => {
-            if (
-              prev.length === 1 &&
-              !prev[0].codigo &&
-              prev[0].codigosSeleccionados.length === 0
-            ) {
-              return allLoadedBoletas;
-            }
-            // Si el usuario ya estuvo editando boletas, no sobrecribirlas aquí
-            return prev;
+          boletasMap.set(ticketId, {
+            id: ticketId,
+            ticketId: ticketId,
+            codigo: row.Tickets_code || "",
+            costoPorKg: row.Tickets_product_payment?.toString() || "0",
+            costoTotal: row.Tickets_product_payment?.toString() || "0",
+            precioDiferido: isDeferred,
+            codigosSeleccionados: [],
+            menudencias: [],
+            detalles: {},
+            tiposContenedor: {},
           });
         }
+
+        const boleta = boletasMap.get(ticketId)!;
+        const isDeferred =
+          String(row.Tickets_deferred_payment) === "1" ||
+          String(row.Tickets_deferred_payment) === "true";
+
+        if (!boleta.codigosSeleccionados.includes(row.Product_name)) {
+          boleta.codigosSeleccionados.push(row.Product_name);
+          boleta.detalles[row.Product_name] = {
+            cajas: Number(row.ProductAssignment_container) || 0,
+            unidades: Number(row.ProductAssignment_units) || 0,
+            precio: isDeferred
+              ? row.ProductAssignment_payment?.toString() || "0"
+              : row.Tickets_product_payment?.toString() || "0",
+            pesajes: [],
+            kgBruto: Number(row.ProductAssignment_gross_weight) || 0,
+            kgNeto: Number(row.ProductAssignment_net_weight) || 0,
+            _isEdited: true,
+          };
+        }
+
+        if (row.TicketsWeighing_id) {
+          boleta.detalles[row.Product_name].pesajes?.push({
+            id: row.TicketsWeighing_id.toString(),
+            cajas: Number(row.TicketsWeighing_container) || 0,
+            unidades: Number(row.TicketsWeighing_units) || 0,
+            kg: Number(row.TicketsWeighing_gross_weight) || 0,
+            contenedor: row.TicketsWeighing_Container_id?.toString() || "",
+          });
+        }
+      });
+
+      const allLoadedBoletas = Array.from(boletasMap.values());
+
+      if (isMounted && allLoadedBoletas.length > 0) {
+        setBoletas((prev) => {
+          if (
+            prev.length === 1 &&
+            !prev[0].codigo &&
+            prev[0].codigosSeleccionados.length === 0
+          ) {
+            return allLoadedBoletas;
+          }
+          return prev;
+        });
       }
     };
 
@@ -206,8 +194,7 @@ export default function ReceptionScreen({
     if (
       boletas.length === 1 &&
       !boletas[0].codigo &&
-      boletas[0].codigosSeleccionados.length === 0 &&
-      existingTicketIds.length > 0
+      boletas[0].codigosSeleccionados.length === 0
     ) {
       loadTickets();
     }
@@ -216,7 +203,7 @@ export default function ReceptionScreen({
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingTicketIds]);
+  }, [assignment.id]);
 
   const [costoTotalGeneral] = useState("0.00");
   const [pesoTotalGeneral] = useState("0.00");

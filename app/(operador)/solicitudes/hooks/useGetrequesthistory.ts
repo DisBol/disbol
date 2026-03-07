@@ -61,6 +61,9 @@ export function useGetrequesthistory() {
       );
 
       const grouped = response.data.reduce((acc, curr) => {
+        // Solo procesamos y agrupamos los items que estén en el RequestStage_position 1
+        if (Number(curr.RequestStage_position) !== 1) return acc;
+
         const existing = acc.find((r) => r.Request_id === curr.Request_id);
         if (existing) {
           existing.items.push(curr);
