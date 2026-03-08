@@ -1,8 +1,25 @@
+export interface GeofencePoint {
+  lat: number;
+  lng: number;
+}
+
 export interface Geofence {
-  id: number;
-  name: string;
-  description?: string;
-  type?: string;
+  idCerca: number;
+  idtipo_cerca: number;
+  tipo_cerca: string;
+  nombre: string;
+  color: string;
+  puntos: GeofencePoint[];
+  radio: number;
+  limite_velocidad: number;
+  solo_mi_usuario: number;
+  visible: number;
+  umbral: {
+    puntos_poligono: GeofencePoint[];
+    tolerancia: number;
+  };
+  grupo: string;
+  compartida: number;
 }
 
 export interface GeofencesResponse {
@@ -18,15 +35,13 @@ export async function getGeofences(token: string): Promise<Geofence[]> {
     throw new Error("Monnet API configuration missing");
   }
 
+  const formData = new FormData();
+  formData.append("apikey", apiKey);
+  formData.append("token", token);
+
   const response = await fetch(`${baseUrl}/getGeofences`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      apikey: apiKey,
-      token: token,
-    }),
+    body: formData,
   });
 
   if (!response.ok) {

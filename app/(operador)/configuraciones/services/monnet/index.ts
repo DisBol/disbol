@@ -1,8 +1,15 @@
 import { getMonnetToken } from "./getToken";
 import { getGeofences, type Geofence } from "./getGeofences";
+import {
+  getVehicleGetAllComplete,
+  type VehicleComplete,
+} from "./vehicleGetAllComplete";
+import { getMonnetData, type UnitData } from "./getData";
 
 export interface MonnetGeofencesService {
   getGeofencesList: () => Promise<Geofence[]>;
+  getVehicleGetAllCompleteList: () => Promise<VehicleComplete[]>;
+  getMonnetDataList: () => Promise<UnitData[]>;
 }
 
 class MonnetService implements MonnetGeofencesService {
@@ -23,6 +30,16 @@ class MonnetService implements MonnetGeofencesService {
     const token = await this.getValidToken();
     return await getGeofences(token);
   }
+
+  async getVehicleGetAllCompleteList(): Promise<VehicleComplete[]> {
+    const token = await this.getValidToken();
+    return await getVehicleGetAllComplete(token);
+  }
+
+  async getMonnetDataList(): Promise<UnitData[]> {
+    const token = await this.getValidToken();
+    return await getMonnetData(token);
+  }
 }
 
 export const monnetService = new MonnetService();
@@ -30,3 +47,5 @@ export const monnetService = new MonnetService();
 export * from "./getToken";
 export * from "./getGeofences";
 export * from "./vehicleGetAll";
+export * from "./vehicleGetAllComplete";
+export * from "./getData";
