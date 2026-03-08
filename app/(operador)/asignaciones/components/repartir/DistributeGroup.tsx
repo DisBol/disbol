@@ -10,6 +10,7 @@ import { useUpdateProductRequest } from "../../hooks/repartir/useUpdateProductRe
 import { useUpdateRequestStage } from "../../hooks/repartir/useUpdateRequeststage";
 import { useUpdateRequest } from "../../hooks/repartir/useUpdateRequest";
 import { useUpdateRequestRequestState } from "../../hooks/repartir/useUpdateRequestRequestState";
+import { useDistributeStore } from "../../stores/distribute-store";
 
 interface Code {
   label: string;
@@ -52,8 +53,6 @@ interface DistributeGroupProps {
   isActive?: boolean;
   onStarted?: (isStarted: boolean) => void;
   encargado?: string;
-  // Notifica al padre: (guardados, total) para que sepa el progreso
-  onSavedCountChange?: (saved: number, total: number) => void;
   vehiculo?: string;
   chofer?: string;
 }
@@ -71,7 +70,6 @@ export default function DistributeGroup({
   isActive = false,
   onStarted,
   encargado = "",
-  onSavedCountChange,
   vehiculo = "",
   chofer = "",
 }: DistributeGroupProps) {
@@ -81,6 +79,7 @@ export default function DistributeGroup({
   const { updateRequestStage } = useUpdateRequestStage();
   const { updateRequest } = useUpdateRequest();
   const { updateRequestRequestState } = useUpdateRequestRequestState();
+  const { setClientTotal } = useDistributeStore();
   const [savingClient, setSavingClient] = useState<number | null>(null);
   const [savedClients, setSavedClients] = useState<Set<number>>(new Set());
   const [saveErrors, setSaveErrors] = useState<Record<number, string>>({});
@@ -101,11 +100,6 @@ export default function DistributeGroup({
   useEffect(() => {
     setIsStarted(isActive);
   }, [isActive]);
-
-  // Notifica al padre cada vez que cambia savedClients
-  useEffect(() => {
-    onSavedCountChange?.(savedClients.size, clientes.length);
-  }, [savedClients, clientes.length]);
 
   // Función para calcular el costo total de distribución por cliente
   // COSTO = Σ (peso_neto_producto × precio_venta)
@@ -163,6 +157,25 @@ export default function DistributeGroup({
       return Math.round(total * 100) / 100;
     };
   }, [precioDiferido, containersData, pesajesMap, preciosMap]);
+
+  // Sincroniza los totales calculados por cliente con el store global para el PDF
+  useEffect(() => {
+    if (clientes && clientes.length > 0) {
+      clientes.forEach((cliente, clienteIdx) => {
+        const total = calculateTotalDistribucion(
+          clienteIdx,
+          cliente.codes,
+          precioVentaCliente[clienteIdx] || "",
+        );
+        setClientTotal(cliente.Request_id, total);
+      });
+    }
+  }, [
+    clientes,
+    calculateTotalDistribucion,
+    precioVentaCliente,
+    setClientTotal,
+  ]);
 
   // Calcula peso bruto y neto real de un código según sus pesajes registrados
   const calcularPesos = (

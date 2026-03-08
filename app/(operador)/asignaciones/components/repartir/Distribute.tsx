@@ -7,6 +7,7 @@ import { Assignment } from "../../stores/assignments-store";
 import { Datum } from "../../interfaces/getassignmenthistory.interface";
 import { useGetRequestForreparting } from "../../hooks/repartir/useGetRequestForreparting";
 import { Datum as RepartirDatum } from "../../interfaces/repartir/getrequestforreparting.interface";
+import { useDistributeStore } from "../../stores/distribute-store";
 
 interface DistributeProps {
   assignment?: Assignment | null;
@@ -46,14 +47,11 @@ export default function Repartir({
   onClose,
 }: DistributeProps) {
   const { data: repartirData, loading, error } = useGetRequestForreparting();
+  const { clientTotals } = useDistributeStore();
 
   const [activeGroupIdx, setActiveGroupIdx] = useState<number | null>(null);
   const [vehiculo, setVehiculo] = useState<string>("");
   const [chofer, setChofer] = useState<string>("");
-  // Conteo de clientes guardados por grupo: { [groupIdx]: { saved, total } }
-  const [groupSavedCounts, setGroupSavedCounts] = useState<
-    Record<number, { saved: number; total: number }>
-  >({});
 
   // Procesar datos del hook y del assignment en paralelo
   const { detalles, proveedor, costoPorKg, precioDiferido, groups } =
@@ -283,25 +281,6 @@ export default function Repartir({
 
   const displayGroups = editableGroups.length > 0 ? editableGroups : groups;
 
-  // allSaved = true cuando todos los clientes de todos los grupos están guardados
-  // Si hay un grupo activo: solo verificar los clientes de ESE grupo
-  // Si no hay grupo activo: verificar todos los grupos
-  const allSaved = (() => {
-    if (activeGroupIdx !== null) {
-      const g = groupSavedCounts[activeGroupIdx];
-      return g !== undefined && g.total > 0 && g.saved >= g.total;
-    }
-    const totalClientes = Object.values(groupSavedCounts).reduce(
-      (sum, g) => sum + g.total,
-      0,
-    );
-    const totalGuardados = Object.values(groupSavedCounts).reduce(
-      (sum, g) => sum + g.saved,
-      0,
-    );
-    return totalClientes > 0 && totalGuardados >= totalClientes;
-  })();
-
   return (
     <div className="w-full bg-gray-50">
       {/* Contenido de Distribute */}
@@ -319,8 +298,6 @@ export default function Repartir({
               onClose?.();
             }
           }}
-          onSave={() => console.log("Save clicked")}
-          allSaved={allSaved}
           isStarted={activeGroupIdx !== null}
           groupName={
             activeGroupIdx !== null ? displayGroups[activeGroupIdx]?.name : ""
@@ -343,7 +320,7 @@ export default function Repartir({
             activeGroupIdx !== null
               ? displayGroups[activeGroupIdx]?.clientes.map((c) => ({
                   nombre: c.name,
-                  montoACobrar: 0,
+                  montoACobrar: clientTotals[c.Request_id] || 0,
                   deudaCajas: 0,
                   deudaDinero: 0,
                 }))
@@ -378,12 +355,6 @@ export default function Repartir({
                 onStarted={(isStarted) => {
                   setActiveGroupIdx(isStarted ? activeGroupIdx : null);
                 }}
-                onSavedCountChange={(saved, total) => {
-                  setGroupSavedCounts((prev) => ({
-                    ...prev,
-                    [activeGroupIdx!]: { saved, total },
-                  }));
-                }}
                 onCajasChange={(codeIdx, val) => {
                   const newGroups = [...editableGroups];
                   newGroups[activeGroupIdx].codes[codeIdx].cajas = val;
@@ -415,12 +386,6 @@ export default function Repartir({
                   onStarted={(isStarted) => {
                     setActiveGroupIdx(isStarted ? groupIdx : null);
                   }}
-                  onSavedCountChange={(saved, total) => {
-                    setGroupSavedCounts((prev) => ({
-                      ...prev,
-                      [groupIdx]: { saved, total },
-                    }));
-                  }}
                   onCajasChange={(codeIdx, val) => {
                     const newGroups = [...editableGroups];
                     newGroups[groupIdx].codes[codeIdx].cajas = val;
@@ -449,24 +414,6 @@ export default function Repartir({
                 className="px-6 py-2.5 border border-gray-200 rounded-lg text-sm font-bold shadow-sm bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors sm:w-75 shrink-0 text-center"
               >
                 Cancelar
-              </button>
-              <button className="px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm bg-[#e11d48] hover:bg-rose-700 text-white transition-colors flex-1 flex items-center justify-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17 21 17 13 7 13 7 21" />
-                  <polyline points="7 3 7 8 15 8" />
-                </svg>
-                Guardar Distribución
               </button>
             </div>
           )}
