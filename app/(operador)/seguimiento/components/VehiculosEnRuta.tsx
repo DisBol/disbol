@@ -108,6 +108,25 @@ export default function VehiculosEnRuta({
                     >
                       Placa: {car.license} • ID: {car.idCar}
                     </div>
+                    {((car as any).Employee_name ||
+                      (car as any).ClientGroup_name) && (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#6b7280",
+                          marginTop: 1,
+                          whiteSpace: "nowrap",
+                          opacity: 0.8,
+                        }}
+                      >
+                        {[
+                          (car as any).Employee_name,
+                          (car as any).ClientGroup_name,
+                        ]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </div>
+                    )}
                   </div>
                   {/* Right: status */}
                   <div style={{ textAlign: "right", flexShrink: 0 }}>

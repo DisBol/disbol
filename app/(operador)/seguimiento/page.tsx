@@ -102,6 +102,7 @@ export default function SeguimientoPage() {
               <MapaSeguimiento
                 vehiculosEnVivo={mapDataCompleta}
                 zonasPoligonales={geofences}
+                rutasSeleccionadas={requests || []}
               />
               {loadingTracker && (
                 <div

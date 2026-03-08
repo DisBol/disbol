@@ -48,11 +48,11 @@ export default function DetalleVehiculo() {
     },
     {
       label: "Chofer",
-      value: "Carlos Ramírez", // Estático por el momento
+      value: requests[0]?.Employee_name || "Sin chofer",
     },
     {
       label: "Ruta",
-      value: "La Paz Centro", // Estático por el momento
+      value: requests[0]?.ClientGroup_name || "Sin ruta",
     },
     {
       label: "Estado",

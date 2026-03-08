@@ -108,7 +108,8 @@ export default function DetalleRuta({
                   </div>
                   <div style={{ fontSize: 11, color: "#6b7280" }}>
                     {timeFmt ? `${timeFmt} · ` : ""}
-                    Grupo {request.ClientGroup_id} · {canastas} canastos
+                    Ruta {request.ClientGroup_name ||
+                      request.ClientGroup_id} · {canastas} canastos
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
