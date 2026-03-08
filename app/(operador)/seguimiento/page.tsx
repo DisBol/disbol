@@ -1,18 +1,63 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RouteProtection } from "@/components/shared/RouteProtection";
 import "leaflet/dist/leaflet.css";
-import { Vehiculo } from "./types";
 
-import { VEHICULOS } from "./data/vehiculos";
 import MapaSeguimiento from "./components/MapaSeguimiento";
 import DetalleVehiculo from "./components/DetalleVehiculo";
 import DetalleRuta from "./components/DetalleRuta";
 import VehiculosEnRuta from "./components/VehiculosEnRuta";
+import { useGetRequestByCar } from "./hook/useGetRequestByCar";
+import { Datum } from "./interface/getrequestbycar.interface";
+import { useGetGeofences } from "./hook/useGetGeofences";
+import { useGetVehicleComplete } from "./hook/useGetVehicleComplete";
+import { useGetTrackingData } from "./hook/useGetTrackingData";
 
 export default function SeguimientoPage() {
-  const [seleccionado, setSeleccionado] = useState<Vehiculo>(VEHICULOS[0]);
+  const { requests, loading, error } = useGetRequestByCar(0);
+  const [seleccionado, setSeleccionado] = useState<Datum | undefined>();
+
+  // 1. Carga Inicial: Obtenemos Geocercas (1 vez)
+  const { geofences, loading: loadingGeo } = useGetGeofences();
+
+  // 2. Carga Inicial: Datos descriptivos y el Icono del Vehículo (1 vez)
+  const { vehicles } = useGetVehicleComplete();
+
+  // 3. Tiempo Real: Datos GPS refrescando mágicamente cada 30 Segs
+  const { trackingData, loading: loadingTracker } = useGetTrackingData(30000);
+
+  // 4. "Diccionario" Visual (Hacemos un match para asociar la Posición vs la Información del Vehículo)
+  const mapDataCompleta = React.useMemo(() => {
+    return trackingData.map((gpsPoint) => {
+      // Cruzamos los datos usando el ID/UnitId
+      const metaData = vehicles.find(
+        (v) => v.nombre === gpsPoint.UnitId || v.patente === gpsPoint.UnitPlate,
+      );
+
+      return {
+        lat: parseFloat(gpsPoint.Latitude),
+        lng: parseFloat(gpsPoint.Longitude),
+        id: gpsPoint.UnitId,
+        velocidad: gpsPoint.GpsSpeed,
+        encendido: gpsPoint.Ignition === "1",
+        bateriaGps: gpsPoint.BateriaGps,
+        bateriaVehiculo: gpsPoint.BateriaVeh,
+        icono: metaData?.icono_vehiculo || "default-icon.png",
+        tipoVehiculo: metaData?.tipo_vehiculo || "Desconocido",
+        nombreCompleto: metaData?.nombre || gpsPoint.UnitPlate,
+      };
+    });
+  }, [trackingData, vehicles]);
+
+  const hasAutoSelectedRef = React.useRef(false);
+
+  useEffect(() => {
+    if (requests && requests.length > 0 && !hasAutoSelectedRef.current) {
+      setSeleccionado(requests[0]);
+      hasAutoSelectedRef.current = true;
+    }
+  }, [requests]);
 
   return (
     <RouteProtection requiredTransaction="Seguimiento">
@@ -47,12 +92,33 @@ export default function SeguimientoPage() {
                 overflow: "hidden",
                 height: 370,
                 flexShrink: 0,
+                position: "relative",
               }}
             >
               <MapaSeguimiento
-                vehiculos={VEHICULOS}
+                vehiculosEnVivo={mapDataCompleta}
+                zonasPoligonales={geofences}
                 seleccionado={seleccionado}
               />
+              {loadingTracker && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    background: "rgba(255, 255, 255, 0.9)",
+                    padding: "4px 8px",
+                    borderRadius: 4,
+                    fontSize: 11,
+                    letterSpacing: 1,
+                    textTransform: "uppercase",
+                    zIndex: 1000,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  Actualizando GPS...
+                </div>
+              )}
             </div>
 
             {/* VEHICLE DETAIL */}
@@ -64,7 +130,9 @@ export default function SeguimientoPage() {
 
           {/* ── RIGHT COLUMN: vehicle list full height ── */}
           <VehiculosEnRuta
-            vehiculos={VEHICULOS}
+            vehiculos={requests || []}
+            loading={loading}
+            error={error}
             seleccionado={seleccionado}
             onSeleccionar={setSeleccionado}
           />

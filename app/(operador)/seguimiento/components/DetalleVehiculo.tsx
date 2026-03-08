@@ -1,32 +1,73 @@
-import { Vehiculo, ESTADO_LABELS } from "../types";
+import { Datum } from "../interface/getrequestbycar.interface";
 
 interface DetalleVehiculoProps {
-  vehiculo: Vehiculo;
+  vehiculo?: Datum;
 }
 
 export default function DetalleVehiculo({ vehiculo }: DetalleVehiculoProps) {
+  if (!vehiculo) {
+    return (
+      <div
+        style={{
+          border: "1px solid #d1d5db",
+          borderRadius: 6,
+          background: "#fff",
+          padding: "10px 14px",
+          flexShrink: 0,
+          color: "#6b7280",
+          fontSize: 13,
+        }}
+      >
+        Selecciona un vehículo en ruta con información de solicitud.
+      </div>
+    );
+  }
+
+  const ordenesEntregadas = vehiculo.RequestStage_in_container || 0;
+  const ordenesTotales =
+    (vehiculo.RequestStage_out_container || 0) + ordenesEntregadas;
+
   const detalles = [
     {
       label: "Unidad",
       value: (
         <span style={{ color: "#dc2626", fontWeight: 600 }}>
-          {vehiculo.codigo} · {vehiculo.placa}
+          REQ-{vehiculo.Request_id} · {vehiculo.Provider_name || "Sin placa"}
         </span>
       ),
     },
-    { label: "Chofer", value: vehiculo.chofer },
-    { label: "Ruta", value: vehiculo.ruta },
+    { label: "Chofer", value: vehiculo.Client_name || "Sin chofer" },
+    { label: "Ruta", value: `Grupo ${vehiculo.ClientGroup_id || "N/A"}` },
     {
       label: "Estado",
-      value: ESTADO_LABELS[vehiculo.estado],
+      value: (
+        <span
+          style={{
+            background:
+              vehiculo.RequestState_name === "ENTREGADO"
+                ? "#dcfce7"
+                : "#fee2e2",
+            color:
+              vehiculo.RequestState_name === "ENTREGADO"
+                ? "#166534"
+                : "#991b1b",
+            padding: "2px 6px",
+            borderRadius: 4,
+            fontWeight: 600,
+            fontSize: 11,
+          }}
+        >
+          {vehiculo.RequestState_name}
+        </span>
+      ),
     },
     {
       label: "Órdenes",
-      value: `${vehiculo.ordenesEntregadas} entregadas / ${vehiculo.ordenesTotales - vehiculo.ordenesEntregadas} pendientes`,
+      value: `${ordenesEntregadas} entregadas / ${ordenesTotales - ordenesEntregadas} pendientes`,
     },
     {
       label: "Canastos",
-      value: `${vehiculo.canastas} entregados · ${vehiculo.canastasTotal} en camión`,
+      value: `${vehiculo.RequestStage_in_container || 0} recibidos · ${vehiculo.RequestStage_out_container || 0} despachados`,
     },
   ];
 
