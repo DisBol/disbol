@@ -252,7 +252,14 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                 color="warning"
                 size="sm"
                 className="min-w-22.5"
-                onClick={() => showPlanningScreen(assignment)}
+                onClick={() => {
+                  // Refrescar datos antes de mostrar planificación
+                  onRefreshData();
+                  // Pequeño delay para asegurar que los datos se actualicen antes de mostrar la pantalla
+                  setTimeout(() => {
+                    showPlanningScreen(assignment);
+                  }, 300);
+                }}
               >
                 Planificar
               </Button>

@@ -53,6 +53,65 @@ export default function TotalGroup({
   onSaveGroup,
   onUpdateClientCode,
 }: TotalGroupProps) {
+  // Helper para calcular el multiplicador según código de producto
+  const getMultiplier = (productCode: string) => {
+    if (productCode.includes("104") || productCode.includes("105")) return 15;
+    if (
+      productCode.includes("106") ||
+      productCode.includes("107") ||
+      productCode.includes("108") ||
+      productCode.includes("109")
+    )
+      return 12;
+    return 0;
+  };
+
+  const handleCajasChange = (
+    clienteIdx: number,
+    clientCodeIdx: number,
+    value: number,
+    productCode: string,
+  ) => {
+    // Actualizar cajas
+    onUpdateClientCode?.(clienteIdx, clientCodeIdx, "cajas", value);
+
+    // Calcular unidades automáticamente si hay multiplicador
+    const multiplier = getMultiplier(productCode);
+    if (multiplier > 0) {
+      const unidadesCalculadas = value * multiplier;
+      onUpdateClientCode?.(
+        clienteIdx,
+        clientCodeIdx,
+        "unidades",
+        unidadesCalculadas,
+      );
+    }
+  };
+
+  const handleUnidadesChange = (
+    clienteIdx: number,
+    clientCodeIdx: number,
+    value: number,
+    productCode: string,
+  ) => {
+    // Actualizar unidades
+    onUpdateClientCode?.(clienteIdx, clientCodeIdx, "unidades", value);
+
+    // Calcular cajas automáticamente si hay multiplicador
+    const multiplier = getMultiplier(productCode);
+    if (multiplier > 0) {
+      const cajasCalculadas = value / multiplier;
+      const cajasRedondeadas = Number.isInteger(cajasCalculadas)
+        ? cajasCalculadas
+        : Number(cajasCalculadas.toFixed(2));
+      onUpdateClientCode?.(
+        clienteIdx,
+        clientCodeIdx,
+        "cajas",
+        cajasRedondeadas,
+      );
+    }
+  };
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm transition-all">
       {/* Accordion Header (Group Total) */}
@@ -203,11 +262,11 @@ export default function TotalGroup({
                                 value={code.cajas}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value) || 0;
-                                  onUpdateClientCode?.(
+                                  handleCajasChange(
                                     clienteIdx,
                                     clientCodeIdx,
-                                    "cajas",
                                     value,
+                                    code.label,
                                   );
                                 }}
                                 className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
@@ -229,11 +288,11 @@ export default function TotalGroup({
                                 value={code.unidades}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value) || 0;
-                                  onUpdateClientCode?.(
+                                  handleUnidadesChange(
                                     clienteIdx,
                                     clientCodeIdx,
-                                    "unidades",
                                     value,
+                                    code.label,
                                   );
                                 }}
                                 className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
