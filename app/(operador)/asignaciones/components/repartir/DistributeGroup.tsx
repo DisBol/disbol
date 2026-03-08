@@ -9,6 +9,7 @@ import { useAddRequestWeighing } from "../../hooks/repartir/useAddRequestWeighin
 import { useUpdateProductRequest } from "../../hooks/repartir/useUpdateProductRequest";
 import { useUpdateRequestStage } from "../../hooks/repartir/useUpdateRequeststage";
 import { useUpdateRequest } from "../../hooks/repartir/useUpdateRequest";
+import { useUpdateRequestRequestState } from "../../hooks/repartir/useUpdateRequestRequestState";
 
 interface Code {
   label: string;
@@ -79,6 +80,7 @@ export default function DistributeGroup({
   const { updateProductRequest } = useUpdateProductRequest();
   const { updateRequestStage } = useUpdateRequestStage();
   const { updateRequest } = useUpdateRequest();
+  const { updateRequestRequestState } = useUpdateRequestRequestState();
   const [savingClient, setSavingClient] = useState<number | null>(null);
   const [savedClients, setSavedClients] = useState<Set<number>>(new Set());
   const [saveErrors, setSaveErrors] = useState<Record<number, string>>({});
@@ -346,7 +348,12 @@ export default function DistributeGroup({
         Number(vehiculo) || 1,
         Number(chofer) || 2,
       );
-      if (!reqVal) allOk = false;
+      if (!reqVal) {
+        allOk = false;
+      } else {
+        const reqStateVal = await updateRequestRequestState(requestId);
+        if (!reqStateVal) allOk = false;
+      }
     }
 
     setSavingClient(null);
