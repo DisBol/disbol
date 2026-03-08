@@ -2,7 +2,24 @@
 
 import { useEffect, useRef } from "react";
 import type { Geofence } from "../../configuraciones/services/monnet/getGeofences";
-import type { Datum } from "../interface/getrequestbycar.interface";
+import { useCarStore } from "../store/useCarStore";
+
+// Create truck icon as data URL
+const createTruckIconDataUrl = (color = "#dd2e44") => {
+  const svgString = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 36 36">
+      <path fill="${color}" d="M36 27a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4v-3a4 4 0 0 1 4-4h28a4 4 0 0 1 4 4z"></path>
+      <path fill="#ffcc4d" d="m19 13l-.979-1H7.146C4 12 3 14 3 14l-3 5.959V25h19z"></path>
+      <path fill="#55acee" d="M9 20H2l2-4s1-2 3-2h2z"></path>
+      <circle cx="9" cy="31" r="4" fill="#292f33"></circle>
+      <circle cx="9" cy="31" r="2" fill="#ccd6dd"></circle>
+      <circle cx="27" cy="31" r="4" fill="#292f33"></circle>
+      <circle cx="27" cy="31" r="2" fill="#ccd6dd"></circle>
+      <path fill="#dd2e44" d="M32 8H17a4 4 0 0 0-4 4v13h23V12a4 4 0 0 0-4-4"></path>
+    </svg>
+  `;
+  return `data:image/svg+xml;base64,${btoa(svgString)}`;
+};
 
 export interface VehiculoEnVivo {
   lat: number;
@@ -20,14 +37,13 @@ export interface VehiculoEnVivo {
 interface MapaSeguimientoProps {
   vehiculosEnVivo: VehiculoEnVivo[];
   zonasPoligonales: Geofence[];
-  seleccionado?: Datum;
 }
 
 export default function MapaSeguimiento({
   vehiculosEnVivo,
   zonasPoligonales,
-  seleccionado,
 }: MapaSeguimientoProps) {
+  const { selectedCar } = useCarStore();
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -41,17 +57,6 @@ export default function MapaSeguimiento({
     import("leaflet").then((L) => {
       // Initialize map only once
       if (!mapInstanceRef.current) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (L.Icon.Default.prototype as any)._getIconUrl;
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl:
-            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-          iconUrl:
-            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-          shadowUrl:
-            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-        });
-
         const map = L.map(mapRef.current!, {
           center: [-16.505, -68.135], // Generic start coordinates
           zoom: 12,
@@ -94,22 +99,21 @@ export default function MapaSeguimiento({
       let vehicleToCenter: VehiculoEnVivo | undefined = undefined;
       let vehiclesToRender = vehiculosEnVivo;
 
-      if (seleccionado) {
-        // Fallback temporal para tus datos de prueba: Si la BD dice "SOFIA", usamos "5231-KSB"
-        const targetPlaca =
-          seleccionado.Provider_name === "SOFIA"
-            ? "5231-KSB"
-            : seleccionado.Provider_name;
-
+      if (selectedCar) {
+        // Find vehicle by license plate or name
         vehicleToCenter = vehiculosEnVivo.find(
-          (v) => v.nombreCompleto === targetPlaca || v.id === targetPlaca,
+          (v) =>
+            v.nombreCompleto === selectedCar.license ||
+            v.id === selectedCar.license ||
+            v.nombreCompleto === selectedCar.name ||
+            v.id === selectedCar.idCar,
         );
 
         if (vehicleToCenter) {
           vehiclesToRender = [vehicleToCenter];
         } else {
-          // If no match is found, show nothing to indicate mismatch, or you could change to show all
-          vehiclesToRender = [];
+          // If no match is found, show all vehicles but highlight none
+          vehiclesToRender = vehiculosEnVivo;
         }
       }
 
@@ -138,22 +142,22 @@ export default function MapaSeguimiento({
           markersRef.current[id].setLatLng(latlng);
           markersRef.current[id].getPopup().setContent(popupContent);
         } else {
-          // Marker doesn't exist, create it
-          const iconUrl =
-            v.icono &&
-            !v.icono.startsWith(".") &&
-            v.icono !== "default-icon.png"
-              ? v.icono
-              : "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
+          // Marker doesn't exist, create it with truck icon
+          const isSelectedVehicle =
+            selectedCar &&
+            (v.nombreCompleto === selectedCar.license ||
+              v.id === selectedCar.license ||
+              v.nombreCompleto === selectedCar.name ||
+              v.id === selectedCar.idCar);
+
+          const iconColor = isSelectedVehicle ? "#dc2626" : "#dd2e44";
+          const iconUrl = createTruckIconDataUrl(iconColor);
 
           const iconToUse = L.icon({
             iconUrl: iconUrl,
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowUrl:
-              "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-            shadowSize: [41, 41],
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            popupAnchor: [0, -30],
           });
 
           const marker = L.marker(latlng, { icon: iconToUse })
@@ -186,12 +190,11 @@ export default function MapaSeguimiento({
     });
 
     // We no longer destroy the map instance inside the hook unless it's an unmount (see below)
-  }, [vehiculosEnVivo, zonasPoligonales, seleccionado]);
+  }, [vehiculosEnVivo, zonasPoligonales, selectedCar]);
 
   // Clean-up on unmount
   useEffect(() => {
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

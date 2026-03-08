@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { RouteProtection } from "@/components/shared/RouteProtection";
 import "leaflet/dist/leaflet.css";
 
@@ -9,17 +9,23 @@ import DetalleVehiculo from "./components/DetalleVehiculo";
 import DetalleRuta from "./components/DetalleRuta";
 import VehiculosEnRuta from "./components/VehiculosEnRuta";
 import { useGetRequestByCar } from "./hook/useGetRequestByCar";
-import { Datum } from "./interface/getrequestbycar.interface";
 import { useGetGeofences } from "./hook/useGetGeofences";
+import { useCar } from "../configuraciones/hooks/vehiculos/useCar";
+import { useCarStore } from "./store/useCarStore";
 import { useGetVehicleComplete } from "./hook/useGetVehicleComplete";
 import { useGetTrackingData } from "./hook/useGetTrackingData";
 
 export default function SeguimientoPage() {
-  const { requests, loading, error } = useGetRequestByCar(0);
-  const [seleccionado, setSeleccionado] = useState<Datum | undefined>();
+  const { selectedCar, setSelectedCar } = useCarStore();
+  const { cars, isLoading: loadingCars, error: errorCars } = useCar();
+  const {
+    requests,
+    loading: loadingRequests,
+    error: errorRequests,
+  } = useGetRequestByCar(selectedCar?.id || 0);
 
   // 1. Carga Inicial: Obtenemos Geocercas (1 vez)
-  const { geofences, loading: loadingGeo } = useGetGeofences();
+  const { geofences } = useGetGeofences();
 
   // 2. Carga Inicial: Datos descriptivos y el Icono del Vehículo (1 vez)
   const { vehicles } = useGetVehicleComplete();
@@ -50,14 +56,12 @@ export default function SeguimientoPage() {
     });
   }, [trackingData, vehicles]);
 
-  const hasAutoSelectedRef = React.useRef(false);
-
-  useEffect(() => {
-    if (requests && requests.length > 0 && !hasAutoSelectedRef.current) {
-      setSeleccionado(requests[0]);
-      hasAutoSelectedRef.current = true;
+  // Auto-select first car when available
+  React.useEffect(() => {
+    if (!selectedCar && cars && cars.length > 0) {
+      setSelectedCar(cars[0]);
     }
-  }, [requests]);
+  }, [cars, selectedCar, setSelectedCar]);
 
   return (
     <RouteProtection requiredTransaction="Seguimiento">
@@ -98,7 +102,6 @@ export default function SeguimientoPage() {
               <MapaSeguimiento
                 vehiculosEnVivo={mapDataCompleta}
                 zonasPoligonales={geofences}
-                seleccionado={seleccionado}
               />
               {loadingTracker && (
                 <div
@@ -122,19 +125,22 @@ export default function SeguimientoPage() {
             </div>
 
             {/* VEHICLE DETAIL */}
-            <DetalleVehiculo vehiculo={seleccionado} />
+            <DetalleVehiculo />
 
             {/* ROUTE DETAIL */}
-            <DetalleRuta vehiculo={seleccionado} />
+            <DetalleRuta
+              carSeleccionado={selectedCar}
+              requests={requests || []}
+              loadingRequests={loadingRequests}
+              errorRequests={errorRequests}
+            />
           </div>
 
           {/* ── RIGHT COLUMN: vehicle list full height ── */}
           <VehiculosEnRuta
-            vehiculos={requests || []}
-            loading={loading}
-            error={error}
-            seleccionado={seleccionado}
-            onSeleccionar={setSeleccionado}
+            cars={cars || []}
+            loading={loadingCars}
+            error={errorCars}
           />
         </div>
       </div>

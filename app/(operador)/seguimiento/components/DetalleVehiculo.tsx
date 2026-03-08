@@ -1,11 +1,11 @@
-import { Datum } from "../interface/getrequestbycar.interface";
+import { useCarStore } from "../store/useCarStore";
+import { useGetRequestByCar } from "../hook/useGetRequestByCar";
 
-interface DetalleVehiculoProps {
-  vehiculo?: Datum;
-}
+export default function DetalleVehiculo() {
+  const { selectedCar } = useCarStore();
+  const { requests } = useGetRequestByCar(selectedCar?.id || 0);
 
-export default function DetalleVehiculo({ vehiculo }: DetalleVehiculoProps) {
-  if (!vehiculo) {
+  if (!selectedCar) {
     return (
       <div
         style={{
@@ -18,56 +18,66 @@ export default function DetalleVehiculo({ vehiculo }: DetalleVehiculoProps) {
           fontSize: 13,
         }}
       >
-        Selecciona un vehículo en ruta con información de solicitud.
+        Selecciona un vehículo para ver sus detalles.
       </div>
     );
   }
 
-  const ordenesEntregadas = vehiculo.RequestStage_in_container || 0;
-  const ordenesTotales =
-    (vehiculo.RequestStage_out_container || 0) + ordenesEntregadas;
+  // Cálculos con los requests del vehículo
+  const totalOrdenes = requests.length;
+  const canastosEntregados = requests.reduce(
+    (acc, req) => acc + (req.RequestStage_out_container || 0),
+    0,
+  );
+  const canastosEnCamion = requests.reduce(
+    (acc, req) =>
+      acc +
+      ((req.RequestStage_in_container || 0) -
+        (req.RequestStage_out_container || 0)),
+    0,
+  );
 
   const detalles = [
     {
       label: "Unidad",
       value: (
         <span style={{ color: "#dc2626", fontWeight: 600 }}>
-          REQ-{vehiculo.Request_id} · {vehiculo.Provider_name || "Sin placa"}
+          {selectedCar.name} · {selectedCar.license || "Sin placa"}
         </span>
       ),
     },
-    { label: "Chofer", value: vehiculo.Client_name || "Sin chofer" },
-    { label: "Ruta", value: `Grupo ${vehiculo.ClientGroup_id || "N/A"}` },
+    {
+      label: "Chofer",
+      value: "Carlos Ramírez", // Estático por el momento
+    },
+    {
+      label: "Ruta",
+      value: "La Paz Centro", // Estático por el momento
+    },
     {
       label: "Estado",
       value: (
         <span
           style={{
-            background:
-              vehiculo.RequestState_name === "ENTREGADO"
-                ? "#dcfce7"
-                : "#fee2e2",
-            color:
-              vehiculo.RequestState_name === "ENTREGADO"
-                ? "#166534"
-                : "#991b1b",
+            background: selectedCar.active === "true" ? "#dcfce7" : "#fee2e2",
+            color: selectedCar.active === "true" ? "#166534" : "#991b1b",
             padding: "2px 6px",
             borderRadius: 4,
             fontWeight: 600,
             fontSize: 11,
           }}
         >
-          {vehiculo.RequestState_name}
+          {selectedCar.active === "true" ? "Retornando" : "INACTIVO"}
         </span>
       ),
     },
     {
       label: "Órdenes",
-      value: `${ordenesEntregadas} entregadas / ${ordenesTotales - ordenesEntregadas} pendientes`,
+      value: `${canastosEntregados > 0 ? Math.min(totalOrdenes, canastosEntregados) : 0} entregadas / ${totalOrdenes - (canastosEntregados > 0 ? Math.min(totalOrdenes, canastosEntregados) : 0)} pendientes`,
     },
     {
       label: "Canastos",
-      value: `${vehiculo.RequestStage_in_container || 0} recibidos · ${vehiculo.RequestStage_out_container || 0} despachados`,
+      value: `${canastosEntregados} entregados · ${canastosEnCamion} en camión`,
     },
   ];
 
