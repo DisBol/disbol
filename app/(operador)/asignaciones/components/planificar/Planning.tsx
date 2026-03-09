@@ -261,9 +261,26 @@ export default function Planificar({
   const handleAutomaticPlanning = useCallback(() => {
     if (editableGroups.length === 0 || updatedDetalles.length === 0) return;
 
+    // Filtrar solo los productos que están en rojo (excedidos)
+    const productosExcedidos = updatedDetalles.filter(
+      (detalle) => detalle.cajasExcedidas || detalle.unidadesExcedidas,
+    );
+
+    if (productosExcedidos.length === 0) {
+      console.log("No hay productos excedidos para procesar");
+      return;
+    }
+
+    console.log(
+      `Aplicando planificación automática solo a productos excedidos:`,
+      productosExcedidos.map((p) => p.label),
+    );
+
     setEditableGroups((prevGroups) => {
-      const result = executeAutomaticPlanning(prevGroups, updatedDetalles);
-      console.log("Planificación automática aplicada");
+      const result = executeAutomaticPlanning(prevGroups, productosExcedidos);
+      console.log(
+        `Planificación automática aplicada a ${productosExcedidos.length} productos excedidos`,
+      );
       return result;
     });
   }, [editableGroups, updatedDetalles, executeAutomaticPlanning]);
@@ -279,7 +296,6 @@ export default function Planificar({
           detalles={updatedDetalles}
           onCancel={onClose}
           onAutomaticPlanning={handleAutomaticPlanning}
-          onSavePlanning={() => console.log("Save planning clicked")}
         />
 
         {/* Total Groups Section */}

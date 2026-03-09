@@ -1,32 +1,83 @@
-import { Vehiculo, ESTADO_LABELS } from "../types";
+import { useCarStore } from "../store/useCarStore";
+import { useGetRequestByCar } from "../hook/useGetRequestByCar";
 
-interface DetalleVehiculoProps {
-  vehiculo: Vehiculo;
-}
+export default function DetalleVehiculo() {
+  const { selectedCar } = useCarStore();
+  const { requests } = useGetRequestByCar(selectedCar?.id || 0);
 
-export default function DetalleVehiculo({ vehiculo }: DetalleVehiculoProps) {
+  if (!selectedCar) {
+    return (
+      <div
+        style={{
+          border: "1px solid #d1d5db",
+          borderRadius: 6,
+          background: "#fff",
+          padding: "10px 14px",
+          flexShrink: 0,
+          color: "#6b7280",
+          fontSize: 13,
+        }}
+      >
+        Selecciona un vehículo para ver sus detalles.
+      </div>
+    );
+  }
+
+  // Cálculos con los requests del vehículo
+  const totalOrdenes = requests.length;
+  const canastosEntregados = requests.reduce(
+    (acc, req) => acc + (req.RequestStage_out_container || 0),
+    0,
+  );
+  const canastosEnCamion = requests.reduce(
+    (acc, req) =>
+      acc +
+      ((req.RequestStage_in_container || 0) -
+        (req.RequestStage_out_container || 0)),
+    0,
+  );
+
   const detalles = [
     {
       label: "Unidad",
       value: (
         <span style={{ color: "#dc2626", fontWeight: 600 }}>
-          {vehiculo.codigo} · {vehiculo.placa}
+          {selectedCar.name} · {selectedCar.license || "Sin placa"}
         </span>
       ),
     },
-    { label: "Chofer", value: vehiculo.chofer },
-    { label: "Ruta", value: vehiculo.ruta },
+    {
+      label: "Chofer",
+      value: requests[0]?.Employee_name || "Sin chofer",
+    },
+    {
+      label: "Ruta",
+      value: requests[0]?.ClientGroup_name || "Sin ruta",
+    },
     {
       label: "Estado",
-      value: ESTADO_LABELS[vehiculo.estado],
+      value: (
+        <span
+          style={{
+            background: selectedCar.active === "true" ? "#dcfce7" : "#fee2e2",
+            color: selectedCar.active === "true" ? "#166534" : "#991b1b",
+            padding: "2px 6px",
+            borderRadius: 4,
+            fontWeight: 600,
+            fontSize: 11,
+          }}
+        >
+          {selectedCar.active === "true" ? "Retornando" : "INACTIVO"}
+        </span>
+      ),
     },
     {
       label: "Órdenes",
-      value: `${vehiculo.ordenesEntregadas} entregadas / ${vehiculo.ordenesTotales - vehiculo.ordenesEntregadas} pendientes`,
+      value: `${canastosEntregados > 0 ? Math.min(totalOrdenes, canastosEntregados) : 0} entregadas / ${totalOrdenes - (canastosEntregados > 0 ? Math.min(totalOrdenes, canastosEntregados) : 0)} pendientes`,
     },
     {
       label: "Canastos",
-      value: `${vehiculo.canastas} entregados · ${vehiculo.canastasTotal} en camión`,
+      value: `${canastosEntregados} entregados · ${canastosEnCamion} en camión`,
     },
   ];
 

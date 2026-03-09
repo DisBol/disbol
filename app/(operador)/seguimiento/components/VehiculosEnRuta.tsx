@@ -1,16 +1,18 @@
-import { Vehiculo, ESTADO_LABELS, ESTADO_BADGE_STYLE } from "../types";
+import { Datum as CarDatum } from "../../configuraciones/interfaces/vehiculos/getcar";
+import { useCarStore } from "../store/useCarStore";
 
 interface VehiculosEnRutaProps {
-  vehiculos: Vehiculo[];
-  seleccionado: Vehiculo;
-  onSeleccionar: (vehiculo: Vehiculo) => void;
+  cars: CarDatum[];
+  loading: boolean;
+  error: string | null;
 }
 
 export default function VehiculosEnRuta({
-  vehiculos,
-  seleccionado,
-  onSeleccionar,
+  cars,
+  loading,
+  error,
 }: VehiculosEnRutaProps) {
+  const { selectedCar, setSelectedCar } = useCarStore();
   return (
     <div
       style={{
@@ -33,96 +35,122 @@ export default function VehiculosEnRuta({
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>
-          Vehículos en ruta
+          Vehículos disponibles
         </div>
         <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-          Selecciona una unidad para centrar el mapa
+          Selecciona un vehículo para ver sus rutas
         </div>
       </div>
 
       {/* Vehicle rows */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {vehiculos.map((v) => {
-          const isSelected = seleccionado.id === v.id;
-          return (
-            <div
-              key={v.id}
-              onClick={() => onSeleccionar(v)}
-              style={{
-                padding: "10px 14px",
-                cursor: "pointer",
-                borderBottom: "1px solid #e5e7eb",
-                background: isSelected ? "#fff1f0" : "#fff",
-                borderLeft: isSelected
-                  ? "3px solid #ef4444"
-                  : "3px solid transparent",
-                transition: "background 0.15s",
-              }}
-            >
+        {loading && (
+          <div style={{ padding: "10px 14px", color: "#6b7280", fontSize: 13 }}>
+            Cargando vehículos...
+          </div>
+        )}
+        {error && (
+          <div style={{ padding: "10px 14px", color: "#ef4444", fontSize: 13 }}>
+            Error: {error}
+          </div>
+        )}
+        {!loading && !error && cars.length === 0 && (
+          <div style={{ padding: "10px 14px", color: "#6b7280", fontSize: 13 }}>
+            No hay vehículos registrados.
+          </div>
+        )}
+        {!loading &&
+          cars.map((car) => {
+            const isSelected = selectedCar?.id === car.id;
+
+            return (
               <div
+                key={car.id}
+                onClick={() => setSelectedCar(isSelected ? undefined : car)}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: 6,
+                  padding: "10px 14px",
+                  cursor: "pointer",
+                  borderBottom: "1px solid #e5e7eb",
+                  background: isSelected ? "#fff1f0" : "#fff",
+                  borderLeft: isSelected
+                    ? "3px solid #ef4444"
+                    : "3px solid transparent",
+                  transition: "background 0.15s",
                 }}
               >
-                {/* Left: code + name */}
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 13,
-                      color: isSelected ? "#dc2626" : "#1f2937",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {v.codigo} · {v.placa}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "#6b7280",
-                      marginTop: 1,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {v.chofer} · {v.ruta}
-                  </div>
-                </div>
-                {/* Right: orders + canastas */}
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "#374151",
-                    }}
-                  >
-                    {v.ordenesEntregadas}/{v.ordenesTotales} ord.
-                  </div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>
-                    Canastos: {v.canastasTotal}
-                  </div>
-                  <div style={{ marginTop: 4 }}>
-                    <span
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 6,
+                  }}
+                >
+                  {/* Left: name + license */}
+                  <div style={{ minWidth: 0 }}>
+                    <div
                       style={{
-                        ...ESTADO_BADGE_STYLE[v.estado],
-                        fontSize: 10,
                         fontWeight: 700,
-                        padding: "1px 6px",
-                        borderRadius: 3,
-                        letterSpacing: "0.04em",
+                        fontSize: 13,
+                        color: isSelected ? "#dc2626" : "#1f2937",
+                        whiteSpace: "nowrap",
                       }}
                     >
-                      {ESTADO_LABELS[v.estado]}
-                    </span>
+                      {car.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#6b7280",
+                        marginTop: 1,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Placa: {car.license} • ID: {car.idCar}
+                    </div>
+                    {((car as any).Employee_name ||
+                      (car as any).ClientGroup_name) && (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#6b7280",
+                          marginTop: 1,
+                          whiteSpace: "nowrap",
+                          opacity: 0.8,
+                        }}
+                      >
+                        {[
+                          (car as any).Employee_name,
+                          (car as any).ClientGroup_name,
+                        ]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </div>
+                    )}
+                  </div>
+                  {/* Right: status */}
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ marginTop: 4 }}>
+                      <span
+                        style={{
+                          background:
+                            car.active === "true" ? "#dcfce7" : "#fee2e2",
+                          color: car.active === "true" ? "#166534" : "#991b1b",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "1px 6px",
+                          borderRadius: 3,
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        {car.active === "true" ? "ACTIVO" : "INACTIVO"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     </div>
   );

@@ -22,6 +22,8 @@ export interface GroupedRequest {
   Client_id: number;
   items: Datum[];
   pagado: boolean;
+  RequestStage_payment?: number;
+  PaymentType_name?: string;
 }
 
 export function useGetrequesthistory() {
@@ -80,6 +82,8 @@ export function useGetrequesthistory() {
             Provider_id: curr.Provider_id,
             Client_id: curr.Client_id,
             pagado: isPaid,
+            RequestStage_payment: curr.RequestStage_payment,
+            PaymentType_name: String(curr.PaymentType_name),
             items: [curr],
           });
         }

@@ -2,6 +2,19 @@ import { useCallback } from "react";
 import { EditableGroupData } from "../../types/planning.types";
 
 export const useAutomaticPlanning = () => {
+  // Helper para calcular el multiplicador según código de producto
+  const getMultiplier = useCallback((productCode: string) => {
+    if (productCode.includes("104") || productCode.includes("105")) return 15;
+    if (
+      productCode.includes("106") ||
+      productCode.includes("107") ||
+      productCode.includes("108") ||
+      productCode.includes("109")
+    )
+      return 12;
+    return 0;
+  }, []);
+
   // Función para recalcular totales de un grupo basado en sus clientes
   const recalculateGroupTotals = useCallback(
     (group: EditableGroupData): EditableGroupData => {
@@ -72,23 +85,35 @@ export const useAutomaticPlanning = () => {
 
       const newGroups = [...editableGroups];
 
-      // Primero resetear todos los valores a 0
+      // Crear un Set de productos a procesar para facilitar la búsqueda
+      const productosAProcesar = new Set(updatedDetalles.map((d) => d.label));
+
+      // Solo resetear valores de productos excedidos
       newGroups.forEach((group, groupIndex) => {
         group.clientes.forEach((cliente) => {
           cliente.codes.forEach((code) => {
-            code.cajas = 0;
-            code.unidades = 0;
-            code.restante = code.solicitado - code.unidades;
+            // Solo resetear si el producto está en la lista de excedidos
+            if (productosAProcesar.has(code.label)) {
+              code.cajas = 0;
+              code.unidades = 0;
+              code.restante = code.solicitado - code.unidades;
+            }
           });
           // Recalcular totales del cliente
-          cliente.totalCajas = 0;
-          cliente.totalUnid = 0;
+          cliente.totalCajas = cliente.codes.reduce(
+            (sum, code) => sum + code.cajas,
+            0,
+          );
+          cliente.totalUnid = cliente.codes.reduce(
+            (sum, code) => sum + code.unidades,
+            0,
+          );
         });
         // Recalcular totales del grupo
         newGroups[groupIndex] = recalculateGroupTotals(newGroups[groupIndex]);
       });
 
-      // Luego, para cada producto en los detalles
+      // Luego, procesar solo los productos en updatedDetalles
       updatedDetalles.forEach((detalle) => {
         // Extraer el valor disponible (posición 2) - después del "/"
         const cajasParts = detalle.cajas.split("/");
@@ -105,32 +130,28 @@ export const useAutomaticPlanning = () => {
 
         // Calcular total solicitado para este producto (posición 1)
         let totalCajasSolicitadas = 0;
-        let totalUnidadesSolicitadas = 0;
 
         newGroups.forEach((group) => {
           group.clientes.forEach((cliente) => {
             const code = cliente.codes.find((c) => c.label === detalle.label);
             if (code && code.solicitado > 0) {
               totalCajasSolicitadas += code.solicitado;
-              totalUnidadesSolicitadas += code.solicitado;
             }
           });
         });
 
         // Si no hay solicitudes para este producto, continuar
-        if (totalCajasSolicitadas === 0 && totalUnidadesSolicitadas === 0)
-          return;
+        if (totalCajasSolicitadas === 0) return;
 
-        // Calcular porcentajes de disponibilidad
+        // Calcular porcentaje de disponibilidad de cajas
         const porcentajeCajas =
           cajasDisponibles >= totalCajasSolicitadas
             ? 1
             : cajasDisponibles / totalCajasSolicitadas;
 
-        const porcentajeUnidades =
-          unidadesDisponibles >= totalUnidadesSolicitadas
-            ? 1
-            : unidadesDisponibles / totalUnidadesSolicitadas;
+        console.log(
+          `Producto ${detalle.label}: disponible ${cajasDisponibles}, solicitado ${totalCajasSolicitadas}, porcentaje ${(porcentajeCajas * 100).toFixed(2)}%`,
+        );
 
         // Aplicar distribución proporcional a cada cliente
         newGroups.forEach((group, groupIndex) => {
@@ -144,21 +165,25 @@ export const useAutomaticPlanning = () => {
                 newGroups[groupIndex].clientes[clienteIndex].codes[codeIndex];
 
               if (code.solicitado > 0) {
-                // Calcular asignación proporcional
+                // Calcular asignación proporcional de cajas con redondeo hacia abajo
                 const cajasAsignadas =
                   porcentajeCajas >= 1
                     ? code.solicitado
                     : Math.floor(code.solicitado * porcentajeCajas);
 
+                // Calcular unidades basándose en las cajas asignadas y el multiplicador
+                const multiplier = getMultiplier(detalle.label);
                 const unidadesAsignadas =
-                  porcentajeUnidades >= 1
-                    ? code.solicitado
-                    : Math.floor(code.solicitado * porcentajeUnidades);
+                  multiplier > 0 ? cajasAsignadas * multiplier : cajasAsignadas; // Si no hay multiplicador, usar el mismo valor que cajas
 
                 // Asignar valores
                 code.cajas = cajasAsignadas;
                 code.unidades = unidadesAsignadas;
                 code.restante = code.solicitado - code.unidades;
+
+                console.log(
+                  `Cliente ${cliente.name} - ${detalle.label}: solicitado ${code.solicitado}, asignado ${cajasAsignadas} cajas → ${unidadesAsignadas} unidades (multiplier: ${multiplier})`,
+                );
               }
             }
           });
@@ -182,7 +207,7 @@ export const useAutomaticPlanning = () => {
 
       return newGroups;
     },
-    [recalculateGroupTotals],
+    [recalculateGroupTotals, getMultiplier],
   );
 
   return {

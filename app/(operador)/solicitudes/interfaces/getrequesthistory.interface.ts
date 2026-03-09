@@ -22,6 +22,7 @@ export interface Datum {
   ProductRequest_units: number;
   ProductRequest_containers: number;
   ProductRequest_menudencia: string;
+  RequestStage_payment?: number;
 }
 
 export enum CategoryName {
