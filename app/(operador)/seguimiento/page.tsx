@@ -56,13 +56,6 @@ export default function SeguimientoPage() {
     });
   }, [trackingData, vehicles]);
 
-  // Auto-select first car when available
-  React.useEffect(() => {
-    if (!selectedCar && cars && cars.length > 0) {
-      setSelectedCar(cars[0]);
-    }
-  }, [cars, selectedCar, setSelectedCar]);
-
   return (
     <RouteProtection requiredTransaction="Seguimiento">
       <div

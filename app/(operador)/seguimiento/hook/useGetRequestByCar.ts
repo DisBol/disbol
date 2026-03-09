@@ -9,6 +9,10 @@ export function useGetRequestByCar(Car_id: number) {
 
   useEffect(() => {
     let isMounted = true;
+
+    // We removed the early return here so that `Car_id === 0` will
+    // fetch all routes/clients from the backend.
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
