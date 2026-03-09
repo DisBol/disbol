@@ -678,7 +678,11 @@ export default function DistributeGroup({
                             cliente.Request_id,
                           )
                         }
-                        disabled={savingClient === clienteIdx || savingWeighing}
+                        disabled={
+                          savingClient === clienteIdx ||
+                          savingWeighing ||
+                          savedClients.has(clienteIdx)
+                        }
                         className={`text-xs font-bold text-white px-3 py-2 rounded-lg transition-colors ${
                           savedClients.has(clienteIdx)
                             ? "bg-emerald-500 hover:bg-emerald-600"
