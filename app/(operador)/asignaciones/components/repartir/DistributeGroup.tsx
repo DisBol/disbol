@@ -355,7 +355,7 @@ export default function DistributeGroup({
       // Llamar a UpdateRequest
       const reqVal = await updateRequest(
         requestId,
-        "1",
+        "true",
         clientes[clienteIdx].Provider_id,
         clientes[clienteIdx].Client_id,
         Number(vehiculo) || 1,
