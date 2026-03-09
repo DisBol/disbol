@@ -23,7 +23,6 @@ export default function DetailAssignment({
   detalles,
   onCancel,
   onAutomaticPlanning,
-  onSavePlanning,
 }: DetailAssignmentProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 shadow-sm">
@@ -44,7 +43,7 @@ export default function DetailAssignment({
               onClick={onCancel}
               className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-[11px] font-bold shadow-sm bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors shrink-0"
             >
-              Cancelar
+              Volver
             </button>
             <button
               onClick={onAutomaticPlanning}
@@ -53,14 +52,6 @@ export default function DetailAssignment({
               Planificación
               <br />
               Automática
-            </button>
-            <button
-              onClick={onSavePlanning}
-              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold shadow-sm bg-[#f59e0b] hover:bg-amber-600 text-white transition-colors leading-tight text-center"
-            >
-              Guardar
-              <br />
-              Planificación
             </button>
           </div>
         </div>

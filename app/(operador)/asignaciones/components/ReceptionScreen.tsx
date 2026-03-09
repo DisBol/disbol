@@ -205,8 +205,76 @@ export default function ReceptionScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignment.id]);
 
-  const [costoTotalGeneral] = useState("0.00");
-  const [pesoTotalGeneral] = useState("0.00");
+  const { costoTotalGeneral, pesoTotalGeneral } = useMemo(() => {
+    let totalCost = 0;
+    let totalWeight = 0;
+
+    boletas.forEach((boleta) => {
+      let boletaCost = 0;
+      let boletaWeight = 0;
+
+      if (!boleta.precioDiferido) {
+        const costoPorKg = Number(boleta.costoPorKg) || 0;
+        let totalNetWeight = 0;
+
+        for (const codigo of boleta.codigosSeleccionados) {
+          const detalle = boleta.detalles[codigo];
+          if (detalle?.pesajes) {
+            for (const pesaje of detalle.pesajes) {
+              const selectedContainer = containersData?.find(
+                (container) => container.id.toString() === pesaje.contenedor,
+              );
+              const destare = selectedContainer?.destare || 0;
+              const grossWeight = Number(pesaje.kg) || 0;
+              const cantidadCajas = Number(pesaje.cajas) || 0;
+              const netWeight = Math.max(
+                0,
+                grossWeight - destare * cantidadCajas,
+              );
+              totalNetWeight += netWeight;
+            }
+          }
+        }
+
+        boletaCost = costoPorKg * totalNetWeight;
+        boletaWeight = totalNetWeight;
+      } else {
+        for (const codigo of boleta.codigosSeleccionados) {
+          const detalle = boleta.detalles[codigo];
+          if (detalle?.pesajes) {
+            const precioProducto = Number(detalle.precio) || 0;
+            let netWeightProducto = 0;
+
+            for (const pesaje of detalle.pesajes) {
+              const selectedContainer = containersData?.find(
+                (container) => container.id.toString() === pesaje.contenedor,
+              );
+              const destare = selectedContainer?.destare || 0;
+              const grossWeight = Number(pesaje.kg) || 0;
+              const cantidadCajas = Number(pesaje.cajas) || 0;
+              const netWeight = Math.max(
+                0,
+                grossWeight - destare * cantidadCajas,
+              );
+              netWeightProducto += netWeight;
+            }
+
+            boletaCost += precioProducto * netWeightProducto;
+            boletaWeight += netWeightProducto;
+          }
+        }
+      }
+
+      totalCost += boletaCost;
+      totalWeight += boletaWeight;
+    });
+
+    return {
+      costoTotalGeneral: (Math.round(totalCost * 100) / 100).toFixed(2),
+      pesoTotalGeneral: (Math.round(totalWeight * 100) / 100).toFixed(2),
+    };
+  }, [boletas, containersData]);
+
   const [showResumenModal, setShowResumenModal] = useState(false);
 
   const handleAgregarBoleta = () => {

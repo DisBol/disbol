@@ -16,7 +16,6 @@ interface DistributeAssignmentHeaderProps {
     unidades: string;
   }>;
   onCancel?: () => void;
-  onSave?: () => void;
   isStarted?: boolean;
   groupName?: string;
   totalCajas?: number;
@@ -31,8 +30,6 @@ interface DistributeAssignmentHeaderProps {
     deudaCajas: number;
     deudaDinero: number;
   }>;
-  // true cuando todos los clientes de todos los grupos han sido guardados
-  allSaved?: boolean;
 }
 
 export default function DistributeAssignmentHeader({
@@ -41,7 +38,6 @@ export default function DistributeAssignmentHeader({
   precioDiferido = false,
   detalles,
   onCancel,
-  onSave,
   isStarted = false,
   groupName = "",
   totalCajas = 0,
@@ -51,7 +47,6 @@ export default function DistributeAssignmentHeader({
   onVehiculoChange,
   onChoferChange,
   clientes = [],
-  allSaved = false,
 }: DistributeAssignmentHeaderProps) {
   const { cars } = useCar();
   const { drivers } = useGetEmployeeDriver();
@@ -61,6 +56,14 @@ export default function DistributeAssignmentHeader({
     chofer && drivers.find((d) => d.id.toString() === chofer)?.name
       ? drivers.find((d) => d.id.toString() === chofer)?.name
       : "No asignado";
+
+  // Obtener nombre del vehículo basado en su ID
+  const vehiculoEncontrado = vehiculo
+    ? cars.find((c) => c.id.toString() === vehiculo)
+    : null;
+  const vehiculoNombre = vehiculoEncontrado
+    ? `${vehiculoEncontrado.name} - ${vehiculoEncontrado.license}`
+    : "No asignado";
 
   // Convert cars to SelectOption format
   const vehiculoOptions: SelectOption[] = cars.map((car) => ({
@@ -141,7 +144,7 @@ export default function DistributeAssignmentHeader({
               </div>
               <div>
                 <p style="margin: 0; color: #666; font-weight: bold;">VEHÍCULO:</p>
-                <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: bold; color: #1e293b;">${vehiculo || "No asignado"}</p>
+                <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: bold; color: #1e293b;">${vehiculoNombre}</p>
               </div>
               <div>
                 <p style="margin: 0; color: #666; font-weight: bold;">CHOFER:</p>
@@ -169,9 +172,9 @@ export default function DistributeAssignmentHeader({
                           (c) =>
                             `<tr style="border-bottom: 1px solid #d1d5db;">
                               <td style="padding: 15px; text-align: left; font-size: 14px;">${c.nombre}</td>
-                              <td style="padding: 15px; text-align: center; font-size: 14px;">0.00</td>
-                              <td style="padding: 15px; text-align: center; font-size: 14px;">0</td>
-                              <td style="padding: 15px; text-align: center; font-size: 14px;">0.00</td>
+                              <td style="padding: 15px; text-align: center; font-size: 14px;">${c.montoACobrar.toFixed(2)}</td>
+                              <td style="padding: 15px; text-align: center; font-size: 14px;">${c.deudaCajas}</td>
+                              <td style="padding: 15px; text-align: center; font-size: 14px;">${c.deudaDinero.toFixed(2)}</td>
                             </tr>`,
                         )
                         .join("")
@@ -270,22 +273,6 @@ export default function DistributeAssignmentHeader({
                 Volver
               </button>
               <button
-                onClick={onSave}
-                disabled={!allSaved}
-                title={
-                  !allSaved
-                    ? "Debe guardar todos los pesajes de cada cliente primero"
-                    : ""
-                }
-                className={`px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors flex-1 min-w-35 ${
-                  allSaved
-                    ? "bg-[#10b981] hover:bg-emerald-600 text-white cursor-pointer"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
-              >
-                Guardar Pesaje
-              </button>
-              <button
                 className="px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm bg-blue-500 hover:bg-blue-600 text-white transition-colors flex-1 min-w-35"
                 onClick={generatePDF}
               >
@@ -368,23 +355,7 @@ export default function DistributeAssignmentHeader({
               onClick={onCancel}
               className="px-4 py-2 border border-gray-200 rounded-lg text-[12px] font-bold shadow-sm bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors shrink-0 flex-1"
             >
-              Cancelar
-            </button>
-            <button
-              onClick={onSave}
-              disabled={!allSaved}
-              title={
-                !allSaved
-                  ? "Debe guardar todos los pesajes de cada cliente primero"
-                  : ""
-              }
-              className={`px-4 py-2 rounded-lg text-[12px] font-bold shadow-sm transition-colors text-center flex-1 ${
-                allSaved
-                  ? "bg-[#10b981] hover:bg-emerald-600 text-white cursor-pointer"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
-              }`}
-            >
-              Guardar
+              Volver
             </button>
           </div>
         </div>

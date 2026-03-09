@@ -1,24 +1,20 @@
 import { Datum } from "../interface/getrequestbycar.interface";
-import { BadgeEnvio, BadgePago } from "./Badges";
-import { useGetHistoryForRequest } from "../hook/useGetHistoryForRequest";
+import { Datum as CarDatum } from "../../configuraciones/interfaces/vehiculos/getcar";
+import { BadgeEnvio } from "./Badges";
 
 interface DetalleRutaProps {
-  vehiculo?: Datum;
+  carSeleccionado?: CarDatum;
+  requests: Datum[];
+  loadingRequests: boolean;
+  errorRequests: string | null;
 }
 
-export default function DetalleRuta({ vehiculo }: DetalleRutaProps) {
-  const { stops, loading, error } = useGetHistoryForRequest(
-    vehiculo?.Request_created_at
-      ? String(vehiculo.Request_created_at)
-      : undefined,
-    vehiculo?.Provider_id,
-    vehiculo?.ClientGroup_id,
-  );
-
-  const rawReq = vehiculo;
-  const hasStops = stops && stops.length > 0;
-  const hasFallbackItem = !hasStops && rawReq;
-
+export default function DetalleRuta({
+  carSeleccionado,
+  requests,
+  loadingRequests,
+  errorRequests,
+}: DetalleRutaProps) {
   return (
     <div
       style={{
@@ -41,56 +37,62 @@ export default function DetalleRuta({ vehiculo }: DetalleRutaProps) {
           flexShrink: 0,
         }}
       >
-        Detalle de la ruta
+        Detalle de rutas{" "}
+        {carSeleccionado
+          ? `- ${carSeleccionado.name} (${carSeleccionado.license})`
+          : ""}
       </div>
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {!vehiculo && (
+        {!carSeleccionado && (
           <div style={{ fontSize: 13, color: "#6b7280" }}>
-            Seleccione una ruta
+            Seleccione un vehículo para ver sus rutas
           </div>
         )}
-        {vehiculo && loading && (
+        {carSeleccionado && loadingRequests && (
           <div style={{ fontSize: 13, color: "#6b7280" }}>
-            Cargando detalle...
+            Cargando rutas...
           </div>
         )}
-        {vehiculo && error && (
+        {carSeleccionado && errorRequests && (
           <div style={{ fontSize: 13, color: "#ef4444" }}>
-            Error cargando detalles
+            Error cargando rutas: {errorRequests}
           </div>
         )}
-        {vehiculo && !loading && !error && !hasStops && !hasFallbackItem && (
-          <div style={{ fontSize: 13, color: "#6b7280" }}>
-            No hay paradas o detalles para esta ruta.
-          </div>
-        )}
+        {carSeleccionado &&
+          !loadingRequests &&
+          !errorRequests &&
+          requests.length === 0 && (
+            <div style={{ fontSize: 13, color: "#6b7280" }}>
+              No hay rutas asignadas a este vehículo.
+            </div>
+          )}
 
-        {/* --- Render history items if exist --- */}
-        {vehiculo &&
-          !loading &&
-          hasStops &&
-          stops.map((stop, idx) => {
-            const ordenes = stop.items.length;
-            const canastas = stop.items.reduce(
-              (acc, curr) =>
-                acc + (Number(curr.ProductRequest_containers) || 0),
-              0,
-            );
+        {/* --- Render requests if exist --- */}
+        {carSeleccionado &&
+          !loadingRequests &&
+          !errorRequests &&
+          requests.length > 0 &&
+          requests.map((request, idx) => {
+            const ordenes =
+              (request.RequestStage_in_container || 0) +
+              (request.RequestStage_out_container || 0);
+            const canastas = ordenes;
 
             // Intentamos formatear la hora (asume "YYYY-MM-DD HH:mm:ss" o isostring)
-            const timeStr = String(stop.Request_created_at).split(" ")[1] || "";
+            const timeStr =
+              String(request.Request_created_at).split(" ")[1] || "";
             const timeFmt = timeStr ? timeStr.slice(0, 5) : "";
 
             return (
               <div
-                key={stop.Request_id || idx}
+                key={request.Request_id}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
                   padding: "10px 0",
                   borderBottom:
-                    idx < stops.length - 1 ? "1px solid #f3f4f6" : "none",
+                    idx < requests.length - 1 ? "1px solid #f3f4f6" : "none",
                 }}
               >
                 <div>
@@ -102,17 +104,18 @@ export default function DetalleRuta({ vehiculo }: DetalleRutaProps) {
                       marginBottom: 4,
                     }}
                   >
-                    {stop.Client_name}
+                    REQ-{request.Request_id} · {request.Client_name}
                   </div>
                   <div style={{ fontSize: 11, color: "#6b7280" }}>
                     {timeFmt ? `${timeFmt} · ` : ""}
-                    {ordenes} órdenes · {canastas} canastos
+                    Ruta {request.ClientGroup_name ||
+                      request.ClientGroup_id} · {canastas} canastos
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                   <BadgeEnvio
                     estado={
-                      String(stop.RequestState_name) === "ENTREGADO"
+                      String(request.RequestState_name) === "ENTREGADO"
                         ? "ENTREGADO"
                         : "ENVIADO"
                     }
@@ -120,11 +123,11 @@ export default function DetalleRuta({ vehiculo }: DetalleRutaProps) {
                   <span
                     style={{
                       background:
-                        stop.PaymentType_name === "No Pagado"
+                        request.PaymentType_name === "No Pagado"
                           ? "#fee2e2"
                           : "#dcfce7",
                       color:
-                        stop.PaymentType_name === "No Pagado"
+                        request.PaymentType_name === "No Pagado"
                           ? "#991b1b"
                           : "#166534",
                       padding: "2px 6px",
@@ -133,72 +136,13 @@ export default function DetalleRuta({ vehiculo }: DetalleRutaProps) {
                       fontSize: 11,
                     }}
                   >
-                    Bs. {stop.RequestStage_payment || 0} -{" "}
-                    {stop.PaymentType_name ||
-                      (stop.pagado ? "Efectivo" : "No Pagado")}
+                    Bs. {request.RequestStage_payment || 0} -{" "}
+                    {request.PaymentType_name || "No Pagado"}
                   </span>
                 </div>
               </div>
             );
           })}
-
-        {/* --- Fallback view if no history items but request details exist --- */}
-        {vehiculo && !loading && !error && hasFallbackItem && rawReq && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "8px 0",
-              borderBottom: "none",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontWeight: 600,
-                  fontSize: 13,
-                  color: "#111827",
-                  marginBottom: 2,
-                }}
-              >
-                Información de Ruta
-              </div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>
-                {rawReq.RequestStage_in_container || 0} recibidos ·{" "}
-                {rawReq.RequestStage_out_container || 0} despachados
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              <BadgeEnvio
-                estado={
-                  String(rawReq.RequestState_name) === "ENTREGADO"
-                    ? "ENTREGADO"
-                    : "ENVIADO"
-                }
-              />
-              <span
-                style={{
-                  background:
-                    rawReq.PaymentType_name === "No Pagado"
-                      ? "#fee2e2"
-                      : "#dcfce7",
-                  color:
-                    rawReq.PaymentType_name === "No Pagado"
-                      ? "#991b1b"
-                      : "#166534",
-                  padding: "2px 6px",
-                  borderRadius: 4,
-                  fontWeight: 600,
-                  fontSize: 11,
-                }}
-              >
-                Bs. {rawReq.RequestStage_payment || 0} -{" "}
-                {rawReq.PaymentType_name}
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
