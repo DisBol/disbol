@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { RouteProtection } from "@/components/shared/RouteProtection";
 import "leaflet/dist/leaflet.css";
 
@@ -16,7 +16,8 @@ import { useGetVehicleComplete } from "./hook/useGetVehicleComplete";
 import { useGetTrackingData } from "./hook/useGetTrackingData";
 
 export default function SeguimientoPage() {
-  const { selectedCar, setSelectedCar } = useCarStore();
+  const { selectedCar } = useCarStore();
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const { cars, isLoading: loadingCars, error: errorCars } = useCar();
   const {
     requests,
@@ -56,6 +57,20 @@ export default function SeguimientoPage() {
     });
   }, [trackingData, vehicles]);
 
+  React.useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+
+    if (isMapFullscreen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = originalOverflow;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isMapFullscreen]);
+
   return (
     <RouteProtection requiredTransaction="Seguimiento">
       <div
@@ -87,22 +102,27 @@ export default function SeguimientoPage() {
                 border: "1px solid #d1d5db",
                 borderRadius: 6,
                 overflow: "hidden",
-                height: 370,
+                height: isMapFullscreen ? "100vh" : 370,
                 flexShrink: 0,
-                position: "relative",
+                position: isMapFullscreen ? "fixed" : "relative",
+                top: isMapFullscreen ? 0 : undefined,
+                left: isMapFullscreen ? 0 : undefined,
+                width: isMapFullscreen ? "100vw" : undefined,
+                zIndex: isMapFullscreen ? 9999 : undefined,
               }}
             >
               <MapaSeguimiento
                 vehiculosEnVivo={mapDataCompleta}
                 zonasPoligonales={geofences}
                 rutasSeleccionadas={requests || []}
+                isFullscreen={isMapFullscreen}
               />
               {loadingTracker && (
                 <div
                   style={{
                     position: "absolute",
                     top: 10,
-                    right: 10,
+                    right: 50,
                     background: "rgba(255, 255, 255, 0.9)",
                     padding: "4px 8px",
                     borderRadius: 4,
@@ -116,6 +136,65 @@ export default function SeguimientoPage() {
                   Actualizando GPS...
                 </div>
               )}
+              {/* Fullscreen toggle button */}
+              <button
+                onClick={() => setIsMapFullscreen((prev) => !prev)}
+                title={isMapFullscreen ? "Minimizar mapa" : "Pantalla completa"}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  zIndex: 1001,
+                  background: "white",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 4,
+                  width: 32,
+                  height: 32,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }}
+              >
+                {isMapFullscreen ? (
+                  /* Minimize icon */
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#374151"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                    <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                    <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                    <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                  </svg>
+                ) : (
+                  /* Fullscreen icon */
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#374151"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                  </svg>
+                )}
+              </button>
             </div>
 
             {/* VEHICLE DETAIL */}

@@ -22,6 +22,8 @@ interface ProductReception {
   kgBruto: number;
   kgNeto: number;
   kgRecibidos: number;
+  recibidosCajas: number;
+  recibidosUnidades: number;
   productId: string;
   active: boolean; // Agregar estado activo
 }
@@ -68,30 +70,6 @@ export default function ReceptionScreen({
 }: ReceptionScreenProps) {
   // Obtener rawData del store para acceder a productos de posición 2
   const { rawData } = useAssignmentsStore();
-
-  // Transformar productos del assignment a formato de recepción
-  const productos = useMemo<ProductReception[]>(() => {
-    // Mostrar todos los productos del assignment que tienen posición === 1 (activos e inactivos)
-    return assignment.productos
-      .filter((p) => p.posicion === 1)
-      .map((p) => ({
-        codigo: p.codigo,
-        cajas: p.cajas,
-        unidades: p.unidades,
-        kgBruto: p.kgBruto,
-        kgNeto: p.kgNeto,
-        kgRecibidos: 0.0,
-        productId: p.productId,
-        active: p.active,
-      }));
-  }, [assignment.productos]);
-
-  const { addAssignmentStage } = useAddAssignmentStage();
-  const { addTicket } = useAddTicket();
-  const { addProductAssignment } = useAddProductAssignment();
-  const { addTicketsWeighing } = useAddTicketsWeighing();
-  const { updateProductAssignment } = useUpdateProductAssignment();
-  const { updateTicket } = useUpdateTicket();
   const { containersData } = useContainer();
 
   const [boletas, setBoletas] = useState<Boleta[]>([
@@ -107,6 +85,88 @@ export default function ReceptionScreen({
       tiposContenedor: {},
     },
   ]);
+
+  // Transformar productos del assignment a formato de recepción
+  const productos = useMemo<ProductReception[]>(() => {
+    // Mostrar todos los productos del assignment que tienen posición === 1 (activos e inactivos)
+    return assignment.productos
+      .filter((p) => p.posicion === 1)
+      .map((p) => ({
+        codigo: p.codigo,
+        cajas: p.cajas,
+        unidades: p.unidades,
+        kgBruto: p.kgBruto,
+        kgNeto: p.kgNeto,
+        kgRecibidos: 0.0,
+        recibidosCajas: 0,
+        recibidosUnidades: 0,
+        productId: p.productId,
+        active: p.active,
+      }));
+  }, [assignment.productos]);
+
+  const recibidosPorCodigo = useMemo(() => {
+    const acc: Record<
+      string,
+      { cajas: number; unidades: number; kgRecibidos: number }
+    > = {};
+
+    boletas.forEach((boleta) => {
+      boleta.codigosSeleccionados.forEach((codigo) => {
+        const detalle = boleta.detalles[codigo];
+        if (!detalle) return;
+
+        if (!acc[codigo]) {
+          acc[codigo] = { cajas: 0, unidades: 0, kgRecibidos: 0 };
+        }
+
+        acc[codigo].cajas += Number(detalle.cajas) || 0;
+        acc[codigo].unidades += Number(detalle.unidades) || 0;
+
+        if (detalle.pesajes && detalle.pesajes.length > 0) {
+          const netoFromPesajes = detalle.pesajes.reduce((sum, pesaje) => {
+            const selectedContainer = containersData?.find(
+              (container) => container.id.toString() === pesaje.contenedor,
+            );
+            const destare = selectedContainer?.destare || 0;
+            const grossWeight = Number(pesaje.kg) || 0;
+            const cantidadCajas = Number(pesaje.cajas) || 0;
+            const netWeight = Math.max(
+              0,
+              grossWeight - destare * cantidadCajas,
+            );
+            return sum + netWeight;
+          }, 0);
+
+          acc[codigo].kgRecibidos += netoFromPesajes;
+        }
+      });
+    });
+
+    return acc;
+  }, [boletas, containersData]);
+
+  const productosConComparacion = useMemo(
+    () =>
+      productos.map((producto) => {
+        const recibido = recibidosPorCodigo[producto.codigo];
+
+        return {
+          ...producto,
+          recibidosCajas: recibido?.cajas || 0,
+          recibidosUnidades: recibido?.unidades || 0,
+          kgRecibidos: recibido?.kgRecibidos || 0,
+        };
+      }),
+    [productos, recibidosPorCodigo],
+  );
+
+  const { addAssignmentStage } = useAddAssignmentStage();
+  const { addTicket } = useAddTicket();
+  const { addProductAssignment } = useAddProductAssignment();
+  const { addTicketsWeighing } = useAddTicketsWeighing();
+  const { updateProductAssignment } = useUpdateProductAssignment();
+  const { updateTicket } = useUpdateTicket();
 
   const { fetchTicketsHistory } = useGetTicketsHistory();
 
@@ -895,7 +955,7 @@ export default function ReceptionScreen({
     <div className="min-h-screen max-w-full">
       <ReceptionHeader
         assignment={assignment}
-        productos={productos}
+        productos={productosConComparacion}
         costoTotalGeneral={costoTotalGeneral}
         onBack={onBack}
         onRegistrarRecepcion={handleRegistrarRecepcion}

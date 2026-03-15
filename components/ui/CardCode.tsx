@@ -84,6 +84,13 @@ export interface CardCodeProps
   // Visual indicators for exceeded values
   cajasExcedidas?: boolean;
   unidadesExcedidas?: boolean;
+  // Optional read-only comparison mode (e.g., Asignado vs Recibido)
+  compareReadOnly?: {
+    leftLabel?: string;
+    rightLabel: string;
+    rightCajas: string | number;
+    rightUnidades: string | number;
+  };
 }
 
 const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
@@ -113,6 +120,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       onRemovePesaje,
       cajasExcedidas = false,
       unidadesExcedidas = false,
+      compareReadOnly,
       ...props
     },
     ref,
@@ -219,25 +227,52 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             </svg>
           </button>
         )}
-        <h3 className="font-bold text-gray-900 text-[10px] mb-1 text-center whitespace-nowrap tracking-tight">
+        <h3 className="font-bold text-gray-900 text-[10px] mb-1 text-left tracking-tight">
           {label}
         </h3>
 
         <div className="space-y-1.5 flex-1">
           <div>
-            <label className="block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               CAJAS
             </label>
             {readOnly ? (
-              <div
-                className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
-                  cajasExcedidas
-                    ? "bg-red-50 border-red-300 text-red-700"
-                    : "bg-white border-gray-200 text-gray-700"
-                }`}
-              >
-                {cajas}
-              </div>
+              compareReadOnly ? (
+                <div className="grid grid-cols-2 gap-1">
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase text-center mb-0.5">
+                      {compareReadOnly.leftLabel || "Asig."}
+                    </span>
+                    <div
+                      className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                        cajasExcedidas
+                          ? "bg-red-50 border-red-300 text-red-700"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {cajas}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-emerald-600 uppercase text-center mb-0.5">
+                      {compareReadOnly.rightLabel}
+                    </span>
+                    <div className="w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-700">
+                      {compareReadOnly.rightCajas}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                    cajasExcedidas
+                      ? "bg-red-50 border-red-300 text-red-700"
+                      : "bg-white border-gray-200 text-gray-700"
+                  }`}
+                >
+                  {cajas}
+                </div>
+              )
             ) : (
               <input
                 type="number"
@@ -251,19 +286,46 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
           </div>
 
           <div>
-            <label className="block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               UNID.
             </label>
             {readOnly ? (
-              <div
-                className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
-                  unidadesExcedidas
-                    ? "bg-red-50 border-red-300 text-red-700"
-                    : "bg-white border-gray-200 text-gray-700"
-                }`}
-              >
-                {unidades}
-              </div>
+              compareReadOnly ? (
+                <div className="grid grid-cols-2 gap-1">
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase text-center mb-0.5">
+                      {compareReadOnly.leftLabel || "Asig."}
+                    </span>
+                    <div
+                      className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                        unidadesExcedidas
+                          ? "bg-red-50 border-red-300 text-red-700"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {unidades}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-emerald-600 uppercase text-center mb-0.5">
+                      {compareReadOnly.rightLabel}
+                    </span>
+                    <div className="w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-700">
+                      {compareReadOnly.rightUnidades}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                    unidadesExcedidas
+                      ? "bg-red-50 border-red-300 text-red-700"
+                      : "bg-white border-gray-200 text-gray-700"
+                  }`}
+                >
+                  {unidades}
+                </div>
+              )
             ) : (
               <input
                 type="number"
@@ -279,7 +341,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
           {/* Campo Precio - Solo se muestra cuando showPrecio es true */}
           {showPrecio && (
             <div>
-              <label className="block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
                 PRECIO
               </label>
               <input
@@ -319,7 +381,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                       </svg>
                     </Checkbox.Indicator>
                   </Checkbox.Root>
-                  <span className="text-[8px] font-bold text-gray-400 uppercase group-hover/checkbox:text-gray-600 transition-colors">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase group-hover/checkbox:text-gray-600 transition-colors">
                     MENUDENCIA
                   </span>
                 </label>
@@ -362,17 +424,17 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             {weightInfo && (
               <div className="border-t border-gray-200 pt-1 text-center space-y-0.5">
                 {weightInfo.bruto && (
-                  <div className="text-[9px] text-gray-600 font-medium">
+                  <div className="text-[10px] text-gray-600 font-medium">
                     {weightInfo.bruto} kg Bruto
                   </div>
                 )}
                 {weightInfo.neto && (
-                  <div className="text-[9px] text-gray-600 font-medium">
+                  <div className="text-[10px] text-gray-600 font-medium">
                     {weightInfo.neto} kg Neto
                   </div>
                 )}
                 {weightInfo.recibidos && (
-                  <div className="text-[9px] text-emerald-600 font-bold">
+                  <div className="text-[10px] text-emerald-600 font-bold">
                     {weightInfo.recibidos} kg Recibidos
                   </div>
                 )}
@@ -381,7 +443,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                     {weightInfo.adicional.map((info, index) => (
                       <div
                         key={index}
-                        className={`text-[9px] font-medium ${
+                        className={`text-[10px] font-medium ${
                           info.color === "success"
                             ? "text-emerald-600"
                             : info.color === "danger"
@@ -470,7 +532,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                     <div className="space-y-1">
                       <div className="flex gap-1 items-end">
                         <div className="flex-1">
-                          <label className="block text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
                             CAJAS
                           </label>
                           <input
@@ -492,7 +554,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                       </div>
                       <div className="flex gap-1 items-end">
                         <div className="flex-1">
-                          <label className="block text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
                             UNID.
                           </label>
                           <input
@@ -548,7 +610,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                       </div>
                       <div className="flex gap-1 items-end">
                         <div className="flex-1">
-                          <label className="block text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
                             KG
                           </label>
                           <input
@@ -611,7 +673,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                 <div className="space-y-0.5 text-center">
                   {differences.cajas !== undefined && (
                     <div
-                      className={`text-[9px] font-medium ${
+                      className={`text-[10px] font-medium ${
                         differences.cajas === 0
                           ? "text-emerald-600"
                           : differences.cajas > 0
@@ -625,7 +687,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                   )}
                   {differences.unidades !== undefined && (
                     <div
-                      className={`text-[9px] font-medium ${
+                      className={`text-[10px] font-medium ${
                         differences.unidades === 0
                           ? "text-emerald-600"
                           : differences.unidades > 0
@@ -639,7 +701,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                   )}
                   {differences.kgBruto !== undefined && (
                     <div
-                      className={`text-[9px] font-medium ${
+                      className={`text-[10px] font-medium ${
                         differences.kgBruto === 0
                           ? "text-emerald-600"
                           : differences.kgBruto > 0
