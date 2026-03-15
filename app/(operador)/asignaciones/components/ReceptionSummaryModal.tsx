@@ -42,12 +42,8 @@ export default function ReceptionSummaryModal({
     >
       {/* Contenedor con altura fija y scroll */}
       <div className="max-h-[70vh] overflow-y-auto">
-        <div className="space-y-6">
-          <h3 className="text-lg font-bold text-gray-900">
-            Resumen por Código
-          </h3>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div className="space-y-6 pb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
             {productos.map((producto) => {
               // Buscar en rawData los productos con posición 2 del assignment actual
               const productosRecibidos =

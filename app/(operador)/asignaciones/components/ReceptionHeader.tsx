@@ -14,6 +14,8 @@ interface ProductReception {
   kgBruto: number;
   kgNeto: number;
   kgRecibidos: number;
+  recibidosCajas: number;
+  recibidosUnidades: number;
   active: boolean; // Agregar estado activo
 }
 
@@ -35,18 +37,17 @@ export default function ReceptionHeader({
   return (
     <Card className="p-4 md:p-6">
       {/* Header con información general */}
-      <div className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div>
-            <span className="text-xs font-bold text-gray-500 uppercase block">
-              PROVEEDOR:
-            </span>
-            <span className="text-md font-bold text-gray-900">
-              {assignment.proveedor}
-            </span>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <span className="text-xs font-bold text-gray-500 uppercase block">
+            PROVEEDOR:
+          </span>
+          <span className="text-md font-bold text-gray-900">
+            {assignment.proveedor}
+          </span>
+        </div>
 
-          {/* <div>
+        {/* <div>
             <span className="text-xs font-bold text-gray-500 uppercase block">
               CLIENTE:
             </span>
@@ -55,14 +56,13 @@ export default function ReceptionHeader({
             </span>
           </div> */}
 
-          <div>
-            <span className="text-xs font-bold text-gray-500 uppercase block">
-              COSTO TOTAL GENERAL
-            </span>
-            <span className="text-md font-bold text-red-500">
-              Bs {costoTotalGeneral}
-            </span>
-          </div>
+        <div>
+          <span className="text-xs font-bold text-gray-500 uppercase block">
+            COSTO TOTAL GENERAL
+          </span>
+          <span className="text-md font-bold text-red-500">
+            Bs {costoTotalGeneral}
+          </span>
         </div>
 
         <div className="flex gap-3">
@@ -86,7 +86,7 @@ export default function ReceptionHeader({
           Detalles de la Asignación
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
           {productos.map((producto) => (
             <div
               key={producto.codigo}
@@ -100,9 +100,19 @@ export default function ReceptionHeader({
                   cajas={producto.cajas}
                   unidades={producto.unidades}
                   readOnly={true}
+                  compareReadOnly={{
+                    leftLabel: "Asig.",
+                    rightLabel: "Rec.",
+                    rightCajas: producto.recibidosCajas,
+                    rightUnidades: producto.recibidosUnidades,
+                  }}
+                  differences={{
+                    cajas: producto.recibidosCajas - producto.cajas,
+                    unidades: producto.recibidosUnidades - producto.unidades,
+                  }}
                   weightInfo={{
-                    bruto: `${producto.kgBruto.toFixed(2)}`,
-                    neto: `${producto.kgNeto.toFixed(2)}`,
+                    // bruto: `${producto.kgBruto.toFixed(2)}`,
+                    // neto: `${producto.kgNeto.toFixed(2)}`,
                     recibidos: `${producto.kgRecibidos.toFixed(2)}`,
                   }}
                 />
