@@ -46,12 +46,14 @@ interface MapaSeguimientoProps {
   vehiculosEnVivo: VehiculoEnVivo[];
   zonasPoligonales: Geofence[];
   rutasSeleccionadas?: RequestDatum[];
+  isFullscreen?: boolean;
 }
 
 export default function MapaSeguimiento({
   vehiculosEnVivo,
   zonasPoligonales,
   rutasSeleccionadas,
+  isFullscreen = false,
 }: MapaSeguimientoProps) {
   const { selectedCar } = useCarStore();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -245,6 +247,36 @@ export default function MapaSeguimiento({
 
     // We no longer destroy the map instance inside the hook unless it's an unmount (see below)
   }, [vehiculosEnVivo, zonasPoligonales, selectedCar, rutasSeleccionadas]);
+
+  // Keep Leaflet synced with container size changes.
+  useEffect(() => {
+    if (!mapRef.current || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => {
+      mapInstanceRef.current?.invalidateSize(false);
+    });
+
+    observer.observe(mapRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Fullscreen transitions need explicit size invalidation after layout settles.
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      mapInstanceRef.current?.invalidateSize(true);
+    });
+    const timeoutId = window.setTimeout(() => {
+      mapInstanceRef.current?.invalidateSize(true);
+    }, 250);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [isFullscreen]);
 
   // Clean-up on unmount
   useEffect(() => {
