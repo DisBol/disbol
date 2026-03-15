@@ -59,7 +59,7 @@ export default function ContainerForm({
       ...initialData,
       name,
       destare: parseFloat(peso),
-      deff: porDefecto ? 1 : 0,
+      deff: porDefecto ? "true" : "false",
     });
   };
 

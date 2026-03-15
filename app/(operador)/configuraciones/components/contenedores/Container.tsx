@@ -40,7 +40,7 @@ export default function Containers() {
           id: editingProvider.id,
           name: data.name || "",
           destare: data.destare || 0,
-          deff: data.deff || 0,
+          deff: data.deff ?? "false",
           active: editingProvider.active,
         });
         success = !!result;
@@ -48,7 +48,7 @@ export default function Containers() {
         const result = await addContainer({
           name: data.name || "",
           destare: data.destare || 0,
-          deff: data.deff || 0,
+          deff: data.deff ?? "false",
           active: "true",
         });
         success = !!result;

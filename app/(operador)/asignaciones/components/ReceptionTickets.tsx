@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -98,6 +99,42 @@ export default function ReceptionTickets({
   onGuardarBoleta,
 }: ReceptionTicketsProps) {
   const { containers, containersData } = useContainer();
+  const [savingBoletas, setSavingBoletas] = useState<Set<string>>(new Set());
+  const [expandedSavedBoletas, setExpandedSavedBoletas] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const handleGuardarBoleta = async (boletaId: string) => {
+    if (savingBoletas.has(boletaId)) return;
+
+    setSavingBoletas((prev) => {
+      const next = new Set(prev);
+      next.add(boletaId);
+      return next;
+    });
+
+    try {
+      await Promise.resolve(onGuardarBoleta(boletaId));
+    } finally {
+      setSavingBoletas((prev) => {
+        const next = new Set(prev);
+        next.delete(boletaId);
+        return next;
+      });
+    }
+  };
+
+  const toggleSavedBoleta = (boletaId: string) => {
+    setExpandedSavedBoletas((prev) => {
+      const next = new Set(prev);
+      if (next.has(boletaId)) {
+        next.delete(boletaId);
+      } else {
+        next.add(boletaId);
+      }
+      return next;
+    });
+  };
 
   // Función para calcular el total_payment en tiempo real
   const calculateTotalPayment = (boleta: Boleta): number => {
@@ -154,6 +191,18 @@ export default function ReceptionTickets({
     return Math.round(totalPayment * 100) / 100; // Redondear a 2 decimales
   };
 
+  const calculateBoletaTotals = (boleta: Boleta) => {
+    return boleta.codigosSeleccionados.reduce(
+      (acc, codigo) => {
+        const detalle = boleta.detalles[codigo];
+        acc.totalCajas += Number(detalle?.cajas) || 0;
+        acc.totalUnidades += Number(detalle?.unidades) || 0;
+        return acc;
+      },
+      { totalCajas: 0, totalUnidades: 0 },
+    );
+  };
+
   return (
     <Card className="p-4 md:p-6 mt-4">
       {/* Boletas de Recepción */}
@@ -178,198 +227,286 @@ export default function ReceptionTickets({
               key={boleta.id}
               className="border border-gray-200 rounded-lg p-4 bg-gray-50"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-red-500">
-                  Boleta #{index + 1}
-                </h3>
-                {!boleta.ticketId && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="success"
-                      color="success"
-                      size="sm"
-                      onClick={() => onGuardarBoleta(boleta.id)}
-                    >
-                      Guardar Boleta
-                    </Button>
-                    <Button
-                      variant="danger"
-                      color="danger"
-                      size="sm"
-                      onClick={() => onEliminarBoleta(boleta.id)}
-                    >
-                      Eliminar Boleta
-                    </Button>
-                  </div>
-                )}
-              </div>
+              {(() => {
+                const isSaved = Boolean(boleta.ticketId);
+                const isExpanded =
+                  !isSaved || expandedSavedBoletas.has(boleta.id);
+                const { totalCajas, totalUnidades } =
+                  calculateBoletaTotals(boleta);
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
-                    CÓDIGO DE BOLETA
-                  </span>
-                  <InputField
-                    placeholder="Ingrese código"
-                    value={boleta.codigo}
-                    onChange={(e) =>
-                      onUpdateBoleta(boleta.id, "codigo", e.target.value)
-                    }
-                  />
-                </div>
+                return (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-4 py-2">
+                          <h3 className="text-md font-bold tracking-tight text-red-500 uppercase">
+                            Boleta{" "}
+                            <span className="text-red-500 ml-1">
+                              #{index + 1}
+                            </span>
+                          </h3>
 
-                <div>
-                  <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
-                    COSTO POR KG (Bs)
-                  </span>
-                  <InputField
-                    value={boleta.costoPorKg}
-                    disabled={boleta.precioDiferido}
-                    onChange={(e) =>
-                      onUpdateBoleta(boleta.id, "costoPorKg", e.target.value)
-                    }
-                  />
-                </div>
+                          <div className="flex items-center gap-3 text-red-500">
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-[12px] font-medium uppercase tracking-wider text-slate-500">
+                                Cajas
+                              </span>
+                              <span className="text-sm font-semibold text-slate-800">
+                                {totalCajas}
+                              </span>
+                            </div>
 
-                <div>
-                  <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
-                    COSTO DE ESTA BOLETA
-                  </span>
-                  <div className="text-2xl font-bold text-red-500">
-                    Bs {calculateTotalPayment(boleta).toFixed(2)}
-                  </div>
-                </div>
-              </div>
+                            {/* Separador tipo punto (bullet) más discreto que una línea vertical */}
+                            <span className="h-1 w-1 rounded-full bg-slate-300" />
 
-              <div className="mb-4">
-                <Checkbox
-                  label="Precio diferido"
-                  checked={boleta.precioDiferido}
-                  onChange={(checked) =>
-                    onUpdateBoleta(boleta.id, "precioDiferido", checked)
-                  }
-                />
-              </div>
-
-              {/* Códigos en esta Boleta */}
-              <div className="mb-4">
-                <h4 className="text-sm font-bold text-gray-600 uppercase mb-3">
-                  Códigos en esta Boleta
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {productos.map((producto) => {
-                    const isSelected = boleta.codigosSeleccionados.includes(
-                      producto.codigo,
-                    );
-                    // const isMenudencia = boleta.menudencias?.includes(
-                    //   producto.codigo,
-                    // );
-
-                    const detalle = boleta.detalles?.[producto.codigo] || {
-                      cajas: 0,
-                      unidades: 0,
-                    };
-
-                    return (
-                      <div key={producto.codigo} className="relative h-full">
-                        {isSelected ? (
-                          <div className="h-full">
-                            <CardCode
-                              label={
-                                <div className="flex items-center justify-center gap-2">
-                                  <Checkbox
-                                    checked={true}
-                                    onChange={() =>
-                                      onToggleCodigoEnBoleta(
-                                        boleta.id,
-                                        producto.codigo,
-                                      )
-                                    }
-                                    label={`Código ${producto.codigo}`}
-                                  />
-                                </div>
-                              }
-                              cajas={detalle.cajas}
-                              unidades={detalle.unidades}
-                              readOnly={false}
-                              onCajasChange={(val) =>
-                                onUpdateCantidadBoleta(
-                                  boleta.id,
-                                  producto.codigo,
-                                  "cajas",
-                                  val === "" ? 0 : Number(val),
-                                )
-                              }
-                              onUnidadesChange={(val) =>
-                                onUpdateCantidadBoleta(
-                                  boleta.id,
-                                  producto.codigo,
-                                  "unidades",
-                                  val === "" ? 0 : Number(val),
-                                )
-                              }
-                              showPrecio={boleta.precioDiferido}
-                              precio={detalle.precio || ""}
-                              onPrecioChange={(val) =>
-                                onUpdateCantidadBoleta(
-                                  boleta.id,
-                                  producto.codigo,
-                                  "precio",
-                                  val,
-                                )
-                              }
-                              productName={producto.codigo}
-                              variant="active"
-                              // Don't pass menudencia props to hide the checkbox at bottom
-                              weightInfo={{
-                                bruto: `${(detalle.kgBruto !== undefined ? detalle.kgBruto : producto.kgBruto).toFixed(2)}`,
-                                neto: `${(detalle.kgNeto !== undefined ? detalle.kgNeto : producto.kgNeto).toFixed(2)}`,
-                              }}
-                              className="pointer-events-auto h-full"
-                              pesajes={detalle.pesajes}
-                              onAgregarPesaje={() =>
-                                onAgregarPesaje(boleta.id, producto.codigo)
-                              }
-                              onUpdatePesaje={(pesajeId, field, value) =>
-                                onUpdatePesaje(
-                                  boleta.id,
-                                  producto.codigo,
-                                  pesajeId,
-                                  field,
-                                  value,
-                                )
-                              }
-                              onRemovePesaje={(pesajeId) =>
-                                onRemovePesaje(
-                                  boleta.id,
-                                  producto.codigo,
-                                  pesajeId,
-                                )
-                              }
-                              containers={containers}
-                            />
-                          </div>
-                        ) : (
-                          <div className="border border-gray-200 rounded-lg p-3 bg-white flex items-center gap-3 h-full">
-                            <div>
-                              <Checkbox
-                                checked={false}
-                                onChange={() =>
-                                  onToggleCodigoEnBoleta(
-                                    boleta.id,
-                                    producto.codigo,
-                                  )
-                                }
-                                label={`Código ${producto.codigo}`}
-                              />
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-[12px] font-medium uppercase tracking-wider text-slate-500">
+                                Unidades
+                              </span>
+                              <span className="text-sm font-semibold text-slate-800">
+                                {totalUnidades}
+                              </span>
                             </div>
                           </div>
+                        </div>
+                        {isSaved && (
+                          <p className="text-xs text-gray-600">
+                            Guardada - Codigo: {boleta.codigo || "Sin codigo"} -
+                            Costo: Bs {calculateTotalPayment(boleta).toFixed(2)}
+                          </p>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+
+                      {isSaved ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleSavedBoleta(boleta.id)}
+                        >
+                          {isExpanded ? "Ocultar detalle" : "Ver detalle"}
+                        </Button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="success"
+                            color="success"
+                            size="sm"
+                            loading={savingBoletas.has(boleta.id)}
+                            disabled={savingBoletas.has(boleta.id)}
+                            onClick={() => handleGuardarBoleta(boleta.id)}
+                          >
+                            Guardar Boleta
+                          </Button>
+                          <Button
+                            variant="danger"
+                            color="danger"
+                            size="sm"
+                            onClick={() => onEliminarBoleta(boleta.id)}
+                          >
+                            Eliminar Boleta
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {isExpanded && (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div>
+                            <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                              CÓDIGO DE BOLETA
+                            </span>
+                            <InputField
+                              placeholder="Ingrese código"
+                              value={boleta.codigo}
+                              onChange={(e) =>
+                                onUpdateBoleta(
+                                  boleta.id,
+                                  "codigo",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                              COSTO POR KG (Bs)
+                            </span>
+                            <InputField
+                              value={boleta.costoPorKg}
+                              disabled={boleta.precioDiferido}
+                              onChange={(e) =>
+                                onUpdateBoleta(
+                                  boleta.id,
+                                  "costoPorKg",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                              COSTO DE ESTA BOLETA
+                            </span>
+                            <div className="text-2xl font-bold text-red-500">
+                              Bs {calculateTotalPayment(boleta).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mb-4">
+                          <Checkbox
+                            label="Precio diferido"
+                            checked={boleta.precioDiferido}
+                            onChange={(checked) =>
+                              onUpdateBoleta(
+                                boleta.id,
+                                "precioDiferido",
+                                checked,
+                              )
+                            }
+                          />
+                        </div>
+
+                        {/* Códigos en esta Boleta */}
+                        <div className="mb-4">
+                          <h4 className="text-sm font-bold text-gray-600 uppercase mb-3">
+                            Códigos en esta Boleta
+                          </h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                            {productos.map((producto) => {
+                              const isSelected =
+                                boleta.codigosSeleccionados.includes(
+                                  producto.codigo,
+                                );
+                              // const isMenudencia = boleta.menudencias?.includes(
+                              //   producto.codigo,
+                              // );
+
+                              const detalle = boleta.detalles?.[
+                                producto.codigo
+                              ] || {
+                                cajas: 0,
+                                unidades: 0,
+                              };
+
+                              return (
+                                <div
+                                  key={producto.codigo}
+                                  className="relative h-full"
+                                >
+                                  {isSelected ? (
+                                    <div className="h-full">
+                                      <CardCode
+                                        label={
+                                          <div className="flex items-center justify-center gap-2">
+                                            <Checkbox
+                                              checked={true}
+                                              onChange={() =>
+                                                onToggleCodigoEnBoleta(
+                                                  boleta.id,
+                                                  producto.codigo,
+                                                )
+                                              }
+                                              label={`Código ${producto.codigo}`}
+                                            />
+                                          </div>
+                                        }
+                                        cajas={detalle.cajas}
+                                        unidades={detalle.unidades}
+                                        readOnly={false}
+                                        onCajasChange={(val) =>
+                                          onUpdateCantidadBoleta(
+                                            boleta.id,
+                                            producto.codigo,
+                                            "cajas",
+                                            val === "" ? 0 : Number(val),
+                                          )
+                                        }
+                                        onUnidadesChange={(val) =>
+                                          onUpdateCantidadBoleta(
+                                            boleta.id,
+                                            producto.codigo,
+                                            "unidades",
+                                            val === "" ? 0 : Number(val),
+                                          )
+                                        }
+                                        showPrecio={boleta.precioDiferido}
+                                        precio={detalle.precio || ""}
+                                        onPrecioChange={(val) =>
+                                          onUpdateCantidadBoleta(
+                                            boleta.id,
+                                            producto.codigo,
+                                            "precio",
+                                            val,
+                                          )
+                                        }
+                                        productName={producto.codigo}
+                                        variant="active"
+                                        // Don't pass menudencia props to hide the checkbox at bottom
+                                        weightInfo={{
+                                          bruto: `${(detalle.kgBruto !== undefined ? detalle.kgBruto : producto.kgBruto).toFixed(2)}`,
+                                          neto: `${(detalle.kgNeto !== undefined ? detalle.kgNeto : producto.kgNeto).toFixed(2)}`,
+                                        }}
+                                        className="pointer-events-auto h-full"
+                                        pesajes={detalle.pesajes}
+                                        onAgregarPesaje={() =>
+                                          onAgregarPesaje(
+                                            boleta.id,
+                                            producto.codigo,
+                                          )
+                                        }
+                                        onUpdatePesaje={(
+                                          pesajeId,
+                                          field,
+                                          value,
+                                        ) =>
+                                          onUpdatePesaje(
+                                            boleta.id,
+                                            producto.codigo,
+                                            pesajeId,
+                                            field,
+                                            value,
+                                          )
+                                        }
+                                        onRemovePesaje={(pesajeId) =>
+                                          onRemovePesaje(
+                                            boleta.id,
+                                            producto.codigo,
+                                            pesajeId,
+                                          )
+                                        }
+                                        containers={containers}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="border border-gray-200 rounded-lg p-3 bg-white flex items-center gap-3 h-full">
+                                      <div>
+                                        <Checkbox
+                                          checked={false}
+                                          onChange={() =>
+                                            onToggleCodigoEnBoleta(
+                                              boleta.id,
+                                              producto.codigo,
+                                            )
+                                          }
+                                          label={`Código ${producto.codigo}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           ))}
         </div>
