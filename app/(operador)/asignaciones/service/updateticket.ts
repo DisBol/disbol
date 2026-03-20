@@ -9,6 +9,8 @@ export async function UpdateTicket(
   product_payment: string,
   active: string,
   AssignmentStage_id: number,
+  total_container: number,
+  total_units: number,
 ): Promise<UpdateTicketResponse> {
   return apiCall("updateticket", {
     id,
@@ -18,5 +20,7 @@ export async function UpdateTicket(
     product_payment,
     active,
     AssignmentStage_id,
+    total_container,
+    total_units,
   });
 }
