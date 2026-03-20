@@ -23,6 +23,7 @@ export interface PesajeData {
   unidades: number;
   kg: number;
   contenedor?: string;
+  guardado?: boolean;
 }
 
 interface BoletaDetail {
@@ -32,11 +33,14 @@ interface BoletaDetail {
   pesajes?: PesajeData[];
   kgBruto?: number;
   kgNeto?: number;
+  productAssignmentId?: string;
 }
 
 interface Boleta {
   id: string;
   ticketId?: string;
+  assignmentStageId?: number;
+  flujoCompletado?: boolean;
   codigo: string;
   costoPorKg: string;
   costoTotal: string;
@@ -78,8 +82,18 @@ interface ReceptionTicketsProps {
     field: "cajas" | "unidades" | "kg" | "contenedor",
     value: number | string,
   ) => void;
-  onRemovePesaje: (boletaId: string, codigo: string, pesajeId: string) => void;
+  onRemovePesaje: (
+    boletaId: string,
+    codigo: string,
+    pesajeId: string,
+  ) => void | Promise<void>;
+  onGuardarPesaje: (
+    boletaId: string,
+    codigo: string,
+    pesajeId: string,
+  ) => void | Promise<void>;
   onGuardarBoleta: (boletaId: string) => void;
+  onCompletarFlujoBoleta: (boletaId: string) => void | Promise<void>;
 }
 
 export default function ReceptionTickets({
@@ -96,13 +110,25 @@ export default function ReceptionTickets({
   onAgregarPesaje,
   onUpdatePesaje,
   onRemovePesaje,
+  onGuardarPesaje,
   onGuardarBoleta,
+  onCompletarFlujoBoleta,
 }: ReceptionTicketsProps) {
   const { containers, containersData } = useContainer();
   const [savingBoletas, setSavingBoletas] = useState<Set<string>>(new Set());
+  const [completingBoletas, setCompletingBoletas] = useState<Set<string>>(
+    new Set(),
+  );
+  const [savingPesajes, setSavingPesajes] = useState<Set<string>>(new Set());
   const [expandedSavedBoletas, setExpandedSavedBoletas] = useState<Set<string>>(
     new Set(),
   );
+
+  const getPesajeSaveKey = (
+    boletaId: string,
+    codigo: string,
+    pesajeId: string,
+  ) => `${boletaId}-${codigo}-${pesajeId}`;
 
   const handleGuardarBoleta = async (boletaId: string) => {
     if (savingBoletas.has(boletaId)) return;
@@ -134,6 +160,51 @@ export default function ReceptionTickets({
       }
       return next;
     });
+  };
+
+  const handleCompletarFlujoBoleta = async (boletaId: string) => {
+    if (completingBoletas.has(boletaId)) return;
+
+    setCompletingBoletas((prev) => {
+      const next = new Set(prev);
+      next.add(boletaId);
+      return next;
+    });
+
+    try {
+      await Promise.resolve(onCompletarFlujoBoleta(boletaId));
+    } finally {
+      setCompletingBoletas((prev) => {
+        const next = new Set(prev);
+        next.delete(boletaId);
+        return next;
+      });
+    }
+  };
+
+  const handleGuardarPesaje = async (
+    boletaId: string,
+    codigo: string,
+    pesajeId: string,
+  ) => {
+    const saveKey = getPesajeSaveKey(boletaId, codigo, pesajeId);
+    if (savingPesajes.has(saveKey)) return;
+
+    setSavingPesajes((prev) => {
+      const next = new Set(prev);
+      next.add(saveKey);
+      return next;
+    });
+
+    try {
+      await Promise.resolve(onGuardarPesaje(boletaId, codigo, pesajeId));
+    } finally {
+      setSavingPesajes((prev) => {
+        const next = new Set(prev);
+        next.delete(saveKey);
+        return next;
+      });
+    }
   };
 
   // Función para calcular el total_payment en tiempo real
@@ -278,13 +349,32 @@ export default function ReceptionTickets({
                       </div>
 
                       {isSaved ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleSavedBoleta(boleta.id)}
-                        >
-                          {isExpanded ? "Ocultar detalle" : "Ver detalle"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="success"
+                            color="success"
+                            size="sm"
+                            loading={completingBoletas.has(boleta.id)}
+                            disabled={
+                              completingBoletas.has(boleta.id) ||
+                              Boolean(boleta.flujoCompletado)
+                            }
+                            onClick={() =>
+                              handleCompletarFlujoBoleta(boleta.id)
+                            }
+                          >
+                            {boleta.flujoCompletado
+                              ? "Flujo Completado"
+                              : "Completar Flujo"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleSavedBoleta(boleta.id)}
+                          >
+                            {isExpanded ? "Ocultar detalle" : "Ver detalle"}
+                          </Button>
+                        </div>
                       ) : (
                         <div className="flex gap-2">
                           <Button
@@ -392,6 +482,70 @@ export default function ReceptionTickets({
                                 unidades: 0,
                               };
 
+                              const totalPesajeCajas = (
+                                detalle.pesajes || []
+                              ).reduce(
+                                (sum, pesaje) =>
+                                  sum + (Number(pesaje.cajas) || 0),
+                                0,
+                              );
+                              const totalPesajeUnidades = (
+                                detalle.pesajes || []
+                              ).reduce(
+                                (sum, pesaje) =>
+                                  sum + (Number(pesaje.unidades) || 0),
+                                0,
+                              );
+
+                              const totalPesajeKgBruto = (
+                                detalle.pesajes || []
+                              ).reduce(
+                                (sum, pesaje) => sum + (Number(pesaje.kg) || 0),
+                                0,
+                              );
+
+                              const totalPesajeKgNeto = (
+                                detalle.pesajes || []
+                              ).reduce((sum, pesaje) => {
+                                const selectedContainer = containersData?.find(
+                                  (container) =>
+                                    container.id.toString() ===
+                                    pesaje.contenedor,
+                                );
+                                const destare = selectedContainer?.destare || 0;
+                                const grossWeight = Number(pesaje.kg) || 0;
+                                const cantidadCajas = Number(pesaje.cajas) || 0;
+                                const netWeight =
+                                  grossWeight - destare * cantidadCajas;
+                                return sum + netWeight;
+                              }, 0);
+
+                              const kgBrutoRealtime =
+                                (detalle.pesajes?.length || 0) > 0
+                                  ? totalPesajeKgBruto
+                                  : Number(detalle.kgBruto) || 0;
+
+                              const kgNetoRealtime =
+                                (detalle.pesajes?.length || 0) > 0
+                                  ? totalPesajeKgNeto
+                                  : Number(detalle.kgNeto) || 0;
+
+                              const limiteCajas = Number(detalle.cajas) || 0;
+                              const limiteUnidades =
+                                Number(detalle.unidades) || 0;
+
+                              const excesoCajas = Math.max(
+                                0,
+                                totalPesajeCajas - limiteCajas,
+                              );
+                              const excesoUnidades = Math.max(
+                                0,
+                                totalPesajeUnidades - limiteUnidades,
+                              );
+
+                              const cajasExcedidas = excesoCajas > 0;
+                              const unidadesExcedidas = excesoUnidades > 0;
+
                               return (
                                 <div
                                   key={producto.codigo}
@@ -447,10 +601,27 @@ export default function ReceptionTickets({
                                         variant="active"
                                         // Don't pass menudencia props to hide the checkbox at bottom
                                         weightInfo={{
-                                          bruto: `${(detalle.kgBruto !== undefined ? detalle.kgBruto : producto.kgBruto).toFixed(2)}`,
-                                          neto: `${(detalle.kgNeto !== undefined ? detalle.kgNeto : producto.kgNeto).toFixed(2)}`,
+                                          bruto: `${kgBrutoRealtime.toFixed(2)}`,
+                                          neto: `${kgNetoRealtime.toFixed(2)}`,
+                                          adicional:
+                                            cajasExcedidas || unidadesExcedidas
+                                              ? [
+                                                  {
+                                                    label: "Exceso cajas:",
+                                                    value: `${excesoCajas}`,
+                                                    color: "danger",
+                                                  },
+                                                  {
+                                                    label: "Exceso unid:",
+                                                    value: `${excesoUnidades}`,
+                                                    color: "danger",
+                                                  },
+                                                ]
+                                              : undefined,
                                         }}
                                         className="pointer-events-auto h-full"
+                                        cajasExcedidas={cajasExcedidas}
+                                        unidadesExcedidas={unidadesExcedidas}
                                         pesajes={detalle.pesajes}
                                         onAgregarPesaje={() =>
                                           onAgregarPesaje(
@@ -458,6 +629,7 @@ export default function ReceptionTickets({
                                             producto.codigo,
                                           )
                                         }
+                                        disableAgregarPesaje={!isSaved}
                                         onUpdatePesaje={(
                                           pesajeId,
                                           field,
@@ -476,6 +648,22 @@ export default function ReceptionTickets({
                                             boleta.id,
                                             producto.codigo,
                                             pesajeId,
+                                          )
+                                        }
+                                        onGuardarPesaje={(pesajeId) =>
+                                          handleGuardarPesaje(
+                                            boleta.id,
+                                            producto.codigo,
+                                            pesajeId,
+                                          )
+                                        }
+                                        isSavingPesaje={(pesajeId) =>
+                                          savingPesajes.has(
+                                            getPesajeSaveKey(
+                                              boleta.id,
+                                              producto.codigo,
+                                              pesajeId,
+                                            ),
                                           )
                                         }
                                         containers={containers}

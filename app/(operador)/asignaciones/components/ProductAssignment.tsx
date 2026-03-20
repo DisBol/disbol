@@ -197,6 +197,8 @@ export default function ProductAssignment({
         total_payment: "0", // Se puede calcular después con base en los productos asignados
         product_payment: "0",
         AssignmentStage_id: assignmentStageId.toString(),
+        total_container: totalCajas,
+        total_units: totalUnidades,
       });
 
       if (!ticketId) {
