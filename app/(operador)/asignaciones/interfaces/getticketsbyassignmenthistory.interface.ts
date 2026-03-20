@@ -1,12 +1,17 @@
-export interface GetTicketsHistoryResponse {
+export interface GetTicketBayAssignmentHistoryResponse {
     data: Datum[];
     metadata: Metadata;
 }
 
 export interface Datum {
+    Assignment_id: number;
+    AssignmentStage_id: number;
+    AssignmentStage_position: number;
     Tickets_id: number;
     Tickets_code: string;
-    Tickets_deferred_payment: number | string;
+    Tickets_total_container: number;
+    Tickets_total_units: number;
+    Tickets_deferred_payment: number;
     Tickets_product_payment: number;
     ProductAssignment_id: number;
     ProductAssignment_container: number;
@@ -18,13 +23,6 @@ export interface Datum {
     Category_id: number;
     Product_id: number;
     Product_name: string;
-    TicketsWeighing_id: number;
-    TicketsWeighing_net_weight: number;
-    TicketsWeighing_gross_weight: number;
-    TicketsWeighing_container: number;
-    TicketsWeighing_units: number;
-    TicketsWeighing_Container_id: number;
-    Container_name: string;
     total_container: number;
     total_units: number;
 }

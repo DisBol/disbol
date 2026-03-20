@@ -8,6 +8,9 @@ interface UseAddTicketParams {
   total_payment: string;
   product_payment: string;
   AssignmentStage_id: string;
+  total_container: number;
+  total_units: number;
+
 }
 
 interface UseAddTicketReturn {
@@ -34,6 +37,9 @@ export const useAddTicket = (): UseAddTicketReturn => {
         params.total_payment,
         params.product_payment,
         params.AssignmentStage_id,
+        params.total_container,
+        params.total_units
+
       );
 
       setData(response.data);
