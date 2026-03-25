@@ -13,6 +13,8 @@ interface UseUpdateTicketParams {
   product_payment: string;
   active: string;
   AssignmentStage_id: number;
+  total_container: number;
+  total_units: number;
 }
 
 interface UseUpdateTicketReturn {
@@ -44,6 +46,8 @@ export const useUpdateTicket = (): UseUpdateTicketReturn => {
         params.product_payment,
         params.active,
         params.AssignmentStage_id,
+        params.total_container,
+        params.total_units,
       );
 
       setData(response.data);
@@ -73,6 +77,8 @@ export const useUpdateTicket = (): UseUpdateTicketReturn => {
           params.product_payment,
           "false", // active: false para eliminar
           params.AssignmentStage_id,
+          params.total_container,
+          params.total_units,
         );
 
         setData(response.data);

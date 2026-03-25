@@ -101,6 +101,8 @@ export const useAddFullAssignment = (): UseAddFullAssignmentReturn => {
           total_payment: params.total_payment,
           product_payment: params.product_payment,
           AssignmentStage_id: createdAssignmentStageId.toString(),
+          total_container: 0,
+          total_units: 0,
         });
 
         if (!createdTicketId) {
