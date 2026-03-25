@@ -24,11 +24,19 @@ export default function DetailAssignment({
   onCancel,
   onAutomaticPlanning,
 }: DetailAssignmentProps) {
+  const parseComparativo = (valor: string) => {
+    const [recibidoRaw, asignadoRaw] = valor.split("/");
+    return {
+      recibido: Number(recibidoRaw ?? 0) || 0,
+      asignado: Number(asignadoRaw ?? 0) || 0,
+    };
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 shadow-sm">
       <div className="flex flex-col xl:flex-row items-start gap-4">
         {/* Left info & buttons */}
-        <div className="flex flex-col gap-3 xl:w-70 shrink-0 pb-3 xl:pb-0">
+        <div className="flex flex-col gap-3 xl:w-45 shrink-0 pb-3 xl:pb-0">
           <div className="flex flex-col space-y-2 mt-1">
             <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
               PROVEEDOR: <span className="text-gray-900 ml-1">{proveedor}</span>
@@ -61,19 +69,39 @@ export default function DetailAssignment({
           <h3 className="text-[11px] font-bold text-gray-800 mb-2 xl:ml-2">
             Detalles de la Asignación
           </h3>
-          <div className="flex flex-wrap gap-1.5 xl:ml-2">
-            {detalles.map((d, i) => (
-              <div key={i} className="w-20 shrink-0">
-                <CardCode
-                  label={d.label}
-                  cajas={d.cajas}
-                  unidades={d.unidades}
-                  cajasExcedidas={d.cajasExcedidas}
-                  unidadesExcedidas={d.unidadesExcedidas}
-                  readOnly={true}
-                />
-              </div>
-            ))}
+          <div className="xl:ml-2 rounded-xl border border-gray-200 bg-gray-50 p-2">
+            <div
+              className="grid gap-2 grid-cols-4 sm:grid-cols-8 lg:grid-cols-8 xl:grid-cols-[repeat(var(--detalle-cols),minmax(0,1fr))]"
+              style={{
+                ["--detalle-cols" as string]: Math.max(detalles.length, 1),
+              }}
+            >
+              {detalles.map((d, i) =>
+                (() => {
+                  const cajas = parseComparativo(d.cajas);
+                  const unidades = parseComparativo(d.unidades);
+
+                  return (
+                    <div key={i} className="min-w-0">
+                      <CardCode
+                        label={d.label}
+                        cajas={cajas.recibido}
+                        unidades={unidades.recibido}
+                        cajasExcedidas={d.cajasExcedidas}
+                        unidadesExcedidas={d.unidadesExcedidas}
+                        readOnly={true}
+                        compareReadOnly={{
+                          leftLabel: "Asig.",
+                          rightLabel: "Recib.",
+                          rightCajas: cajas.asignado,
+                          rightUnidades: unidades.asignado,
+                        }}
+                      />
+                    </div>
+                  );
+                })(),
+              )}
+            </div>
           </div>
         </div>
       </div>

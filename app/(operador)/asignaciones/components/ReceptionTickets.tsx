@@ -41,6 +41,7 @@ interface Boleta {
   ticketId?: string;
   assignmentStageId?: number;
   flujoCompletado?: boolean;
+  hasPendingChanges?: boolean;
   codigo: string;
   costoPorKg: string;
   costoTotal: string;
@@ -346,25 +347,45 @@ export default function ReceptionTickets({
                             Costo: Bs {calculateTotalPayment(boleta).toFixed(2)}
                           </p>
                         )}
+                        {isSaved &&
+                          boleta.flujoCompletado &&
+                          boleta.hasPendingChanges && (
+                            <p className="text-xs text-amber-700 mt-1">
+                              Hay cambios pendientes en ticket o productos.
+                            </p>
+                          )}
                       </div>
 
                       {isSaved ? (
                         <div className="flex gap-2">
                           <Button
-                            variant="success"
-                            color="success"
+                            variant={
+                              boleta.flujoCompletado && boleta.hasPendingChanges
+                                ? "outline"
+                                : "success"
+                            }
+                            color={
+                              boleta.flujoCompletado && boleta.hasPendingChanges
+                                ? "warning"
+                                : "success"
+                            }
                             size="sm"
                             loading={completingBoletas.has(boleta.id)}
                             disabled={
                               completingBoletas.has(boleta.id) ||
-                              Boolean(boleta.flujoCompletado)
+                              Boolean(
+                                boleta.flujoCompletado &&
+                                !boleta.hasPendingChanges,
+                              )
                             }
                             onClick={() =>
                               handleCompletarFlujoBoleta(boleta.id)
                             }
                           >
                             {boleta.flujoCompletado
-                              ? "Flujo Completado"
+                              ? boleta.hasPendingChanges
+                                ? "Editar"
+                                : "Flujo Completado"
                               : "Completar Flujo"}
                           </Button>
                           <Button

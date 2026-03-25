@@ -55,6 +55,7 @@ interface Boleta {
   ticketId?: string;
   assignmentStageId?: number;
   flujoCompletado?: boolean;
+  hasPendingChanges?: boolean;
   codigo: string;
   costoPorKg: string;
   costoTotal: string;
@@ -76,6 +77,11 @@ export default function ReceptionScreen({
 }: ReceptionScreenProps) {
   const { containersData } = useContainer();
 
+  const markBoletaAsPendingEdit = (boleta: Boleta): Boleta => {
+    if (!boleta.flujoCompletado) return boleta;
+    return { ...boleta, hasPendingChanges: true };
+  };
+
   const [boletas, setBoletas] = useState<Boleta[]>([
     {
       id: "1",
@@ -83,6 +89,7 @@ export default function ReceptionScreen({
       costoPorKg: "0.00",
       costoTotal: "0.00",
       precioDiferido: false,
+      hasPendingChanges: false,
       codigosSeleccionados: [],
       menudencias: [],
       detalles: {},
@@ -203,6 +210,7 @@ export default function ReceptionScreen({
             ticketId,
             assignmentStageId: Number(row.AssignmentStage_id) || undefined,
             flujoCompletado: false,
+            hasPendingChanges: false,
             codigo: row.Tickets_code || "",
             costoPorKg: row.Tickets_product_payment?.toString() || "0",
             costoTotal: "0",
@@ -267,6 +275,7 @@ export default function ReceptionScreen({
             id: ticketId,
             ticketId: ticketId,
             flujoCompletado: false,
+            hasPendingChanges: false,
             codigo: row.Tickets_code || "",
             costoPorKg: row.Tickets_product_payment?.toString() || "0",
             costoTotal: row.Tickets_product_payment?.toString() || "0",
@@ -422,6 +431,7 @@ export default function ReceptionScreen({
       costoPorKg: "0.00",
       costoTotal: "0.00",
       precioDiferido: false,
+      hasPendingChanges: false,
       codigosSeleccionados: [],
       menudencias: [],
       detalles: {},
@@ -446,7 +456,9 @@ export default function ReceptionScreen({
   ) => {
     setBoletas(
       boletas.map((boleta) =>
-        boleta.id === boletaId ? { ...boleta, [field]: value } : boleta,
+        boleta.id === boletaId
+          ? markBoletaAsPendingEdit({ ...boleta, [field]: value })
+          : boleta,
       ),
     );
   };
@@ -480,7 +492,7 @@ export default function ReceptionScreen({
             }
           }
           return {
-            ...boleta,
+            ...markBoletaAsPendingEdit(boleta),
             codigosSeleccionados: nuevosCodigos,
             detalles: nuevosDetalles,
           };
@@ -535,7 +547,7 @@ export default function ReceptionScreen({
             });
 
             return {
-              ...boleta,
+              ...markBoletaAsPendingEdit(boleta),
               detalles: {
                 ...boleta.detalles,
                 [codigo]: nuevoDetalle,
@@ -559,7 +571,7 @@ export default function ReceptionScreen({
           });
 
           return {
-            ...boleta,
+            ...markBoletaAsPendingEdit(boleta),
             detalles: {
               ...boleta.detalles,
               [codigo]: nuevoDetalle,
@@ -590,7 +602,7 @@ export default function ReceptionScreen({
       boletas.map((boleta) => {
         if (boleta.id === boletaId) {
           return {
-            ...boleta,
+            ...markBoletaAsPendingEdit(boleta),
             tiposContenedor: {
               ...boleta.tiposContenedor,
               [codigo]: tipo,
@@ -610,7 +622,10 @@ export default function ReceptionScreen({
           const nuevasMenudencias = menudenciasActuales.includes(codigo)
             ? menudenciasActuales.filter((c) => c !== codigo)
             : [...menudenciasActuales, codigo];
-          return { ...boleta, menudencias: nuevasMenudencias };
+          return markBoletaAsPendingEdit({
+            ...boleta,
+            menudencias: nuevasMenudencias,
+          });
         }
         return boleta;
       }),
@@ -657,7 +672,7 @@ export default function ReceptionScreen({
             },
           ];
           return {
-            ...boleta,
+            ...markBoletaAsPendingEdit(boleta),
             detalles: {
               ...boleta.detalles,
               [codigo]: {
@@ -693,7 +708,7 @@ export default function ReceptionScreen({
           });
 
           return {
-            ...boleta,
+            ...markBoletaAsPendingEdit(boleta),
             detalles: {
               ...boleta.detalles,
               [codigo]: {
@@ -753,7 +768,7 @@ export default function ReceptionScreen({
           );
 
           return {
-            ...boleta,
+            ...markBoletaAsPendingEdit(boleta),
             detalles: {
               ...boleta.detalles,
               [codigo]: {
@@ -908,6 +923,7 @@ export default function ReceptionScreen({
               id: newTicketId.toString(),
               assignmentStageId: Number(stageId),
               flujoCompletado: false,
+              hasPendingChanges: false,
               detalles: { ...boleta.detalles },
             };
           }),
@@ -1112,6 +1128,7 @@ export default function ReceptionScreen({
             ? {
                 ...b,
                 costoTotal: finalTotalPayment.toString(),
+                hasPendingChanges: false,
                 detalles: detallesBoletaActualizados,
               }
             : b,
@@ -1259,6 +1276,7 @@ export default function ReceptionScreen({
           return {
             ...b,
             flujoCompletado: true,
+            hasPendingChanges: false,
             costoTotal: finalTotalPayment.toString(),
             detalles: updatedDetalles,
           };
