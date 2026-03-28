@@ -17,7 +17,9 @@ export default function Planificar({
   onClose,
 }: PlanningProps) {
   // Hook para obtener datos de planificación
-  const categoryProviderId = rawData?.[0]?.Assignment_CategoryProvider_id;
+  const categoryProviderId = rawData
+    ?.find((d) => d.Assignment_id.toString() === assignment?.id)
+    ?.Assignment_CategoryProvider_id;
   const { data: requestData, loading, error } = useGetRequestForPlanning(categoryProviderId);
 
   // Hooks para guardar datos

@@ -165,7 +165,7 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
     }
 
     try {
-      await deleteAssignment(assignment.id, assignment.providerId);
+      await deleteAssignment(assignment.id, assignment.categoryProviderId);
 
       // Refrescar datos tras eliminación
       setTimeout(() => onRefreshData(), 500);

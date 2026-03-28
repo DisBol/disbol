@@ -33,6 +33,7 @@ export interface Assignment {
   proveedor: string;
   providerId: string; // ID del proveedor necesario para eliminar assignment
   categoryId: string; // ID del grupo
+  categoryProviderId: string; // CategoryProvider_id para updateassignment
   productos: ProductQuantity[];
 }
 
@@ -133,6 +134,7 @@ const transformApiDataToAssignments = (
           proveedor: item.Provider_name,
           providerId: item.Provider_id.toString(),
           categoryId: item.Category_id.toString(),
+          categoryProviderId: item.Assignment_CategoryProvider_id.toString(),
           productos: [],
         };
       }

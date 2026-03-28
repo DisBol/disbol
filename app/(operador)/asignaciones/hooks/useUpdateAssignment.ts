@@ -8,7 +8,10 @@ import {
 interface UseUpdateAssignmentParams {
   id: string;
   active: string;
-  Provider_id: string;
+  CategoryProvider_id: string;
+  isRecibir: string;
+  isPlanificar: string;
+  isRepartir: string;
 }
 
 interface UseUpdateAssignmentReturn {
@@ -16,7 +19,7 @@ interface UseUpdateAssignmentReturn {
   loading: boolean;
   error: string | null;
   updateAssignment: (params: UseUpdateAssignmentParams) => Promise<boolean>;
-  deleteAssignment: (id: string, providerId: string) => Promise<boolean>;
+  deleteAssignment: (id: string, categoryProviderId: string) => Promise<boolean>;
   reset: () => void;
 }
 
@@ -34,7 +37,10 @@ export const useUpdateAssignment = (): UseUpdateAssignmentReturn => {
         const response: UpdateAssignmentResponse = await UpdateAssignment(
           params.id,
           params.active,
-          params.Provider_id,
+          params.CategoryProvider_id,
+          params.isRecibir,
+          params.isPlanificar,
+          params.isRepartir,
         );
 
         setData(response.data);
@@ -53,7 +59,7 @@ export const useUpdateAssignment = (): UseUpdateAssignmentReturn => {
   );
 
   const deleteAssignment = useCallback(
-    async (id: string, providerId: string) => {
+    async (id: string, categoryProviderId: string) => {
       try {
         setLoading(true);
         setError(null);
@@ -61,7 +67,10 @@ export const useUpdateAssignment = (): UseUpdateAssignmentReturn => {
         const response: UpdateAssignmentResponse = await UpdateAssignment(
           id,
           "false", // active: false para eliminar
-          providerId,
+          categoryProviderId,
+          "false",
+          "false",
+          "false",
         );
 
         setData(response.data);
