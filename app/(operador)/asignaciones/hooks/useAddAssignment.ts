@@ -6,7 +6,7 @@ import {
 } from "../interfaces/addassignment.interface";
 
 interface UseAddAssignmentParams {
-  Provider_id: string;
+  CategoryProvider_id: string;
 }
 
 interface UseAddAssignmentReturn {
@@ -28,7 +28,7 @@ export const useAddAssignment = (): UseAddAssignmentReturn => {
       setError(null);
 
       const response: AddAssignmentResponse = await AddAssignment(
-        params.Provider_id,
+        params.CategoryProvider_id,
       );
 
       setData(response.data);

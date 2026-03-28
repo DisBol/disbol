@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import CardCode, { PesajeData } from "@/components/ui/CardCode";
 import { InputField } from "@/components/ui/InputField";
 import jsPDF from "jspdf";
@@ -25,7 +25,7 @@ interface ClienteData {
   estado: string;
   Request_id: number;
   Client_id: number;
-  Provider_id: number;
+  CategoryProvider_id: number;
   codes: Array<{
     label: string;
     solicitado: number;
@@ -64,9 +64,6 @@ export default function DistributeGroup({
   codes: initialCodes,
   totalCajas,
   totalUnid,
-  costoPorKg = "0.00",
-  onCajasChange,
-  onUnidadesChange,
   isActive = false,
   onStarted,
   encargado = "",
@@ -80,6 +77,7 @@ export default function DistributeGroup({
   const { updateRequest } = useUpdateRequest();
   const { updateRequestRequestState } = useUpdateRequestRequestState();
   const { setClientTotal } = useDistributeStore();
+  const idCounterRef = useRef(0);
   const [savingClient, setSavingClient] = useState<number | null>(null);
   const [savedClients, setSavedClients] = useState<Set<number>>(new Set());
   const [saveErrors, setSaveErrors] = useState<Record<number, string>>({});
@@ -356,7 +354,7 @@ export default function DistributeGroup({
       const reqVal = await updateRequest(
         requestId,
         "true",
-        clientes[clienteIdx].Provider_id,
+        clientes[clienteIdx].CategoryProvider_id,
         clientes[clienteIdx].Client_id,
         Number(vehiculo) || 1,
         Number(chofer) || 2,
@@ -381,8 +379,9 @@ export default function DistributeGroup({
   };
 
   const handleAgregarPesaje = (clienteIdx: number, codeIdx: number) => {
+    idCounterRef.current++;
     const newPesaje: PesajeData = {
-      id: `pesaje-${Date.now()}-${Math.random()}`,
+      id: `pesaje-${idCounterRef.current}`,
       cajas: 0,
       unidades: 0,
       kg: 0,

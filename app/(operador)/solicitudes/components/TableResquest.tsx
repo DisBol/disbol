@@ -156,7 +156,7 @@ export default function TableResquest() {
 
   const handleDeleteClick = async (
     requestId: number,
-    providerId: number,
+    categoryProviderId: number,
     clientId: number,
   ) => {
     if (confirm("¿Estás seguro de que deseas eliminar esta solicitud?")) {
@@ -164,7 +164,7 @@ export default function TableResquest() {
         const success = await updateRequest(
           requestId,
           false,
-          providerId,
+          categoryProviderId,
           clientId,
         );
         if (success) {
@@ -347,7 +347,7 @@ export default function TableResquest() {
                               onClick={() =>
                                 handleDeleteClick(
                                   request.Request_id,
-                                  request.Provider_id,
+                                  request.CategoryProvider_id,
                                   request.Client_id,
                                 )
                               }

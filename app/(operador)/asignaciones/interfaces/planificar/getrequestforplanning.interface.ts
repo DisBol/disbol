@@ -7,10 +7,12 @@ export interface Datum {
   Request_id: number;
   Request_created_at: Date;
   RequestStage_position: number;
+  Request_CategoryProvider_id: number;
   RequestState_name: string;
   PaymentType_name: string;
   ClientGroup_id: number;
   ClientGroup_name: string;
+  Client_id: number;
   Client_name: string;
   Provider_id: number;
   Provider_name: string;

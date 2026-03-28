@@ -157,7 +157,7 @@ export default function ProductAssignment({
     try {
       // Paso 1: Crear Assignment
       const assignmentId = await addAssignment({
-        Provider_id: proveedor,
+        CategoryProvider_id: grupo,
       });
 
       if (!assignmentId) {

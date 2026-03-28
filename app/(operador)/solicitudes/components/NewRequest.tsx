@@ -114,7 +114,7 @@ export default function NewRequest() {
     try {
       // PASO 1: Crear la cabecera de la Solicitud (Request)
       const reqResponse = await addRequest(
-        parseInt(proveedor),
+        parseInt(grupo),
         parseInt(cliente),
       );
 
