@@ -16,6 +16,7 @@ export default function AsignacionesPage() {
   );
   const showPlanning = useAssignmentsStore((state) => state.showPlanning);
   const showDistribute = useAssignmentsStore((state) => state.showDistribute);
+  const showInventario = useAssignmentsStore((state) => state.showInventario);
 
   // Limpiar el estado de recepción al salir de la página
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function AsignacionesPage() {
   return (
     <RouteProtection requiredTransaction="Asignaciones">
       <div className="min-h-screen bg-gray-50 pb-12">
-        {!showReception && !showPlanning && !showDistribute && (
+        {!showReception && !showPlanning && !showDistribute && !showInventario && (
           <ProductAssignment onAssignmentCreated={handleAssignmentCreated} />
         )}
         <HistoryAssignment

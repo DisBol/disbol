@@ -6,6 +6,7 @@ import HistoryAssignmentFilters from "./HistoryAssignmentFilters";
 import HistoryAssignmentList from "./HistoryAssignmentList";
 import Planning from "./planificar/Planning";
 import Distribute from "./repartir/Distribute";
+import DetailInventario from "./inventario/DetailInventario";
 import { useAssignmentsStore, Assignment } from "../stores/assignments-store";
 import { useAssignmentFilters } from "../hooks/useAssignmentFilters";
 
@@ -33,6 +34,8 @@ const HistoryAssignment = forwardRef<
     showDistribute,
     distributeAssignment,
     hideDistributeScreen,
+    showInventario,
+    hideInventarioScreen,
     rawData,
   } = useAssignmentsStore();
 
@@ -60,6 +63,11 @@ const HistoryAssignment = forwardRef<
   const handleBackFromDistribute = () => {
     hideDistributeScreen();
   };
+
+  // Si estamos mostrando la pantalla de inventario, renderizarla
+  if (showInventario) {
+    return <DetailInventario onCancel={hideInventarioScreen} />;
+  }
 
   // Si estamos mostrando la pantalla de distribución, renderizarla
   if (showDistribute && distributeAssignment) {

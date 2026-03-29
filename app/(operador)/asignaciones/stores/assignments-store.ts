@@ -65,6 +65,9 @@ interface AssignmentsState {
   showDistribute: boolean;
   distributeAssignment: Assignment | null;
 
+  // Pantalla de inventario
+  showInventario: boolean;
+
   // Estado de edición
   editingAssignments: Set<string>;
   updatingProducts: Set<string>;
@@ -85,6 +88,10 @@ interface AssignmentsState {
   hidePlanningScreen: () => void;
   showDistributeScreen: (assignment: Assignment) => void;
   hideDistributeScreen: () => void;
+
+  // Inventario
+  showInventarioScreen: () => void;
+  hideInventarioScreen: () => void;
 
   // Acciones de edición
   startEditingAssignment: (assignmentId: string) => void;
@@ -190,6 +197,9 @@ export const useAssignmentsStore = create<AssignmentsState>()(
       showDistribute: false,
       distributeAssignment: null,
 
+      // Estado de inventario
+      showInventario: false,
+
       // Estado de edición
       editingAssignments: new Set(),
       updatingProducts: new Set(),
@@ -233,6 +243,7 @@ export const useAssignmentsStore = create<AssignmentsState>()(
             planningAssignment: null,
             showDistribute: false,
             distributeAssignment: null,
+            showInventario: false,
             editingAssignments: new Set(),
             updatingProducts: new Set(),
             pendingChanges: new Map(),
@@ -300,6 +311,20 @@ export const useAssignmentsStore = create<AssignmentsState>()(
           },
           false,
           "hideDistributeScreen",
+        ),
+
+      showInventarioScreen: () =>
+        set(
+          { showInventario: true },
+          false,
+          "showInventarioScreen",
+        ),
+
+      hideInventarioScreen: () =>
+        set(
+          { showInventario: false },
+          false,
+          "hideInventarioScreen",
         ),
 
       // Acciones de edición
