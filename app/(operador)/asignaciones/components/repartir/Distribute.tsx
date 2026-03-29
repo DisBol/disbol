@@ -46,7 +46,9 @@ export default function Repartir({
   rawData = null,
   onClose,
 }: DistributeProps) {
-  const { data: repartirData, loading, error } = useGetRequestForreparting();
+  const { data: repartirData, loading, error } = useGetRequestForreparting(
+    Number(assignment?.categoryProviderId ?? 0),
+  );
   const { clientTotals } = useDistributeStore();
 
   const [activeGroupIdx, setActiveGroupIdx] = useState<number | null>(null);

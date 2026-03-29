@@ -85,6 +85,17 @@ const HistoryAssignmentFilters: React.FC<HistoryAssignmentFiltersProps> = ({
           Filtrar
         </Button>
       </div>
+      {/* Botón Inventario */}
+      <div>
+        <Button
+          variant="info"
+          size="sm"
+          // onClick={}
+          disabled={loading}
+        >
+          Planificar desde Inventario
+        </Button>
+      </div>
     </div>
   );
 };
