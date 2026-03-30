@@ -84,15 +84,7 @@ export default function InventarioTotalGroup({
     onUpdateClientCode?.(clienteIdx, clientCodeIdx, "unidades", value);
     const multiplier = getMultiplier(productCode);
     if (multiplier > 0) {
-      const cajasCalculadas = value / multiplier;
-      onUpdateClientCode?.(
-        clienteIdx,
-        clientCodeIdx,
-        "cajas",
-        Number.isInteger(cajasCalculadas)
-          ? cajasCalculadas
-          : Number(cajasCalculadas.toFixed(2)),
-      );
+      onUpdateClientCode?.(clienteIdx, clientCodeIdx, "cajas", Math.ceil(value / multiplier));
     }
   };
 

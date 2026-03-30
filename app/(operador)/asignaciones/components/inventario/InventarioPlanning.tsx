@@ -4,9 +4,10 @@ import React, { useState, useMemo, useCallback } from "react";
 import DetailInventario from "./DetailInventario";
 import InventarioTotalGroup from "./InventarioTotalGroup";
 import { useCategoryProvider } from "@/app/(operador)/configuraciones/hooks/proveedores/useCategoryprovider";
+import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedores/useContainer";
 import { useGetProductInventoryUnits } from "../../hooks/inventario/useGetProductInventoryunits";
 import { useGetRequestForPlanning } from "../../hooks/planificar/useGetRequestForPlanning";
-import { useAutomaticPlanning } from "../../hooks/planificar/useAutomaticPlanning";
+import { useGetProductInventoryContainer } from "../../hooks/inventario/useGetProductInventoryContainer";
 import { EditableGroupData } from "../../types/planning.types";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
 
@@ -16,8 +17,15 @@ interface InventarioPlanningProps {
 
 export default function InventarioPlanning({ onClose }: InventarioPlanningProps) {
   const { providers, loading: isLoadingProviders } = useCategoryProvider();
+  const { containers, isLoading: isLoadingContainers } = useContainer();
   const [proveedor, setProveedor] = useState("");
   const [grupo, setGrupo] = useState("");
+  const [contenedor, setContenedor] = useState("");
+
+  const { data: containerData } = useGetProductInventoryContainer(
+    contenedor ? Number(contenedor) : null,
+  );
+  const containerInfo = containerData?.data?.[0] ?? null;
 
   const providerOptions = useMemo(
     () => providers.map((p) => ({ value: p.id.toString(), label: p.nombre })),
@@ -43,8 +51,6 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
     useGetProductInventoryUnits(categoryId);
   const { data: requestData, loading: loadingRequest, error: errorRequest } =
     useGetRequestForPlanning(categoryProviderId);
-
-  const { executeAutomaticPlanning, recalculateGroupTotals } = useAutomaticPlanning();
 
   // Build EditableGroupData from request data
   const processedGroups = useMemo((): EditableGroupData[] => {
@@ -147,7 +153,7 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
     return totals;
   }, [editableGroups]);
 
-  // Build detalles: compare planned vs inventory (same pattern as Planning.tsx updatedDetalles)
+  // Build detalles: compare planned vs inventory
   const detalles = useMemo(() => {
     const inventoryMap = new Map<string, number>();
     inventoryData?.data.forEach((item) => {
@@ -172,21 +178,6 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
       };
     });
   }, [plannedTotals, inventoryData]);
-
-  // Automatic planning: only apply to exceeded products
-  const handleAutomaticPlanning = useCallback(() => {
-    if (editableGroups.length === 0 || detalles.length === 0) return;
-
-    const productosExcedidos = detalles.filter(
-      (d) => d.cajasExcedidas || d.unidadesExcedidas,
-    );
-
-    if (productosExcedidos.length === 0) return;
-
-    setEditableGroups((prevGroups) =>
-      executeAutomaticPlanning(prevGroups, productosExcedidos),
-    );
-  }, [editableGroups, detalles, executeAutomaticPlanning]);
 
   const updateClientCode = useCallback(
     (
@@ -214,11 +205,30 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
         clientes[clientIndex] = cliente;
         group.clientes = clientes;
 
-        newGroups[groupIndex] = recalculateGroupTotals(group);
+        const productTotals = new Map<string, { cajas: number; unidades: number }>();
+        group.clientes.forEach((cl) => {
+          cl.codes.forEach((c) => {
+            if (!productTotals.has(c.label)) productTotals.set(c.label, { cajas: 0, unidades: 0 });
+            const t = productTotals.get(c.label)!;
+            t.cajas += c.cajas;
+            t.unidades += c.unidades;
+          });
+        });
+        const updatedCodes = group.codes.map((c) => {
+          const t = productTotals.get(c.label) ?? { cajas: 0, unidades: 0 };
+          return { ...c, cajas: t.cajas, unidades: t.unidades };
+        });
+        newGroups[groupIndex] = {
+          ...group,
+          codes: updatedCodes,
+          totalCajas: updatedCodes.reduce((s, c) => s + c.cajas, 0),
+          totalUnid: updatedCodes.reduce((s, c) => s + c.unidades, 0),
+        };
+
         return newGroups;
       });
     },
-    [recalculateGroupTotals],
+    [],
   );
 
   const [expandedGroups, setExpandedGroups] = useState<number[]>([0]);
@@ -240,10 +250,14 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
           selectedProveedor={proveedor}
           selectedGrupo={grupo}
           isLoadingProviders={isLoadingProviders}
+          containerOptions={containers.map((c) => ({ value: c.value, label: c.label }))}
+          selectedContenedor={contenedor}
+          isLoadingContainers={isLoadingContainers}
           onProviderChange={handleProviderChange}
           onGrupoChange={handleGrupoChange}
+          onContenedorChange={setContenedor}
+          containerInfo={containerInfo}
           onCancel={onClose}
-          onAutomaticPlanning={handleAutomaticPlanning}
         />
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

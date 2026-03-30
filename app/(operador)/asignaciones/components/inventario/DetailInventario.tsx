@@ -13,26 +13,34 @@ interface DetailInventarioProps {
   }>;
   providerOptions: SelectOption[];
   groupOptions: SelectOption[];
+  containerOptions: SelectOption[];
   selectedProveedor: string;
   selectedGrupo: string;
+  selectedContenedor: string;
   isLoadingProviders?: boolean;
+  isLoadingContainers?: boolean;
   onProviderChange: (value: string) => void;
   onGrupoChange: (value: string) => void;
+  onContenedorChange: (value: string) => void;
+  containerInfo?: { Container_name: string; Total_container: number } | null;
   onCancel?: () => void;
-  onAutomaticPlanning?: () => void;
 }
 
 export default function DetailInventario({
   detalles,
   providerOptions,
   groupOptions,
+  containerOptions,
   selectedProveedor,
   selectedGrupo,
+  selectedContenedor,
   isLoadingProviders,
+  isLoadingContainers,
   onProviderChange,
   onGrupoChange,
+  onContenedorChange,
+  containerInfo,
   onCancel,
-  onAutomaticPlanning,
 }: DetailInventarioProps) {
   const parseComparativo = (valor: string) => {
     const [planificadoRaw, inventarioRaw] = valor.split("/");
@@ -55,13 +63,24 @@ export default function DetailInventario({
               onSelect={(option) => onProviderChange(option.value)}
               placeholder={isLoadingProviders ? "Cargando..." : "Proveedor"}
             />
+
             <Select
               size="sm"
               options={groupOptions}
               selectedValues={selectedGrupo ? [selectedGrupo] : []}
               onSelect={(option) => onGrupoChange(option.value)}
-              placeholder={!selectedProveedor ? "Seleccione un proveedor" : "Categoría"}
+              placeholder={
+                !selectedProveedor ? "Seleccione un proveedor" : "Categoría"
+              }
               disabled={!selectedProveedor}
+            />
+
+            <Select
+              size="sm"
+              options={containerOptions}
+              selectedValues={selectedContenedor ? [selectedContenedor] : []}
+              onSelect={(option) => onContenedorChange(option.value)}
+              placeholder={isLoadingContainers ? "Cargando..." : "Contenedor"}
             />
           </div>
           <div className="flex gap-1.5">
@@ -71,19 +90,31 @@ export default function DetailInventario({
             >
               Volver
             </button>
-            <button
-              onClick={onAutomaticPlanning}
-              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold shadow-sm bg-[#e11d48] hover:bg-rose-700 text-white transition-colors leading-tight text-center"
-            >
-              Planificación
-              <br />
-              Automática
-            </button>
           </div>
         </div>
 
         {/* Right: comparison cards */}
         <div className="flex-1">
+          {containerInfo && (
+            <div className="w-full mb-4 rounded-xl bg-gradient-to-r from-[#e11d48] to-[#9f1239] px-4 py-3 shadow-md text-white flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-white/70 mb-0.5">
+                  Contenedor
+                </p>
+                <p className="text-[15px] font-extrabold leading-tight">
+                  {containerInfo.Container_name}
+                </p>
+              </div>
+              <div className="bg-white/20 rounded-xl px-5 py-2 text-center shrink-0">
+                <p className="text-[9px] font-bold text-white/80 uppercase tracking-wide">
+                  Total
+                </p>
+                <p className="text-[24px] font-extrabold leading-none">
+                  {containerInfo.Total_container}
+                </p>
+              </div>
+            </div>
+          )}
           <h3 className="text-[11px] font-bold text-gray-800 mb-2 xl:ml-2">
             Inventario de Productos
           </h3>
