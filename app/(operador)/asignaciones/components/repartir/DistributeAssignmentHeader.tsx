@@ -14,7 +14,10 @@ interface DistributeAssignmentHeaderProps {
     cajas: string;
     unidades: string;
   }>;
+  isRepartir?: string;
+  isFinalizando?: boolean;
   onCancel?: () => void;
+  onFinalizarRepartir?: () => void;
   isStarted?: boolean;
   groupName?: string;
   totalCajas?: number;
@@ -36,7 +39,10 @@ export default function DistributeAssignmentHeader({
   costoPorKg = "10.00",
   precioDiferido = false,
   detalles,
+  isRepartir,
+  isFinalizando,
   onCancel,
+  onFinalizarRepartir,
   isStarted = false,
   groupName = "",
   totalCajas = 0,
@@ -324,12 +330,29 @@ export default function DistributeAssignmentHeader({
               </span>
             </p>
           </div>
-          <div className="flex gap-2.5 mt-2">
+          <div className="flex gap-2.5 mt-2 flex-wrap">
             <button
               onClick={onCancel}
               className="px-4 py-2 border border-gray-200 rounded-lg text-[12px] font-bold shadow-sm bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors shrink-0 flex-1"
             >
               Volver
+            </button>
+            <button
+              onClick={onFinalizarRepartir}
+              disabled={isFinalizando || isRepartir === "true"}
+              className={`px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white transition-colors ${
+                isRepartir === "true"
+                  ? "bg-gray-400 cursor-not-allowed opacity-80"
+                  : isFinalizando
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 cursor-pointer"
+              }`}
+            >
+              {isRepartir === "true"
+                ? "Repartir Finalizado"
+                : isFinalizando
+                  ? "Finalizando..."
+                  : "Finalizar Repartir"}
             </button>
           </div>
         </div>

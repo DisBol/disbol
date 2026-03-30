@@ -47,6 +47,7 @@ interface DistributeGroupProps {
   totalCajas: number;
   totalUnid: number;
   costoPorKg?: string;
+  readOnly?: boolean;
   onCajasChange?: (codeIndex: number, value: number) => void;
   onUnidadesChange?: (codeIndex: number, value: number) => void;
   onEmpezar?: () => void;
@@ -65,6 +66,7 @@ export default function DistributeGroup({
   totalCajas,
   totalUnid,
   isActive = false,
+  readOnly = false,
   onStarted,
   encargado = "",
   vehiculo = "",
@@ -623,15 +625,17 @@ export default function DistributeGroup({
 
             {/* Right Action Button & Chevron */}
             <div className="flex items-center gap-2 shrink-0 pr-4">
-              <button
-                onClick={() => {
-                  setIsStarted(true);
-                  onStarted?.(true);
-                }}
-                className="bg-[#e11d48] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm hover:bg-rose-700 transition-colors"
-              >
-                Empezar
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => {
+                    setIsStarted(true);
+                    onStarted?.(true);
+                  }}
+                  className="bg-[#e11d48] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm hover:bg-rose-700 transition-colors"
+                >
+                  Empezar
+                </button>
+              )}
 
               <div className="flex items-center gap-1 text-gray-500">
                 <span className="text-[11px] font-medium whitespace-nowrap">
@@ -669,31 +673,33 @@ export default function DistributeGroup({
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          handleGuardarPesaje(
-                            clienteIdx,
-                            cliente.codes,
-                            cliente.Request_id,
-                          )
-                        }
-                        disabled={
-                          savingClient === clienteIdx ||
-                          savingWeighing ||
-                          savedClients.has(clienteIdx)
-                        }
-                        className={`text-xs font-bold text-white px-3 py-2 rounded-lg transition-colors ${
-                          savedClients.has(clienteIdx)
-                            ? "bg-emerald-500 hover:bg-emerald-600"
-                            : "bg-[#e11d48] hover:bg-rose-700"
-                        } disabled:opacity-60 disabled:cursor-not-allowed`}
-                      >
-                        {savingClient === clienteIdx
-                          ? "Guardando..."
-                          : savedClients.has(clienteIdx)
-                            ? "✓ Guardado"
-                            : "Guardar"}
-                      </button>
+                      {!readOnly && (
+                        <button
+                          onClick={() =>
+                            handleGuardarPesaje(
+                              clienteIdx,
+                              cliente.codes,
+                              cliente.Request_id,
+                            )
+                          }
+                          disabled={
+                            savingClient === clienteIdx ||
+                            savingWeighing ||
+                            savedClients.has(clienteIdx)
+                          }
+                          className={`text-xs font-bold text-white px-3 py-2 rounded-lg transition-colors ${
+                            savedClients.has(clienteIdx)
+                              ? "bg-emerald-500 hover:bg-emerald-600"
+                              : "bg-[#e11d48] hover:bg-rose-700"
+                          } disabled:opacity-60 disabled:cursor-not-allowed`}
+                        >
+                          {savingClient === clienteIdx
+                            ? "Guardando..."
+                            : savedClients.has(clienteIdx)
+                              ? "✓ Guardado"
+                              : "Guardar"}
+                        </button>
+                      )}
                       <button
                         onClick={() =>
                           generateClientPDF(cliente.name, clienteIdx)
@@ -720,6 +726,7 @@ export default function DistributeGroup({
                         <InputField
                           placeholder="0.00"
                           className="w-32 text-xs"
+                          disabled={readOnly}
                           value={precioVentaCliente[clienteIdx] || ""}
                           onChange={(e) =>
                             setPrecioVentaCliente((prev) => ({
@@ -729,11 +736,12 @@ export default function DistributeGroup({
                           }
                         />
                       )}
-                      <label className="flex items-center gap-1 cursor-pointer">
+                      <label className={`flex items-center gap-1 ${readOnly ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                         <input
                           type="checkbox"
                           className="w-4 h-4"
                           checked={precioDiferido}
+                          disabled={readOnly}
                           onChange={(e) => setPrecioDiferido(e.target.checked)}
                         />
                         <span className="text-xs text-gray-600">
@@ -764,19 +772,24 @@ export default function DistributeGroup({
                             readOnly={true}
                             showPrecio={precioDiferido}
                             precio={preciosMap[`${clienteIdx}-${idx}`] || ""}
-                            onPrecioChange={(val) =>
-                              handleUpdatePrecio(clienteIdx, idx, val)
+                            onPrecioChange={
+                              readOnly
+                                ? undefined
+                                : (val) => handleUpdatePrecio(clienteIdx, idx, val)
                             }
                             productName={code.label}
                             variant="active"
                             menudencia={
                               menudenciaMap[`${clienteIdx}-${idx}`] ?? true
                             }
-                            onMenudenciaChange={(checked) =>
-                              setMenudenciaMap((prev) => ({
-                                ...prev,
-                                [`${clienteIdx}-${idx}`]: checked,
-                              }))
+                            onMenudenciaChange={
+                              readOnly
+                                ? undefined
+                                : (checked) =>
+                                    setMenudenciaMap((prev) => ({
+                                      ...prev,
+                                      [`${clienteIdx}-${idx}`]: checked,
+                                    }))
                             }
                             weightInfo={{
                               bruto: calcularPesos(clienteIdx, idx).bruto,
@@ -784,20 +797,28 @@ export default function DistributeGroup({
                             }}
                             className="pointer-events-auto h-full"
                             pesajes={pesajesMap[`${clienteIdx}-${idx}`] || []}
-                            onAgregarPesaje={() =>
-                              handleAgregarPesaje(clienteIdx, idx)
+                            onAgregarPesaje={
+                              readOnly
+                                ? undefined
+                                : () => handleAgregarPesaje(clienteIdx, idx)
                             }
-                            onUpdatePesaje={(pesajeId, field, value) =>
-                              handleUpdatePesaje(
-                                clienteIdx,
-                                idx,
-                                pesajeId,
-                                field,
-                                value,
-                              )
+                            onUpdatePesaje={
+                              readOnly
+                                ? undefined
+                                : (pesajeId, field, value) =>
+                                    handleUpdatePesaje(
+                                      clienteIdx,
+                                      idx,
+                                      pesajeId,
+                                      field,
+                                      value,
+                                    )
                             }
-                            onRemovePesaje={(pesajeId) =>
-                              handleRemovePesaje(clienteIdx, idx, pesajeId)
+                            onRemovePesaje={
+                              readOnly
+                                ? undefined
+                                : (pesajeId) =>
+                                    handleRemovePesaje(clienteIdx, idx, pesajeId)
                             }
                             containers={containers}
                           />
