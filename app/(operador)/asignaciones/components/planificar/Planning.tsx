@@ -14,6 +14,7 @@ import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestfor
 import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
 import { Modal } from "@/components/ui/Modal";
 import { AddAssignmentRequest } from "../../service/planificar/addassignmentrequest";
+import { useAddProductInventoryMovements } from "../../hooks/inventario/useAddProductInventoryMovements";
 
 export default function Planificar({
   assignment = null,
@@ -21,16 +22,21 @@ export default function Planificar({
   onClose,
 }: PlanningProps) {
   // Hook para obtener datos de planificación
-  const categoryProviderId = rawData
-    ?.find((d) => d.Assignment_id.toString() === assignment?.id)
-    ?.Assignment_CategoryProvider_id;
-  const { data: requestData, loading, error } = useGetRequestForPlanning(categoryProviderId);
+  const categoryProviderId = rawData?.find(
+    (d) => d.Assignment_id.toString() === assignment?.id,
+  )?.Assignment_CategoryProvider_id;
+  const {
+    data: requestData,
+    loading,
+    error,
+  } = useGetRequestForPlanning(categoryProviderId);
 
   // Hooks para guardar datos
   const { addStage, loading: loadingStage } = useAddRequestStage();
   const { updateAssignmentFlags } = useAssignmentsStore();
   const { addProduct, loading: loadingAdd } = useAddProductRequest();
   const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
+  const { mutate: addMovement } = useAddProductInventoryMovements();
 
   // Hook para procesamiento de datos
   const { detalles, processedGroups, proveedor, clienteOrigen } =
@@ -210,7 +216,7 @@ export default function Planificar({
         console.error("Error saving group:", err);
       }
     },
-    [editableGroups, requestData, addStage, addProduct],
+    [editableGroups, requestData, addStage, addProduct, assignment],
   );
 
   // Calcular totales en tiempo real desde editableGroups
@@ -282,6 +288,34 @@ export default function Planificar({
   const handleConfirmFinalizar = useCallback(async () => {
     if (!assignment) return;
     setShowConfirmFinalizar(false);
+
+    // Registrar movimiento de inventario por sobrado de cada producto
+    if (requestData?.data && updatedDetalles.length > 0) {
+      const productIdMap = new Map<string, number>();
+      requestData.data.forEach((item) => {
+        productIdMap.set(item.Product_name, item.Product_id);
+      });
+
+      await Promise.all(
+        updatedDetalles.map((detalle) => {
+          const [assignedCajas, receivedCajas] = detalle.cajas.split("/").map(Number);
+          const [assignedUnidades, receivedUnidades] = detalle.unidades.split("/").map(Number);
+          const ProductInventory_id = productIdMap.get(detalle.label);
+          if (!ProductInventory_id) return Promise.resolve();
+
+          return addMovement({
+            active: "true",
+            Assignment_id: parseInt(assignment.id),
+            Request_id: null,
+            Container_id: null,
+            ProductInventory_id,
+            container: (receivedCajas || 0) - (assignedCajas || 0),
+            units: (receivedUnidades || 0) - (assignedUnidades || 0),
+          });
+        }),
+      );
+    }
+
     const ok = await updateAssignment({
       id: assignment.id,
       active: "true",
@@ -294,7 +328,7 @@ export default function Planificar({
       updateAssignmentFlags(assignment.id, { isPlanificar: "true" });
     }
     onClose?.();
-  }, [assignment, updateAssignment, updateAssignmentFlags, onClose]);
+  }, [assignment, requestData, updatedDetalles, addMovement, updateAssignment, updateAssignmentFlags, onClose]);
 
   // Función para planificación automática
   const handleAutomaticPlanning = useCallback(() => {

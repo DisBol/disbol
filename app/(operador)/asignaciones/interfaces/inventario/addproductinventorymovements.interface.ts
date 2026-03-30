@@ -3,7 +3,7 @@ export interface AddProductInventoryMovementsBody {
   Assignment_id: number | null;
   ProductInventory_id: number;
   Request_id: number | null;
-  Container_id: number;
+  Container_id: number | null;
   container: number;
   units: number;
 }
