@@ -8,6 +8,7 @@ import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedore
 import { useGetProductInventoryUnits } from "../../hooks/inventario/useGetProductInventoryunits";
 import { useGetRequestForPlanning } from "../../hooks/planificar/useGetRequestForPlanning";
 import { useGetProductInventoryContainer } from "../../hooks/inventario/useGetProductInventoryContainer";
+import { useAddProductInventoryMovements } from "../../hooks/inventario/useAddProductInventoryMovements";
 import { EditableGroupData } from "../../types/planning.types";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
 
@@ -244,14 +245,52 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
     );
   };
 
+  const { mutate: addMovement } = useAddProductInventoryMovements();
+
   const [savingGroups, setSavingGroups] = useState<number[]>([]);
-  const handleSaveGroup = useCallback((groupIndex: number) => {
+  const handleSaveGroup = useCallback(async (groupIndex: number) => {
+    const group = editableGroups[groupIndex];
+    if (!group || !contenedor || !requestData?.data || !inventoryData?.data) return;
+
+    const Container_id = Number(contenedor);
+
+    const inventoryMap = new Map<string, number>();
+    inventoryData.data.forEach((item) => {
+      inventoryMap.set(item.Product_name, item.Product_id);
+    });
+
+    const requestMap = new Map<string, number>();
+    requestData.data.forEach((item) => {
+      requestMap.set(`${item.Client_name}__${item.Product_name}`, item.Request_id);
+    });
+
     setSavingGroups((prev) => [...prev, groupIndex]);
-    // TODO: llamar al servicio de guardado con editableGroups[groupIndex]
-    setTimeout(() => {
+    try {
+      const promises: Promise<unknown>[] = [];
+      group.clientes.forEach((cliente) => {
+        cliente.codes.forEach((code) => {
+          const Request_id = requestMap.get(`${cliente.name}__${code.label}`);
+          const ProductInventory_id = inventoryMap.get(code.label);
+          if (Request_id == null || ProductInventory_id == null) return;
+
+          promises.push(
+            addMovement({
+              active: "true",
+              Assignment_id: null,
+              Request_id,
+              ProductInventory_id,
+              Container_id,
+              container: -code.cajas,
+              units: -code.unidades,
+            }),
+          );
+        });
+      });
+      await Promise.all(promises);
+    } finally {
       setSavingGroups((prev) => prev.filter((i) => i !== groupIndex));
-    }, 1500);
-  }, []);
+    }
+  }, [editableGroups, contenedor, requestData, inventoryData, addMovement]);
 
   const loading = loadingInventory || loadingRequest;
 
