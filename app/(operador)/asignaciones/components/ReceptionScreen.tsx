@@ -4,7 +4,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
-import { Assignment } from "../stores/assignments-store";
+import { Modal } from "@/components/ui/Modal";
+import { Assignment, useAssignmentsStore } from "../stores/assignments-store";
 import { useAddAssignmentStage } from "../hooks/useAddAssignmentStage";
 import { useAddTicket } from "../hooks/useAddTicket";
 import { useAddProductAssignment } from "../hooks/useAddProductAssignment";
@@ -15,6 +16,7 @@ import { useContainer } from "../../configuraciones/hooks/contenedores/useContai
 import { useGetTicketsHistory } from "../hooks/useGetTicketsHistory";
 import { useGetTicketsByAssignmentHistory } from "../hooks/useGetTicketsByAssignmentHistory";
 import { UpdateTicketsWeighing } from "../service/updateticketsweighing";
+import { useUpdateAssignment } from "../hooks/useUpdateAssignment";
 
 // Interfaces
 interface ProductReception {
@@ -76,6 +78,7 @@ export default function ReceptionScreen({
   onBack,
 }: ReceptionScreenProps) {
   const { containersData } = useContainer();
+  const { updateAssignmentFlags } = useAssignmentsStore();
 
   const markBoletaAsPendingEdit = (boleta: Boleta): Boleta => {
     if (!boleta.flujoCompletado) return boleta;
@@ -181,6 +184,7 @@ export default function ReceptionScreen({
   const { addTicketsWeighing } = useAddTicketsWeighing();
   const { updateProductAssignment } = useUpdateProductAssignment();
   const { updateTicket } = useUpdateTicket();
+  const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
 
   const { fetchTicketsHistory } = useGetTicketsHistory();
   const { fetchTicketsByAssignmentHistory } =
@@ -787,6 +791,28 @@ export default function ReceptionScreen({
     setShowResumenModal(true);
   };
 
+  const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
+
+  const handleFinalizarRecepcion = () => {
+    setShowConfirmFinalizar(true);
+  };
+
+  const handleConfirmFinalizar = async () => {
+    setShowConfirmFinalizar(false);
+    const ok = await updateAssignment({
+      id: assignment.id,
+      active: "true",
+      CategoryProvider_id: assignment.categoryProviderId,
+      isRecibir: "true",
+      isPlanificar: assignment.isPlanificar,
+      isRepartir: assignment.isRepartir,
+    });
+    if (ok) {
+      updateAssignmentFlags(assignment.id, { isRecibir: "true" });
+    }
+    onBack();
+  };
+
   const handleConfirmarRecepcion = () => {
     setShowResumenModal(false);
     // Aquí iría la lógica para guardar la recepción
@@ -1297,12 +1323,15 @@ export default function ReceptionScreen({
         costoTotalGeneral={costoTotalGeneral}
         onBack={onBack}
         onRegistrarRecepcion={handleRegistrarRecepcion}
+        onFinalizarRecepcion={handleFinalizarRecepcion}
+        isFinalizando={isFinalizando}
       />
 
       <ReceptionTickets
         productos={productos}
         boletas={boletas}
         pesoTotalGeneral={pesoTotalGeneral}
+        isRecibir={assignment.isRecibir}
         onAgregarBoleta={handleAgregarBoleta}
         onEliminarBoleta={handleEliminarBoleta}
         onUpdateBoleta={updateBoleta}
@@ -1325,6 +1354,34 @@ export default function ReceptionScreen({
         onConfirm={handleConfirmarRecepcion}
         productos={productosConComparacion}
       />
+
+      {/* Modal Confirmar Finalizar Recepción */}
+      <Modal
+        isOpen={showConfirmFinalizar}
+        onClose={() => setShowConfirmFinalizar(false)}
+        title="Finalizar Recepción"
+        size="sm"
+      >
+        <p className="text-sm text-gray-600 mb-6">
+          ¿Está seguro de finalizar la recepción? Una vez finalizada no podrá
+          realizar cambios.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setShowConfirmFinalizar(false)}
+            className="px-4 py-2 rounded-lg text-sm font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirmFinalizar}
+            disabled={isFinalizando}
+            className="px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {isFinalizando ? "Finalizando..." : "Confirmar"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -239,8 +239,8 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
             {/* Botones de Acción */}
             <div className="flex gap-2 mt-3 lg:mt-0">
               <Button
-                variant="primary"
-                color="danger"
+                variant={assignment.isRepartir === "true" ? "outline" : "primary"}
+                color={assignment.isRepartir === "true" ? "secondary" : "danger"}
                 size="sm"
                 className="min-w-22.5"
                 onClick={() => showDistributeScreen(assignment)}
@@ -248,8 +248,8 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                 Repartir
               </Button>
               <Button
-                variant="warning"
-                color="warning"
+                variant={assignment.isPlanificar === "true" ? "outline" : "warning"}
+                color={assignment.isPlanificar === "true" ? "secondary" : "warning"}
                 size="sm"
                 className="min-w-22.5"
                 onClick={() => {
@@ -264,8 +264,8 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                 Planificar
               </Button>
               <Button
-                variant="success"
-                color="success"
+                variant={assignment.isRecibir === "true" ? "outline" : "success"}
+                color={assignment.isRecibir === "true" ? "secondary" : "success"}
                 size="sm"
                 className="min-w-22.5"
                 onClick={() => onRecibirClick(assignment)}
