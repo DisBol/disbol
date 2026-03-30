@@ -27,6 +27,7 @@ interface GroupData {
     Request_id: number;
     Client_id: number;
     Provider_id: number;
+    CategoryProvider_id: number;
     codes: Array<{
       label: string;
       solicitado: number;
@@ -197,6 +198,7 @@ export default function Repartir({
                   Request_id: clientItems[0]?.Request_id ?? 0,
                   Client_id: clientItems[0]?.Client_id ?? 0,
                   Provider_id: clientItems[0]?.Provider_id ?? 0,
+                  CategoryProvider_id: clientItems[0]?.Request_CategoryProvider_id ?? 0,
                   codes: clientCodes,
                   totalCajas,
                   totalUnid,
