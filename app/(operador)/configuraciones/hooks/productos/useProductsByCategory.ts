@@ -8,6 +8,7 @@ import { GetProductByCategory } from "../../services/productos/getproductbycateg
 export interface CategoryView {
   id: number;
   name: string;
+  CategoryProvider_id: number;
   products: ProductView[];
 }
 
@@ -63,6 +64,7 @@ export function useProductsByCategory(): UseProductsByCategoryReturn {
         categoryMap.set(item.id_0, {
           id: item.id_0,
           name: item.name_0,
+          CategoryProvider_id: item.CategoryProvider_id,
           products: [],
         });
       }

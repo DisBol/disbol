@@ -31,6 +31,7 @@ interface TotalGroupProps {
   totalUnid: number;
   clientes: Cliente[];
   isExpanded: boolean;
+  readOnly?: boolean;
   onToggleExpand: () => void;
   onSaveGroup?: () => void | Promise<void>;
   onUpdateClientCode?: (
@@ -49,6 +50,7 @@ export default function TotalGroup({
   totalUnid,
   clientes,
   isExpanded,
+  readOnly = false,
   onToggleExpand,
   onSaveGroup,
   onUpdateClientCode,
@@ -169,7 +171,7 @@ export default function TotalGroup({
 
         {/* Right Action Button & Chevron */}
         <div className="flex items-center gap-2 shrink-0 ml-1">
-          {status === "guardado" ? (
+          {readOnly ? null : status === "guardado" ? (
             <button
               disabled
               className="bg-[#10b981] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-not-allowed opacity-90 flex items-center gap-1"
@@ -291,7 +293,7 @@ export default function TotalGroup({
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
                               CAJAS
                             </label>
-                            {status === "guardado" ? (
+                            {status === "guardado" || readOnly ? (
                               <div className="w-full px-1 py-0.5 bg-gray-200 rounded text-[10px] font-bold text-gray-600 text-center h-5 flex items-center justify-center shadow-inner border border-gray-300">
                                 {code.cajas}
                               </div>
@@ -317,7 +319,7 @@ export default function TotalGroup({
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
                               UNID.
                             </label>
-                            {status === "guardado" ? (
+                            {status === "guardado" || readOnly ? (
                               <div className="w-full px-1 py-0.5 bg-gray-200 rounded text-[10px] font-bold text-gray-600 text-center h-5 flex items-center justify-center shadow-inner border border-gray-300">
                                 {code.unidades}
                               </div>

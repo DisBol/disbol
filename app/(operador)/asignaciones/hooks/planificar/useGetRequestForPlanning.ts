@@ -9,16 +9,19 @@ interface UseGetRequestForPlanningReturn {
   refetch: () => Promise<void>;
 }
 
-export const useGetRequestForPlanning = (): UseGetRequestForPlanningReturn => {
+export const useGetRequestForPlanning = (
+  categoryProviderId: number | null | undefined,
+): UseGetRequestForPlanningReturn => {
   const [data, setData] = useState<GetRequestForPlanningResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!categoryProviderId) return;
     try {
       setLoading(true);
       setError(null);
-      const response = await GetRequestForPlanning();
+      const response = await GetRequestForPlanning(categoryProviderId);
       setData(response);
     } catch (err) {
       setError(
@@ -29,7 +32,7 @@ export const useGetRequestForPlanning = (): UseGetRequestForPlanningReturn => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [categoryProviderId]);
 
   useEffect(() => {
     fetchData();
