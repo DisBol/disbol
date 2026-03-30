@@ -6,7 +6,7 @@ import { useAddProductAssignment } from "./useAddProductAssignment";
 
 interface UseAddFullAssignmentParams {
   // Assignment params
-  Provider_id: string;
+  CategoryProvider_id: string;
 
   // AssignmentStage params
   position: string;
@@ -68,7 +68,7 @@ export const useAddFullAssignment = (): UseAddFullAssignmentReturn => {
 
         // Step 1: Create Assignment
         const createdAssignmentId = await addAssignment({
-          Provider_id: params.Provider_id,
+          CategoryProvider_id: params.CategoryProvider_id,
         });
 
         if (!createdAssignmentId) {

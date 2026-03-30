@@ -95,6 +95,7 @@ export interface CardCodeProps
     rightLabel: string;
     rightCajas: string | number;
     rightUnidades: string | number;
+    rightCajasHidden?: boolean;
   };
 }
 
@@ -246,6 +247,22 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             </label>
             {readOnly ? (
               compareReadOnly ? (
+                compareReadOnly.rightCajasHidden ? (
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase text-center mb-0.5">
+                      {compareReadOnly.leftLabel || "Plan."}
+                    </span>
+                    <div
+                      className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                        cajasExcedidas
+                          ? "bg-red-50 border-red-300 text-red-700"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {cajas}
+                    </div>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-2 gap-1">
                   <div>
                     <span className="block text-[8px] font-bold text-gray-400 uppercase text-center mb-0.5">
@@ -270,6 +287,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                     </div>
                   </div>
                 </div>
+                )
               ) : (
                 <div
                   className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${

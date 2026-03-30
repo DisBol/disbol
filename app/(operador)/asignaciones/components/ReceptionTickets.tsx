@@ -41,6 +41,7 @@ interface Boleta {
   ticketId?: string;
   assignmentStageId?: number;
   flujoCompletado?: boolean;
+  hasPendingChanges?: boolean;
   codigo: string;
   costoPorKg: string;
   costoTotal: string;
@@ -54,6 +55,7 @@ interface ReceptionTicketsProps {
   productos: ProductReception[];
   boletas: Boleta[];
   pesoTotalGeneral: string;
+  isRecibir?: string;
   onAgregarBoleta: () => void;
   onEliminarBoleta: (boletaId: string) => void;
   onUpdateBoleta: (
@@ -100,6 +102,7 @@ export default function ReceptionTickets({
   productos,
   boletas,
   pesoTotalGeneral,
+  isRecibir,
   onAgregarBoleta,
   onEliminarBoleta,
   onUpdateBoleta,
@@ -115,6 +118,7 @@ export default function ReceptionTickets({
   onCompletarFlujoBoleta,
 }: ReceptionTicketsProps) {
   const { containers, containersData } = useContainer();
+  const readOnly = isRecibir === "true";
   const [savingBoletas, setSavingBoletas] = useState<Set<string>>(new Set());
   const [completingBoletas, setCompletingBoletas] = useState<Set<string>>(
     new Set(),
@@ -282,14 +286,16 @@ export default function ReceptionTickets({
           <h2 className="text-md font-bold text-gray-900">
             Boletas de Recepción
           </h2>
-          <Button
-            variant="primary"
-            color="danger"
-            leftIcon={<span>+</span>}
-            onClick={onAgregarBoleta}
-          >
-            Agregar Boleta
-          </Button>
+          {!readOnly && (
+            <Button
+              variant="primary"
+              color="danger"
+              leftIcon={<span>+</span>}
+              onClick={onAgregarBoleta}
+            >
+              Agregar Boleta
+            </Button>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -346,27 +352,51 @@ export default function ReceptionTickets({
                             Costo: Bs {calculateTotalPayment(boleta).toFixed(2)}
                           </p>
                         )}
+                        {isSaved &&
+                          boleta.flujoCompletado &&
+                          boleta.hasPendingChanges && (
+                            <p className="text-xs text-amber-700 mt-1">
+                              Hay cambios pendientes en ticket o productos.
+                            </p>
+                          )}
                       </div>
 
                       {isSaved ? (
                         <div className="flex gap-2">
-                          <Button
-                            variant="success"
-                            color="success"
-                            size="sm"
-                            loading={completingBoletas.has(boleta.id)}
-                            disabled={
-                              completingBoletas.has(boleta.id) ||
-                              Boolean(boleta.flujoCompletado)
-                            }
-                            onClick={() =>
-                              handleCompletarFlujoBoleta(boleta.id)
-                            }
-                          >
-                            {boleta.flujoCompletado
-                              ? "Flujo Completado"
-                              : "Completar Flujo"}
-                          </Button>
+                          {!readOnly && (
+                            <Button
+                              variant={
+                                boleta.flujoCompletado &&
+                                boleta.hasPendingChanges
+                                  ? "outline"
+                                  : "success"
+                              }
+                              color={
+                                boleta.flujoCompletado &&
+                                boleta.hasPendingChanges
+                                  ? "warning"
+                                  : "success"
+                              }
+                              size="sm"
+                              loading={completingBoletas.has(boleta.id)}
+                              disabled={
+                                completingBoletas.has(boleta.id) ||
+                                Boolean(
+                                  boleta.flujoCompletado &&
+                                    !boleta.hasPendingChanges,
+                                )
+                              }
+                              onClick={() =>
+                                handleCompletarFlujoBoleta(boleta.id)
+                              }
+                            >
+                              {boleta.flujoCompletado
+                                ? boleta.hasPendingChanges
+                                  ? "Editar"
+                                  : "Flujo Completado"
+                                : "Completar Flujo"}
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -375,7 +405,7 @@ export default function ReceptionTickets({
                             {isExpanded ? "Ocultar detalle" : "Ver detalle"}
                           </Button>
                         </div>
-                      ) : (
+                      ) : !readOnly ? (
                         <div className="flex gap-2">
                           <Button
                             variant="success"
@@ -396,7 +426,7 @@ export default function ReceptionTickets({
                             Eliminar Boleta
                           </Button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
 
                     {isExpanded && (
@@ -409,6 +439,7 @@ export default function ReceptionTickets({
                             <InputField
                               placeholder="Ingrese código"
                               value={boleta.codigo}
+                              disabled={readOnly}
                               onChange={(e) =>
                                 onUpdateBoleta(
                                   boleta.id,
@@ -425,7 +456,7 @@ export default function ReceptionTickets({
                             </span>
                             <InputField
                               value={boleta.costoPorKg}
-                              disabled={boleta.precioDiferido}
+                              disabled={boleta.precioDiferido || readOnly}
                               onChange={(e) =>
                                 onUpdateBoleta(
                                   boleta.id,
@@ -450,6 +481,7 @@ export default function ReceptionTickets({
                           <Checkbox
                             label="Precio diferido"
                             checked={boleta.precioDiferido}
+                            disabled={readOnly}
                             onChange={(checked) =>
                               onUpdateBoleta(
                                 boleta.id,
@@ -558,6 +590,7 @@ export default function ReceptionTickets({
                                           <div className="flex items-center justify-center gap-2">
                                             <Checkbox
                                               checked={true}
+                                              disabled={readOnly}
                                               onChange={() =>
                                                 onToggleCodigoEnBoleta(
                                                   boleta.id,
@@ -570,7 +603,7 @@ export default function ReceptionTickets({
                                         }
                                         cajas={detalle.cajas}
                                         unidades={detalle.unidades}
-                                        readOnly={false}
+                                        readOnly={readOnly}
                                         onCajasChange={(val) =>
                                           onUpdateCantidadBoleta(
                                             boleta.id,
@@ -629,33 +662,38 @@ export default function ReceptionTickets({
                                             producto.codigo,
                                           )
                                         }
-                                        disableAgregarPesaje={!isSaved}
-                                        onUpdatePesaje={(
-                                          pesajeId,
-                                          field,
-                                          value,
-                                        ) =>
-                                          onUpdatePesaje(
-                                            boleta.id,
-                                            producto.codigo,
-                                            pesajeId,
-                                            field,
-                                            value,
-                                          )
+                                        disableAgregarPesaje={!isSaved || readOnly}
+                                        onUpdatePesaje={
+                                          readOnly
+                                            ? undefined
+                                            : (pesajeId, field, value) =>
+                                                onUpdatePesaje(
+                                                  boleta.id,
+                                                  producto.codigo,
+                                                  pesajeId,
+                                                  field,
+                                                  value,
+                                                )
                                         }
-                                        onRemovePesaje={(pesajeId) =>
-                                          onRemovePesaje(
-                                            boleta.id,
-                                            producto.codigo,
-                                            pesajeId,
-                                          )
+                                        onRemovePesaje={
+                                          readOnly
+                                            ? undefined
+                                            : (pesajeId) =>
+                                                onRemovePesaje(
+                                                  boleta.id,
+                                                  producto.codigo,
+                                                  pesajeId,
+                                                )
                                         }
-                                        onGuardarPesaje={(pesajeId) =>
-                                          handleGuardarPesaje(
-                                            boleta.id,
-                                            producto.codigo,
-                                            pesajeId,
-                                          )
+                                        onGuardarPesaje={
+                                          readOnly
+                                            ? undefined
+                                            : (pesajeId) =>
+                                                handleGuardarPesaje(
+                                                  boleta.id,
+                                                  producto.codigo,
+                                                  pesajeId,
+                                                )
                                         }
                                         isSavingPesaje={(pesajeId) =>
                                           savingPesajes.has(
@@ -674,6 +712,7 @@ export default function ReceptionTickets({
                                       <div>
                                         <Checkbox
                                           checked={false}
+                                          disabled={readOnly}
                                           onChange={() =>
                                             onToggleCodigoEnBoleta(
                                               boleta.id,

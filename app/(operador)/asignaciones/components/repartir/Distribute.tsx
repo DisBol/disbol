@@ -8,6 +8,9 @@ import { Datum } from "../../interfaces/getassignmenthistory.interface";
 import { useGetRequestForreparting } from "../../hooks/repartir/useGetRequestForreparting";
 import { Datum as RepartirDatum } from "../../interfaces/repartir/getrequestforreparting.interface";
 import { useDistributeStore } from "../../stores/distribute-store";
+import { useAssignmentsStore } from "../../stores/assignments-store";
+import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
+import { Modal } from "@/components/ui/Modal";
 
 interface DistributeProps {
   assignment?: Assignment | null;
@@ -46,8 +49,34 @@ export default function Repartir({
   rawData = null,
   onClose,
 }: DistributeProps) {
-  const { data: repartirData, loading, error } = useGetRequestForreparting();
+  const { data: repartirData, loading, error } = useGetRequestForreparting(
+    Number(assignment?.categoryProviderId ?? 0),
+  );
   const { clientTotals } = useDistributeStore();
+  const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
+  const { updateAssignmentFlags } = useAssignmentsStore();
+  const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
+
+  const handleFinalizarRepartir = () => {
+    setShowConfirmFinalizar(true);
+  };
+
+  const handleConfirmFinalizar = async () => {
+    if (!assignment) return;
+    setShowConfirmFinalizar(false);
+    const ok = await updateAssignment({
+      id: assignment.id,
+      active: "true",
+      CategoryProvider_id: assignment.categoryProviderId,
+      isRecibir: assignment.isRecibir,
+      isPlanificar: assignment.isPlanificar,
+      isRepartir: "true",
+    });
+    if (ok) {
+      updateAssignmentFlags(assignment.id, { isRepartir: "true" });
+    }
+    onClose?.();
+  };
 
   const [activeGroupIdx, setActiveGroupIdx] = useState<number | null>(null);
   const [vehiculo, setVehiculo] = useState<string>("");
@@ -291,6 +320,9 @@ export default function Repartir({
           costoPorKg={costoPorKg}
           precioDiferido={precioDiferido}
           detalles={detalles}
+          isRepartir={assignment?.isRepartir}
+          isFinalizando={isFinalizando}
+          onFinalizarRepartir={handleFinalizarRepartir}
           onCancel={() => {
             if (activeGroupIdx !== null) {
               setActiveGroupIdx(null);
@@ -350,6 +382,7 @@ export default function Repartir({
                 totalUnid={displayGroups[activeGroupIdx].totalUnid}
                 costoPorKg={costoPorKg}
                 isActive={true}
+                readOnly={assignment?.isRepartir === "true"}
                 vehiculo={vehiculo}
                 chofer={chofer}
                 onStarted={(isStarted) => {
@@ -381,6 +414,7 @@ export default function Repartir({
                   totalUnid={group.totalUnid}
                   costoPorKg={costoPorKg}
                   isActive={false}
+                  readOnly={assignment?.isRepartir === "true"}
                   vehiculo={vehiculo}
                   chofer={chofer}
                   onStarted={(isStarted) => {
@@ -419,6 +453,34 @@ export default function Repartir({
           )}
         </div>
       </div>
+
+      {/* Modal Confirmar Finalizar Repartir */}
+      <Modal
+        isOpen={showConfirmFinalizar}
+        onClose={() => setShowConfirmFinalizar(false)}
+        title="Finalizar Repartir"
+        size="sm"
+      >
+        <p className="text-sm text-gray-600 mb-6">
+          ¿Está seguro de finalizar el repartir? Una vez finalizado no podrá
+          realizar cambios.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setShowConfirmFinalizar(false)}
+            className="px-4 py-2 rounded-lg text-sm font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirmFinalizar}
+            disabled={isFinalizando}
+            className="px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {isFinalizando ? "Finalizando..." : "Confirmar"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

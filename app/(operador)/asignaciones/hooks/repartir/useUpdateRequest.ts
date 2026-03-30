@@ -9,7 +9,7 @@ export function useUpdateRequest() {
   const updateRequest = async (
     id: number,
     active: string,
-    Provider_id: number,
+    CategoryProvider_id: number,
     Client_id: number,
     Car_id: number,
     Employee_id: number,
@@ -21,7 +21,7 @@ export function useUpdateRequest() {
       const response = await UpdateRequest(
         id,
         active,
-        Provider_id,
+        CategoryProvider_id,
         Client_id,
         Car_id,
         Employee_id,

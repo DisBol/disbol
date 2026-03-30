@@ -19,12 +19,17 @@ interface Cliente {
 
 interface Movimiento {
   fecha: string;
+  canastilla: string;
   cliente: string;
-  tipo: string;
-  canastos: number;
-  almacen: string;
-  saldoCliente: number;
-  saldoAlmacen: number;
+  grupo: string;
+  cantidad: number;
+}
+
+interface MovimientoProveedor {
+  fecha: string;
+  canastilla: string;
+  proveedor: string;
+  cantidad: number;
 }
 
 interface RutaItem {
@@ -108,49 +113,67 @@ const clientes: Cliente[] = [
 
 const movimientos: Movimiento[] = [
   {
-    fecha: "2025-12-23",
-    cliente: "Feria 16 de Julio – Sector A",
-    tipo: "Salida a cliente",
-    canastos: -40,
-    almacen: "Depósito El Alto",
-    saldoCliente: 95,
-    saldoAlmacen: 390,
+    fecha: "2026-01-29 16:17:23",
+    canastilla: "Canastilla Roja",
+    cliente: "cliente ceja 1",
+    grupo: "operation",
+    cantidad: -1000,
   },
   {
-    fecha: "2025-12-23",
+    fecha: "2026-01-28 10:30:15",
+    canastilla: "Canastilla Roja",
     cliente: "Pollería El Rey",
-    tipo: "Devolución de canastos",
-    canastos: 30,
-    almacen: "Almacén Central La Paz",
-    saldoCliente: 120,
-    saldoAlmacen: 650,
+    grupo: "operation",
+    cantidad: 500,
   },
   {
-    fecha: "2025-12-22",
+    fecha: "2026-01-27 14:45:22",
+    canastilla: "Canastilla Azul",
     cliente: "Doña Juana",
-    tipo: "Salida a cliente",
-    canastos: -20,
-    almacen: "Depósito El Alto",
-    saldoCliente: 80,
-    saldoAlmacen: 430,
+    grupo: "retail",
+    cantidad: -800,
   },
   {
-    fecha: "2025-12-21",
+    fecha: "2026-01-26 09:15:33",
+    canastilla: "Canastilla Verde",
+    cliente: "cliente ceja 1",
+    grupo: "operation",
+    cantidad: 300,
+  },
+  {
+    fecha: "2026-01-25 11:22:44",
+    canastilla: "Canastilla Roja",
     cliente: "Distribuidor Sucre",
-    tipo: "Salida a cliente",
-    canastos: -50,
-    almacen: "Depósito Viacha",
-    saldoCliente: 160,
-    saldoAlmacen: 300,
+    grupo: "retail",
+    cantidad: -600,
   },
   {
-    fecha: "2025-12-20",
-    cliente: "Mercado Central – Puesto 4",
-    tipo: "Devolución parcial",
-    canastos: 10,
-    almacen: "Almacén Central La Paz",
-    saldoCliente: 45,
-    saldoAlmacen: 620,
+    fecha: "2026-01-24 15:30:12",
+    canastilla: "Canastilla Azul",
+    cliente: "Pollería El Rey",
+    grupo: "operation",
+    cantidad: 400,
+  },
+  {
+    fecha: "2026-01-23 13:18:56",
+    canastilla: "Canastilla Verde",
+    cliente: "Doña Juana",
+    grupo: "retail",
+    cantidad: -450,
+  },
+  {
+    fecha: "2026-01-22 08:45:22",
+    canastilla: "Canastilla Roja",
+    cliente: "Mercado Central",
+    grupo: "wholesale",
+    cantidad: -700,
+  },
+  {
+    fecha: "2026-01-21 12:00:00",
+    canastilla: "Canastilla Azul",
+    cliente: "cliente ceja 1",
+    grupo: "operation",
+    cantidad: 250,
   },
 ];
 
@@ -159,6 +182,63 @@ const rutas: RutaItem[] = [
   { nombre: "El Alto Norte", canastos: 340 },
   { nombre: "Sucre Centro", canastos: 250 },
   { nombre: "El Alto Sur", canastos: 230 },
+];
+
+const movimientosProveedor: MovimientoProveedor[] = [
+  {
+    fecha: "2026-01-28 20:26:40",
+    canastilla: "Canastilla Roja",
+    proveedor: "SOFIA",
+    cantidad: 15,
+  },
+  {
+    fecha: "2026-01-27 18:15:22",
+    canastilla: "Canastilla Azul",
+    proveedor: "TRANSPORTES BOLIVIA",
+    cantidad: 20,
+  },
+  {
+    fecha: "2026-01-26 14:30:00",
+    canastilla: "Canastilla Verde",
+    proveedor: "SOFIA",
+    cantidad: 10,
+  },
+  {
+    fecha: "2026-01-25 10:45:33",
+    canastilla: "Canastilla Roja",
+    proveedor: "LOGISTICA ANDINA",
+    cantidad: 25,
+  },
+  {
+    fecha: "2026-01-24 16:20:15",
+    canastilla: "Canastilla Azul",
+    proveedor: "SOFIA",
+    cantidad: 18,
+  },
+  {
+    fecha: "2026-01-23 12:00:00",
+    canastilla: "Canastilla Verde",
+    proveedor: "TRANSPORTES BOLIVIA",
+    cantidad: 12,
+  },
+  {
+    fecha: "2026-01-22 09:30:45",
+    canastilla: "Canastilla Roja",
+    proveedor: "LOGISTICA ANDINA",
+    cantidad: 22,
+  },
+  {
+    fecha: "2026-01-21 15:15:30",
+    canastilla: "Canastilla Azul",
+    proveedor: "SOFIA",
+    cantidad: 16,
+  },
+  {
+    fecha: "2026-01-20 11:45:00",
+    canastilla: "Canastilla Verde",
+    proveedor: "TRANSPORTES BOLIVIA",
+    cantidad: 14,
+  },
 ];
 
 const MAX_RUTA = 475;
@@ -248,7 +328,14 @@ function MoraBadge({ dias }: { dias: number }) {
 
 export default function CanastosPage() {
   const [search, setSearch] = useState("");
-  const [fecha, setFecha] = useState("");
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
+  const [cliente, setCliente] = useState("Todos los clientes");
+  const [grupoCliente, setGrupoCliente] = useState("Todos los grupos");
+  const [contenedor, setContenedor] = useState("Bolsa");
+  const [fechaInicioProv, setFechaInicioProv] = useState("");
+  const [fechaFinProv, setFechaFinProv] = useState("");
+  const [proveedor, setProveedor] = useState("Todos los proveedores");
 
   const filteredClientes = clientes.filter(
     (c) =>
@@ -256,21 +343,63 @@ export default function CanastosPage() {
       c.ruta.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const filteredMovimientos = movimientos.filter(
-    (m) => !fecha || m.fecha === fecha,
-  );
+  const filteredMovimientos = movimientos.filter((m) => {
+    const movFecha = new Date(m.fecha.split(" ")[0]);
+    const inicio = fechaInicio ? new Date(fechaInicio) : null;
+    const fin = fechaFin ? new Date(fechaFin) : null;
+
+    const fechaValida =
+      (!inicio || movFecha >= inicio) && (!fin || movFecha <= fin);
+    const clienteValido =
+      cliente === "Todos los clientes" || m.cliente === cliente;
+    const grupoValido =
+      grupoCliente === "Todos los grupos" || m.grupo === grupoCliente;
+
+    return fechaValida && clienteValido && grupoValido;
+  });
+
+  const filteredMovimientosProveedor = movimientosProveedor.filter((m) => {
+    const movFecha = new Date(m.fecha.split(" ")[0]);
+    const inicio = fechaInicioProv ? new Date(fechaInicioProv) : null;
+    const fin = fechaFinProv ? new Date(fechaFinProv) : null;
+
+    const fechaValida =
+      (!inicio || movFecha >= inicio) && (!fin || movFecha <= fin);
+    const proveedorValido =
+      proveedor === "Todos los proveedores" || m.proveedor === proveedor;
+
+    return fechaValida && proveedorValido;
+  });
+
+  const limpiarFiltros = () => {
+    setFechaInicio("");
+    setFechaFin("");
+    setCliente("Todos los clientes");
+    setGrupoCliente("Todos los grupos");
+  };
+
+  const limpiarFiltrosProveedor = () => {
+    setFechaInicioProv("");
+    setFechaFinProv("");
+    setProveedor("Todos los proveedores");
+  };
   return (
     <RouteProtection requiredTransaction="Canastos">
-      <div className="min-h-screen bg-gray-50 font-sans text-gray-800 text-[15px] p-6">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            label="Total Canastos"
-            value="2.200"
-            sub="Inventario teórico"
-            icon={<BoxIcon />}
-            accent="text-gray-700"
-          />
+      <div className="min-h-screen bg-gray-50 font-sans text-gray-800 text-[15px] p-4 sm:p-6">
+        {/* Top section with header and buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
+              Gestión de Canastos
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">
+              Inventario y control de distribución
+            </p>
+          </div>
+        </div>
+
+        {/* KPI Cards + Filter + Button */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <StatCard
             label="En Almacén"
             value="1.350"
@@ -285,20 +414,31 @@ export default function CanastosPage() {
             icon={<IconUsers />}
             accent="text-red-500"
           />
-          <StatCard
-            label="Perdidos / Dañados"
-            value="30"
-            sub="Pendiente regularización"
-            icon={<IconAlert />}
-            accent="text-red-500"
-          />
+          {/* Filtrar por contenedor + Agregar canastos */}
+          <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col">
+            <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase">
+              Filtrar por contenedor
+            </label>
+            <select
+              value={contenedor}
+              onChange={(e) => setContenedor(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400 mb-3"
+            >
+              <option>Bolsa</option>
+              <option>Caja</option>
+              <option>Palé</option>
+            </select>
+            <Button className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl transition-colors">
+              Agregar canastos
+            </Button>
+          </Card>
         </div>
 
         {/* Middle row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
           {/* Clientes en Mora */}
           <Card className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-5 pt-5 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="px-5 pt-5 pb-3 flex flex-col gap-3">
               <div>
                 <h2 className="text-base font-bold text-gray-900">
                   Clientes en Mora
@@ -307,7 +447,7 @@ export default function CanastosPage() {
                   Canastos pendientes – Ordenado por cantidad (mayor a menor)
                 </p>
               </div>
-              <div className="relative w-full sm:w-56">
+              <div className="relative w-full">
                 <Input
                   type="text"
                   placeholder="Buscar cliente o ruta…"
@@ -324,14 +464,7 @@ export default function CanastosPage() {
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    {[
-                      "Cliente",
-                      "Ruta",
-                      "Canastos",
-                      "Últ. movimiento",
-                      "Estado",
-                      "Acciones",
-                    ].map((h) => (
+                    {["Cliente", "Ruta", "Canastos", "Acciones"].map((h) => (
                       <th
                         key={h}
                         className="px-5 py-2.5 text-left text-[11px] font-bold tracking-wider text-red-500 uppercase whitespace-nowrap"
@@ -355,12 +488,6 @@ export default function CanastosPage() {
                       </td>
                       <td className="px-5 py-3 font-black text-red-500">
                         {c.canastos}
-                      </td>
-                      <td className="px-5 py-3 text-gray-400 whitespace-nowrap">
-                        {c.ultimoMovimiento}
-                      </td>
-                      <td className="px-5 py-3">
-                        <MoraBadge dias={c.moraDias} />
                       </td>
                       <td className="px-5 py-3">
                         <Button
@@ -418,56 +545,102 @@ export default function CanastosPage() {
           </Card>
         </div>
 
-        {/* Histórico de Movimientos */}
-        <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 pt-5 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">
-                Histórico de Movimientos por Día
-              </h2>
-              <p className="text-xs text-gray-400">
-                Entradas y salidas de canastos por fecha
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500">Fecha</span>
-              <Input
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                inputSize="sm"
-                className="w-auto min-w-40 rounded-xl border-gray-200 bg-gray-50 text-[13px] focus-visible:ring-sky-200 focus-visible:border-sky-400"
-              />
-              {fecha && (
-                <Button
-                  onClick={() => setFecha("")}
-                  variant="ghost"
-                  size="sm"
-                  radius="lg"
-                  className="h-auto px-1.5 py-1 text-xs text-gray-400 hover:text-gray-700"
+        {/* Histórico de Movimientos por Cliente */}
+        <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+          <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+            <h2 className="text-base font-bold text-gray-900 mb-1">
+              Histórico de Movimientos por Cliente
+            </h2>
+            <p className="text-xs text-gray-400 mb-4">
+              Movimientos de canastillas por cliente
+            </p>
+
+            {/* Filters Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Fecha Inicio
+                </label>
+                <Input
+                  type="date"
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
+                  inputSize="sm"
+                  placeholder="dd/mm/aaaa"
+                  className="rounded-xl border-gray-200 bg-gray-50 text-[13px] focus-visible:ring-sky-200 focus-visible:border-sky-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Fecha Fin
+                </label>
+                <Input
+                  type="date"
+                  value={fechaFin}
+                  onChange={(e) => setFechaFin(e.target.value)}
+                  inputSize="sm"
+                  placeholder="dd/mm/aaaa"
+                  className="rounded-xl border-gray-200 bg-gray-50 text-[13px] focus-visible:ring-sky-200 focus-visible:border-sky-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Cliente
+                </label>
+                <select
+                  value={cliente}
+                  onChange={(e) => setCliente(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                 >
-                  ✕ Limpiar
+                  <option>Todos los clientes</option>
+                  {clientes.map((c) => (
+                    <option key={c.nombre} value={c.nombre}>
+                      {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Grupo de Cliente
+                </label>
+                <select
+                  value={grupoCliente}
+                  onChange={(e) => setGrupoCliente(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                >
+                  <option>Todos los grupos</option>
+                  <option value="operation">operation</option>
+                  <option value="retail">retail</option>
+                  <option value="wholesale">wholesale</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={limpiarFiltros}
+                  variant="ghost"
+                  className="w-full h-auto px-4 py-2 text-red-500 font-semibold text-sm hover:text-red-600"
+                >
+                  Limpiar Filtros
                 </Button>
-              )}
+              </div>
             </div>
           </div>
 
           <div className="overflow-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-gray-100 bg-gray-50">
                   {[
-                    "Fecha",
+                    "Fecha / Hora",
+                    "Canastilla",
                     "Cliente",
-                    "Tipo Movimiento",
-                    "Canastos (+/−)",
-                    "Almacén",
-                    "Saldo Cliente",
-                    "Saldo Almacén",
+                    "Grupo",
+                    "Cantidad (+/-)",
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-5 py-2.5 text-left text-[11px] font-bold tracking-wider text-red-500 uppercase whitespace-nowrap"
+                      className="px-5 py-3 text-left text-[11px] font-bold tracking-wider text-gray-600 uppercase"
                     >
                       {h}
                     </th>
@@ -480,38 +653,153 @@ export default function CanastosPage() {
                     key={i}
                     className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
+                    <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
                       {m.fecha}
                     </td>
-                    <td className="px-5 py-3 font-medium text-gray-800 whitespace-nowrap">
+                    <td className="px-5 py-3 font-semibold text-gray-800 whitespace-nowrap">
+                      {m.canastilla}
+                    </td>
+                    <td className="px-5 py-3 text-gray-700 whitespace-nowrap">
                       {m.cliente}
                     </td>
-                    <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
-                      {m.tipo}
+                    <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
+                      {m.grupo}
                     </td>
                     <td
-                      className={`px-5 py-3 font-black whitespace-nowrap ${m.canastos < 0 ? "text-red-500" : "text-emerald-500"}`}
+                      className={`px-5 py-3 font-black whitespace-nowrap ${m.cantidad < 0 ? "text-red-500" : "text-emerald-500"}`}
                     >
-                      {m.canastos > 0 ? `+${m.canastos}` : m.canastos}
-                    </td>
-                    <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
-                      {m.almacen}
-                    </td>
-                    <td className="px-5 py-3 text-gray-700 whitespace-nowrap">
-                      {m.saldoCliente} can.
-                    </td>
-                    <td className="px-5 py-3 text-gray-700 whitespace-nowrap">
-                      {m.saldoAlmacen} can.
+                      {m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}
                     </td>
                   </tr>
                 ))}
                 {filteredMovimientos.length === 0 && (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={5}
                       className="px-5 py-10 text-center text-sm text-gray-400"
                     >
-                      No hay movimientos para la fecha seleccionada.
+                      No hay movimientos para los filtros seleccionados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {/* Histórico de Movimientos por Proveedor */}
+        <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+          <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+            <h2 className="text-base font-bold text-gray-900 mb-1">
+              Histórico de Movimientos por Proveedor
+            </h2>
+            <p className="text-xs text-gray-400 mb-4">
+              Movimientos de canastillas recibidas de proveedores
+            </p>
+
+            {/* Filters Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Fecha Inicio
+                </label>
+                <Input
+                  type="date"
+                  value={fechaInicioProv}
+                  onChange={(e) => setFechaInicioProv(e.target.value)}
+                  inputSize="sm"
+                  placeholder="dd/mm/aaaa"
+                  className="rounded-xl border-gray-200 bg-gray-50 text-[13px] focus-visible:ring-sky-200 focus-visible:border-sky-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Fecha Fin
+                </label>
+                <Input
+                  type="date"
+                  value={fechaFinProv}
+                  onChange={(e) => setFechaFinProv(e.target.value)}
+                  inputSize="sm"
+                  placeholder="dd/mm/aaaa"
+                  className="rounded-xl border-gray-200 bg-gray-50 text-[13px] focus-visible:ring-sky-200 focus-visible:border-sky-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Proveedor
+                </label>
+                <select
+                  value={proveedor}
+                  onChange={(e) => setProveedor(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                >
+                  <option>Todos los proveedores</option>
+                  <option value="SOFIA">SOFIA</option>
+                  <option value="TRANSPORTES BOLIVIA">
+                    TRANSPORTES BOLIVIA
+                  </option>
+                  <option value="LOGISTICA ANDINA">LOGISTICA ANDINA</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={limpiarFiltrosProveedor}
+                  variant="ghost"
+                  className="w-full h-auto px-4 py-2 text-red-500 font-semibold text-sm hover:text-red-600"
+                >
+                  Limpiar Filtros
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  {[
+                    "Fecha / Hora",
+                    "Canastilla",
+                    "Proveedor",
+                    "Cantidad (+/-)",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-5 py-3 text-left text-[11px] font-bold tracking-wider text-gray-600 uppercase"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMovimientosProveedor.map((m, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
+                      {m.fecha}
+                    </td>
+                    <td className="px-5 py-3 font-semibold text-gray-800 whitespace-nowrap">
+                      {m.canastilla}
+                    </td>
+                    <td className="px-5 py-3 text-gray-700 whitespace-nowrap">
+                      {m.proveedor}
+                    </td>
+                    <td className="px-5 py-3 font-black whitespace-nowrap text-emerald-500">
+                      +{m.cantidad}
+                    </td>
+                  </tr>
+                ))}
+                {filteredMovimientosProveedor.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-5 py-10 text-center text-sm text-gray-400"
+                    >
+                      No hay movimientos para los filtros seleccionados.
                     </td>
                   </tr>
                 )}

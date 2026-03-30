@@ -1,38 +1,35 @@
 import { useState, useEffect, useCallback } from "react";
-import { GetRequestForPlanning } from "../../service/planificar/getrequestforplanning";
-import { GetRequestForPlanningResponse } from "../../interfaces/planificar/getrequestforplanning.interface";
+import { GetProductInventory } from "../../service/inventario/getproductinventory";
+import { GetProductInventoryResponse } from "../../interfaces/inventario/getproductinventory.interface";
 
-interface UseGetRequestForPlanningReturn {
-  data: GetRequestForPlanningResponse | null;
+interface UseGetProductInventoryReturn {
+  data: GetProductInventoryResponse | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
-export const useGetRequestForPlanning = (
-  categoryProviderId: number | null | undefined,
-): UseGetRequestForPlanningReturn => {
-  const [data, setData] = useState<GetRequestForPlanningResponse | null>(null);
+export const useGetProductInventory = (): UseGetProductInventoryReturn => {
+  const [data, setData] = useState<GetProductInventoryResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!categoryProviderId) return;
     try {
       setLoading(true);
       setError(null);
-      const response = await GetRequestForPlanning(categoryProviderId);
+      const response = await GetProductInventory();
       setData(response);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Error al obtener las solicitudes para planificación",
+          : "Error al obtener el inventario de productos",
       );
     } finally {
       setLoading(false);
     }
-  }, [categoryProviderId]);
+  }, []);
 
   useEffect(() => {
     fetchData();

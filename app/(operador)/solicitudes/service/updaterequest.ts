@@ -4,13 +4,13 @@ import { UpdateProducteRequestResponse } from "../interfaces/updateproductreques
 export async function UpdateRequest(
   id: number,
   active: boolean,
-  Provider_id: number,
+  CategoryProvider_id: number,
   Client_id: number,
 ): Promise<UpdateProducteRequestResponse> {
   return apiCall("updaterequest", {
     id,
     active: String(active),
-    Provider_id,
+    CategoryProvider_id,
     Client_id,
     Car_id: 1,
     Employee_id: 1,

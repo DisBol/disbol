@@ -4,7 +4,6 @@ import CardCode from "@/components/ui/CardCode";
 import { Select, type SelectOption } from "@/components/ui/SelecMultipe";
 import { useGetEmployeeDriver } from "../../hooks/chofer/useGetEmployeeDriver";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 interface DistributeAssignmentHeaderProps {
   proveedor?: string;
@@ -15,7 +14,10 @@ interface DistributeAssignmentHeaderProps {
     cajas: string;
     unidades: string;
   }>;
+  isRepartir?: string;
+  isFinalizando?: boolean;
   onCancel?: () => void;
+  onFinalizarRepartir?: () => void;
   isStarted?: boolean;
   groupName?: string;
   totalCajas?: number;
@@ -37,7 +39,10 @@ export default function DistributeAssignmentHeader({
   costoPorKg = "10.00",
   precioDiferido = false,
   detalles,
+  isRepartir,
+  isFinalizando,
   onCancel,
+  onFinalizarRepartir,
   isStarted = false,
   groupName = "",
   totalCajas = 0,
@@ -77,6 +82,14 @@ export default function DistributeAssignmentHeader({
     label: driver.name,
   }));
 
+  const parseComparativo = (valor: string) => {
+    const [solicitadoRaw, asignadoRaw] = valor.split("/");
+    return {
+      solicitado: Number(solicitadoRaw ?? 0) || 0,
+      asignado: Number(asignadoRaw ?? 0) || 0,
+    };
+  };
+
   const generatePDF = async () => {
     try {
       // Crear un contenedor temporal con el contenido del PDF
@@ -85,50 +98,6 @@ export default function DistributeAssignmentHeader({
       pdfContent.style.padding = "40px";
       pdfContent.style.backgroundColor = "#ffffff";
       pdfContent.style.fontFamily = "Arial, sans-serif";
-
-      // Obtener los detalles de los códigos para la tabla
-      const detallesTable = detalles
-        .map(
-          (d) =>
-            `<tr style="border-bottom: 2px solid #e11d48;">
-              <td style="padding: 15px; text-align: left; font-size: 14px;">${d.label}</td>
-              <td style="padding: 15px; text-align: center; font-size: 14px;">${d.cajas}</td>
-              <td style="padding: 15px; text-align: center; font-size: 14px;">${d.unidades}</td>
-            </tr>`,
-        )
-        .join("");
-
-      // Tabla de clientes - una sección por cada cliente
-      const clientesSections = clientes
-        .map(
-          (c) =>
-            `<div style="margin-bottom: 30px; padding: 20px; background-color: #f9fafb; border-radius: 8px; border-left: 4px solid #e11d48;">
-              <h3 style="font-size: 18px; font-weight: bold; color: #1e293b; margin: 0 0 15px 0;">${c.nombre}</h3>
-              <table style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
-                <thead>
-                  <tr style="background-color: #e11d48; color: white;">
-                    <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: bold;">Concepto</th>
-                    <th style="padding: 12px; text-align: center; font-size: 14px; font-weight: bold;">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style="border-bottom: 1px solid #e11d48;">
-                    <td style="padding: 12px; text-align: left; font-size: 13px;">Monto a Cobrar (Bs)</td>
-                    <td style="padding: 12px; text-align: center; font-size: 13px; font-weight: bold;">${c.montoACobrar.toFixed(2)}</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid #e11d48;">
-                    <td style="padding: 12px; text-align: left; font-size: 13px;">Deuda Cajas</td>
-                    <td style="padding: 12px; text-align: center; font-size: 13px; font-weight: bold;">${c.deudaCajas}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px; text-align: left; font-size: 13px;">Deuda Dinero</td>
-                    <td style="padding: 12px; text-align: center; font-size: 13px; font-weight: bold;">${c.deudaDinero.toFixed(2)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>`,
-        )
-        .join("");
 
       pdfContent.innerHTML = `
         <div style="margin-bottom: 40px;">
@@ -284,16 +253,27 @@ export default function DistributeAssignmentHeader({
           {/* Right Section - Codes */}
           <div className="flex-1 pb-2 w-full">
             <div className="flex flex-wrap gap-3">
-              {detalles.map((d, i) => (
-                <div key={i} className="w-30">
-                  <CardCode
-                    label={d.label}
-                    cajas={d.cajas}
-                    unidades={d.unidades}
-                    readOnly={true}
-                  />
-                </div>
-              ))}
+              {detalles.map((d, i) => {
+                const cajas = parseComparativo(d.cajas);
+                const unidades = parseComparativo(d.unidades);
+
+                return (
+                  <div key={i} className="w-30">
+                    <CardCode
+                      label={d.label}
+                      cajas={cajas.asignado}
+                      unidades={unidades.asignado}
+                      readOnly={true}
+                      compareReadOnly={{
+                        leftLabel: "Asig.",
+                        rightLabel: "Solicit.",
+                        rightCajas: cajas.solicitado,
+                        rightUnidades: unidades.solicitado,
+                      }}
+                    />
+                  </div>
+                );
+              })}
               {/* TOTAL Card */}
               <div className="w-30">
                 <div className="bg-[#e11d48] rounded-lg p-2 shadow-sm flex flex-col h-full border border-[#e11d48]">
@@ -350,12 +330,29 @@ export default function DistributeAssignmentHeader({
               </span>
             </p>
           </div>
-          <div className="flex gap-2.5 mt-2">
+          <div className="flex gap-2.5 mt-2 flex-wrap">
             <button
               onClick={onCancel}
               className="px-4 py-2 border border-gray-200 rounded-lg text-[12px] font-bold shadow-sm bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors shrink-0 flex-1"
             >
               Volver
+            </button>
+            <button
+              onClick={onFinalizarRepartir}
+              disabled={isFinalizando || isRepartir === "true"}
+              className={`px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white transition-colors ${
+                isRepartir === "true"
+                  ? "bg-gray-400 cursor-not-allowed opacity-80"
+                  : isFinalizando
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 cursor-pointer"
+              }`}
+            >
+              {isRepartir === "true"
+                ? "Repartir Finalizado"
+                : isFinalizando
+                  ? "Finalizando..."
+                  : "Finalizar Repartir"}
             </button>
           </div>
         </div>
@@ -365,21 +362,32 @@ export default function DistributeAssignmentHeader({
             Detalles de la Asignación
           </h3>
           <div className="flex flex-wrap gap-3 xl:ml-2">
-            {detalles.map((d, i) => (
-              <div key={i} className="w-30">
-                <CardCode
-                  label={d.label}
-                  cajas={d.cajas}
-                  unidades={d.unidades}
-                  readOnly={true}
-                  weightInfo={{
-                    adicional: [
-                      { label: "Costo:", value: `Bs ${costoPorKg}/kg` },
-                    ],
-                  }}
-                />
-              </div>
-            ))}
+            {detalles.map((d, i) => {
+              const cajas = parseComparativo(d.cajas);
+              const unidades = parseComparativo(d.unidades);
+
+              return (
+                <div key={i} className="w-30">
+                  <CardCode
+                    label={d.label}
+                    cajas={cajas.solicitado}
+                    unidades={unidades.solicitado}
+                    readOnly={true}
+                    compareReadOnly={{
+                      leftLabel: "Asig.",
+                      rightLabel: "Solicit.",
+                      rightCajas: cajas.asignado,
+                      rightUnidades: unidades.asignado,
+                    }}
+                    weightInfo={{
+                      adicional: [
+                        { label: "Costo:", value: `Bs ${costoPorKg}/kg` },
+                      ],
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -7,13 +7,13 @@ export function useAddRequest() {
   const [error, setError] = useState<string | null>(null);
 
   const addRequest = async (
-    Provider_id: number,
+    CategoryProvider_id: number,
     Client_id: number,
   ): Promise<AddRequestResponse> => {
     setLoading(true);
     setError(null);
     try {
-      const response = await AddRequest(Provider_id, Client_id);
+      const response = await AddRequest(CategoryProvider_id, Client_id);
       return response;
     } catch (err) {
       const errorMessage =

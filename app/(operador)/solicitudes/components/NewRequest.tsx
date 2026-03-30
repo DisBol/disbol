@@ -113,8 +113,13 @@ export default function NewRequest() {
 
     try {
       // PASO 1: Crear la cabecera de la Solicitud (Request)
+      const selectedCategory = categoriesWithProducts.find(
+        (c) => c.id.toString() === grupo,
+      );
+      if (!selectedCategory) throw new Error("No se encontró la categoría seleccionada");
+
       const reqResponse = await addRequest(
-        parseInt(proveedor),
+        selectedCategory.CategoryProvider_id,
         parseInt(cliente),
       );
 

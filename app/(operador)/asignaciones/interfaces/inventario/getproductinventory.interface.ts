@@ -1,14 +1,18 @@
-export interface ProductByCategoryResponse {
+export interface GetProductInventoryResponse {
   data: Datum[];
   metadata: Metadata;
 }
 
 export interface Datum {
-  id_0: number; // Category ID
-  name_0: string; // Category Name
-  id: number; // Product ID
-  name: string; // Product Name
-  CategoryProvider_id: number; // Category Provider ID
+  id: number;
+  active: string;
+  created_at: Date;
+  updated_at: Date;
+  container: number;
+  units: number;
+  menudencia: string;
+  Product_id: number;
+  Container_id: number;
 }
 
 export interface Metadata {

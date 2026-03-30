@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import CardCode from "@/components/ui/CardCode";
 
 interface Code {
   label: string;
@@ -16,6 +15,7 @@ interface ClientCode {
   unidades: number;
   restante: number;
 }
+
 interface Cliente {
   name: string;
   estado: string;
@@ -23,17 +23,17 @@ interface Cliente {
   totalCajas: number;
   totalUnid: number;
 }
-interface TotalGroupProps {
+
+interface InventarioTotalGroupProps {
   name: string;
-  status: "guardado" | "pendiente";
   codes: Code[];
   totalCajas: number;
   totalUnid: number;
   clientes: Cliente[];
   isExpanded: boolean;
-  readOnly?: boolean;
   onToggleExpand: () => void;
-  onSaveGroup?: () => void | Promise<void>;
+  onSave?: () => void;
+  isSaving?: boolean;
   onUpdateClientCode?: (
     clientIndex: number,
     codeIndex: number,
@@ -42,22 +42,18 @@ interface TotalGroupProps {
   ) => void;
 }
 
-export default function TotalGroup({
+export default function InventarioTotalGroup({
   name,
-  status,
   codes,
   totalCajas,
   totalUnid,
   clientes,
   isExpanded,
-  readOnly = false,
   onToggleExpand,
-  onSaveGroup,
+  onSave,
+  isSaving,
   onUpdateClientCode,
-}: TotalGroupProps) {
-  const [isSaving, setIsSaving] = React.useState(false);
-
-  // Helper para calcular el multiplicador según código de producto
+}: InventarioTotalGroupProps) {
   const getMultiplier = (productCode: string) => {
     if (productCode.includes("104") || productCode.includes("105")) return 15;
     if (
@@ -76,19 +72,10 @@ export default function TotalGroup({
     value: number,
     productCode: string,
   ) => {
-    // Actualizar cajas
     onUpdateClientCode?.(clienteIdx, clientCodeIdx, "cajas", value);
-
-    // Calcular unidades automáticamente si hay multiplicador
     const multiplier = getMultiplier(productCode);
     if (multiplier > 0) {
-      const unidadesCalculadas = value * multiplier;
-      onUpdateClientCode?.(
-        clienteIdx,
-        clientCodeIdx,
-        "unidades",
-        unidadesCalculadas,
-      );
+      onUpdateClientCode?.(clienteIdx, clientCodeIdx, "unidades", value * multiplier);
     }
   };
 
@@ -98,46 +85,53 @@ export default function TotalGroup({
     value: number,
     productCode: string,
   ) => {
-    // Actualizar unidades
     onUpdateClientCode?.(clienteIdx, clientCodeIdx, "unidades", value);
-
-    // Calcular cajas automáticamente si hay multiplicador
     const multiplier = getMultiplier(productCode);
     if (multiplier > 0) {
-      const cajasCalculadas = value / multiplier;
-      const cajasRedondeadas = Number.isInteger(cajasCalculadas)
-        ? cajasCalculadas
-        : Number(cajasCalculadas.toFixed(2));
-      onUpdateClientCode?.(
-        clienteIdx,
-        clientCodeIdx,
-        "cajas",
-        cajasRedondeadas,
-      );
+      onUpdateClientCode?.(clienteIdx, clientCodeIdx, "cajas", Math.ceil(value / multiplier));
     }
   };
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm transition-all">
-      {/* Accordion Header (Group Total) */}
+      {/* Accordion Header */}
       <div
         className="flex flex-col lg:flex-row items-center p-3 gap-4 cursor-pointer hover:bg-gray-50/50"
         onClick={onToggleExpand}
       >
-        {/* Left group name */}
-        <div className="w-25 shrink-0 text-center lg:text-center">
+        {/* Group name */}
+        <div className="w-25 shrink-0 text-center">
           <span className="font-bold text-[#e11d48] text-xs">{name}</span>
         </div>
 
-        {/* Center Code Cards */}
+        {/* Code Cards */}
         <div className="flex flex-wrap gap-1.5 flex-1 items-stretch">
           {codes.map((code, codeIdx) => (
-            <div key={codeIdx} className="w-20 shrink-0 pointer-events-none">
-              <CardCode
-                label={code.label}
-                cajas={code.cajas}
-                unidades={code.unidades}
-                readOnly={true}
-              />
+            <div
+              key={codeIdx}
+              className="w-20 shrink-0 pointer-events-none bg-white rounded-lg p-1.5 shadow-sm border border-gray-100"
+            >
+              <h3 className="font-bold text-gray-900 text-[10px] mb-1 text-left tracking-tight truncate">
+                {code.label}
+              </h3>
+              <div className="space-y-1">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                    CAJAS
+                  </label>
+                  <div className="w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center bg-white border-gray-200 text-gray-700">
+                    {code.cajas}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                    UNID.
+                  </label>
+                  <div className="w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center bg-white border-gray-200 text-gray-700">
+                    {code.unidades}
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
 
@@ -169,67 +163,40 @@ export default function TotalGroup({
           </div>
         </div>
 
-        {/* Right Action Button & Chevron */}
-        <div className="flex items-center gap-2 shrink-0 ml-1">
-          {readOnly ? null : status === "guardado" ? (
-            <button
-              disabled
-              className="bg-[#10b981] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-not-allowed opacity-90 flex items-center gap-1"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              Guardado
-            </button>
-          ) : (
-            <button
-              disabled={isSaving}
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (isSaving) return;
-                setIsSaving(true);
-                try {
-                  await onSaveGroup?.();
-                } finally {
-                  setIsSaving(false);
-                }
-              }}
-              className={`text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1 ${
-                isSaving
-                  ? "bg-rose-400 cursor-not-allowed"
-                  : "bg-[#e11d48] hover:bg-rose-700 cursor-pointer"
-              }`}
-            >
-              {isSaving ? (
-                <>
-                  <svg
-                    className="animate-spin h-3 w-3 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <span>Guardando...</span>
-                </>
-              ) : (
-                "Guardar Grupo"
-              )}
-            </button>
-          )}
+        {/* Save button */}
+        {onSave && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSave(); }}
+            disabled={isSaving}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors border ${
+              isSaving
+                ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-[#e11d48] hover:bg-rose-700 border-[#e11d48] text-white shadow-sm"
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <svg className="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Guardando...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
+                Guardar
+              </>
+            )}
+          </button>
+        )}
 
+        {/* Chevron */}
+        <div className="flex items-center shrink-0 ml-1">
           <button className="p-1 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -249,13 +216,12 @@ export default function TotalGroup({
         </div>
       </div>
 
-      {/* Accordion Content (Nested Client Orders) */}
+      {/* Accordion Content */}
       {isExpanded && clientes && clientes.length > 0 && (
         <div className="bg-slate-50 border-t border-gray-200 p-3">
           <h4 className="text-[11px] font-bold text-gray-500 mb-3 px-1">
             Pedidos de Clientes:
           </h4>
-
           <div className="flex flex-col gap-3">
             {clientes.map((cliente, clienteIdx) => (
               <div
@@ -293,53 +259,39 @@ export default function TotalGroup({
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
                               CAJAS
                             </label>
-                            {status === "guardado" || readOnly ? (
-                              <div className="w-full px-1 py-0.5 bg-gray-200 rounded text-[10px] font-bold text-gray-600 text-center h-5 flex items-center justify-center shadow-inner border border-gray-300">
-                                {code.cajas}
-                              </div>
-                            ) : (
-                              <input
-                                type="number"
-                                min="0"
-                                value={code.cajas}
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 0;
-                                  handleCajasChange(
-                                    clienteIdx,
-                                    clientCodeIdx,
-                                    value,
-                                    code.label,
-                                  );
-                                }}
-                                className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
-                              />
-                            )}
+                            <input
+                              type="number"
+                              min="0"
+                              value={code.cajas}
+                              onChange={(e) =>
+                                handleCajasChange(
+                                  clienteIdx,
+                                  clientCodeIdx,
+                                  parseInt(e.target.value) || 0,
+                                  code.label,
+                                )
+                              }
+                              className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                            />
                           </div>
                           <div>
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
                               UNID.
                             </label>
-                            {status === "guardado" || readOnly ? (
-                              <div className="w-full px-1 py-0.5 bg-gray-200 rounded text-[10px] font-bold text-gray-600 text-center h-5 flex items-center justify-center shadow-inner border border-gray-300">
-                                {code.unidades}
-                              </div>
-                            ) : (
-                              <input
-                                type="number"
-                                min="0"
-                                value={code.unidades}
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 0;
-                                  handleUnidadesChange(
-                                    clienteIdx,
-                                    clientCodeIdx,
-                                    value,
-                                    code.label,
-                                  );
-                                }}
-                                className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
-                              />
-                            )}
+                            <input
+                              type="number"
+                              min="0"
+                              value={code.unidades}
+                              onChange={(e) =>
+                                handleUnidadesChange(
+                                  clienteIdx,
+                                  clientCodeIdx,
+                                  parseInt(e.target.value) || 0,
+                                  code.label,
+                                )
+                              }
+                              className="w-full px-1 py-0.5 bg-gray-50 rounded text-[10px] font-bold text-gray-900 text-center h-5 shadow-inner border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                            />
                           </div>
                           <div>
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
@@ -362,7 +314,7 @@ export default function TotalGroup({
                     </div>
                   ))}
 
-                  {/* Client TOTAL Card */}
+                  {/* Client TOTAL */}
                   <div className="w-20 shrink-0">
                     <div className="bg-[#f59e0b] rounded-lg p-1.5 shadow-sm flex flex-col h-full border border-[#f59e0b]">
                       <h3 className="font-bold text-white text-[9px] mb-1.5 text-center uppercase tracking-wide">

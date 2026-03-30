@@ -156,8 +156,13 @@ export default function ProductAssignment({
 
     try {
       // Paso 1: Crear Assignment
+      const selectedCategory = categoriesWithProducts.find(
+        (c) => c.id.toString() === grupo,
+      );
+      if (!selectedCategory) throw new Error("No se encontró la categoría seleccionada");
+
       const assignmentId = await addAssignment({
-        Provider_id: proveedor,
+        CategoryProvider_id: selectedCategory.CategoryProvider_id.toString(),
       });
 
       if (!assignmentId) {
