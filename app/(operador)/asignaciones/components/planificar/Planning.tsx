@@ -13,6 +13,7 @@ import { useAssignmentsStore } from "../../stores/assignments-store";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
 import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
 import { Modal } from "@/components/ui/Modal";
+import { AddAssignmentRequest } from "../../service/planificar/addassignmentrequest";
 
 export default function Planificar({
   assignment = null,
@@ -130,6 +131,13 @@ export default function Planificar({
 
           // Obtener Request_id (igual para todos los items del cliente)
           const Request_id = clientRequestData[0].Request_id;
+
+          // Vincular asignación con solicitud
+          await AddAssignmentRequest(
+            parseInt(assignment!.id),
+            Request_id,
+            "true",
+          );
 
           // Crear RequestStage con position 2
           const stageResponse = await addStage(
