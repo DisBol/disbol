@@ -153,6 +153,12 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
     return totals;
   }, [editableGroups]);
 
+  const totalPlannedCajas = useMemo(() => {
+    let total = 0;
+    plannedTotals.forEach((t) => { total += t.cajas; });
+    return total;
+  }, [plannedTotals]);
+
   // Build detalles: compare planned vs inventory
   const detalles = useMemo(() => {
     const inventoryMap = new Map<string, number>();
@@ -238,6 +244,15 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
     );
   };
 
+  const [savingGroups, setSavingGroups] = useState<number[]>([]);
+  const handleSaveGroup = useCallback((groupIndex: number) => {
+    setSavingGroups((prev) => [...prev, groupIndex]);
+    // TODO: llamar al servicio de guardado con editableGroups[groupIndex]
+    setTimeout(() => {
+      setSavingGroups((prev) => prev.filter((i) => i !== groupIndex));
+    }, 1500);
+  }, []);
+
   const loading = loadingInventory || loadingRequest;
 
   return (
@@ -257,6 +272,7 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
           onGrupoChange={handleGrupoChange}
           onContenedorChange={setContenedor}
           containerInfo={containerInfo}
+          plannedTotal={totalPlannedCajas}
           onCancel={onClose}
         />
 
@@ -290,6 +306,8 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
                   clientes={group.clientes}
                   isExpanded={expandedGroups.includes(groupIdx)}
                   onToggleExpand={() => toggleGroup(groupIdx)}
+                  onSave={() => handleSaveGroup(groupIdx)}
+                  isSaving={savingGroups.includes(groupIdx)}
                   onUpdateClientCode={(clientIndex, codeIndex, field, value) =>
                     updateClientCode(groupIdx, clientIndex, codeIndex, field, value)
                   }

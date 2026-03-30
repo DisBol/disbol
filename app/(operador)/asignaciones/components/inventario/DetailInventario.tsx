@@ -23,6 +23,7 @@ interface DetailInventarioProps {
   onGrupoChange: (value: string) => void;
   onContenedorChange: (value: string) => void;
   containerInfo?: { Container_name: string; Total_container: number } | null;
+  plannedTotal?: number;
   onCancel?: () => void;
 }
 
@@ -40,6 +41,7 @@ export default function DetailInventario({
   onGrupoChange,
   onContenedorChange,
   containerInfo,
+  plannedTotal = 0,
   onCancel,
 }: DetailInventarioProps) {
   const parseComparativo = (valor: string) => {
@@ -95,26 +97,56 @@ export default function DetailInventario({
 
         {/* Right: comparison cards */}
         <div className="flex-1">
-          {containerInfo && (
-            <div className="w-full mb-4 rounded-xl bg-linear-to-r from-[#e11d48] to-[#9f1239] px-4 py-2 shadow-md text-white flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-white/70 mb-0.5">
-                  Contenedor
-                </p>
-                <p className="text-[12px] font-extrabold leading-tight">
-                  {containerInfo.Container_name}
-                </p>
-              </div>
-              <div className="bg-white/20 rounded-xl px-5 py-2 text-center shrink-0">
-                <p className="text-[9px] font-bold text-white/80 uppercase tracking-wide">
-                  Total
-                </p>
-                <p className="text-[20px] font-extrabold leading-none">
-                  {containerInfo.Total_container}
-                </p>
-              </div>
-            </div>
-          )}
+          {containerInfo &&
+            (() => {
+              const restante = containerInfo.Total_container - plannedTotal;
+              return (
+                <div className="w-full mb-4 rounded-xl bg-linear-to-r from-slate-100 to-slate-100 px-4 py-2 shadow-md text-white flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-800 mb-0.5">
+                      Contenedor
+                    </p>
+                    <p className="text-[13px] font-extrabold leading-tight text-black">
+                      {containerInfo.Container_name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="bg-white/10 rounded-xl px-4 py-1.5 text-center">
+                      <p className="text-[9px] font-bold text-slate-800 uppercase tracking-wide">
+                        Total
+                      </p>
+                      <p className="text-[18px] font-extrabold leading-none text-black">
+                        {containerInfo.Total_container}
+                      </p>
+                    </div>
+                    <div
+                      className={`rounded-xl px-4 py-1.5 text-center border ${
+                        restante < 0
+                          ? "bg-red-500/20 border-red-500"
+                          : restante === 0
+                            ? "bg-white/10 border-white/20"
+                            : "bg-emerald-500/20 border-emerald-500"
+                      }`}
+                    >
+                      <p className="text-[9px] font-bold text-slate-800 uppercase tracking-wide">
+                        Restante
+                      </p>
+                      <p
+                        className={`text-[18px] font-extrabold leading-none ${
+                          restante < 0
+                            ? "text-red-400"
+                            : restante === 0
+                              ? "text-black"
+                              : "text-emerald-400"
+                        }`}
+                      >
+                        {restante > 0 ? `+${restante}` : restante}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           <h3 className="text-[11px] font-bold text-gray-800 mb-2 xl:ml-2">
             Inventario de Productos
           </h3>
@@ -148,6 +180,7 @@ export default function DetailInventario({
                           leftLabel: "Plan.",
                           rightLabel: "Inv.",
                           rightCajas: cajas.inventario,
+                          rightCajasHidden: true,
                           rightUnidades: unidades.inventario,
                         }}
                       />
