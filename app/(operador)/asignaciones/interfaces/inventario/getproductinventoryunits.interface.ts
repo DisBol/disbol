@@ -4,13 +4,9 @@ export interface GetProductInventoryUnitsResponse {
 }
 
 export interface Datum {
-  Productinventory_id: number;
-  Productinventory_active: string;
-  Productinventory_units: number;
   Product_id: number;
   Product_name: string;
-  Category_id: number;
-  Category_name: string;
+  Total_units: number;
 }
 
 export interface Metadata {

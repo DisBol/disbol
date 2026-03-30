@@ -157,7 +157,7 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
   const detalles = useMemo(() => {
     const inventoryMap = new Map<string, number>();
     inventoryData?.data.forEach((item) => {
-      inventoryMap.set(item.Product_name, item.Productinventory_units);
+      inventoryMap.set(item.Product_name, item.Total_units);
     });
 
     const allProducts = new Set<string>([

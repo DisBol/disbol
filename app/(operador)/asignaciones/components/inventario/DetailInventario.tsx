@@ -96,12 +96,12 @@ export default function DetailInventario({
         {/* Right: comparison cards */}
         <div className="flex-1">
           {containerInfo && (
-            <div className="w-full mb-4 rounded-xl bg-gradient-to-r from-[#e11d48] to-[#9f1239] px-4 py-3 shadow-md text-white flex items-center justify-between gap-4">
+            <div className="w-full mb-4 rounded-xl bg-linear-to-r from-[#e11d48] to-[#9f1239] px-4 py-2 shadow-md text-white flex items-center justify-between gap-4">
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-widest text-white/70 mb-0.5">
                   Contenedor
                 </p>
-                <p className="text-[15px] font-extrabold leading-tight">
+                <p className="text-[12px] font-extrabold leading-tight">
                   {containerInfo.Container_name}
                 </p>
               </div>
@@ -109,7 +109,7 @@ export default function DetailInventario({
                 <p className="text-[9px] font-bold text-white/80 uppercase tracking-wide">
                   Total
                 </p>
-                <p className="text-[24px] font-extrabold leading-none">
+                <p className="text-[20px] font-extrabold leading-none">
                   {containerInfo.Total_container}
                 </p>
               </div>
