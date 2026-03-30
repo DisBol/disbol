@@ -9,7 +9,10 @@ import { useAddProductRequest } from "../../../solicitudes/hooks/useAddproductre
 import { usePlanningData } from "../../hooks/planificar/usePlanningData";
 import { useAutomaticPlanning } from "../../hooks/planificar/useAutomaticPlanning";
 import { PlanningProps, EditableGroupData } from "../../types/planning.types";
+import { useAssignmentsStore } from "../../stores/assignments-store";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
+import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
+import { Modal } from "@/components/ui/Modal";
 
 export default function Planificar({
   assignment = null,
@@ -24,7 +27,9 @@ export default function Planificar({
 
   // Hooks para guardar datos
   const { addStage, loading: loadingStage } = useAddRequestStage();
+  const { updateAssignmentFlags } = useAssignmentsStore();
   const { addProduct, loading: loadingAdd } = useAddProductRequest();
+  const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
 
   // Hook para procesamiento de datos
   const { detalles, processedGroups, proveedor, clienteOrigen } =
@@ -260,6 +265,29 @@ export default function Planificar({
     }
   };
 
+  const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
+
+  const handleFinalizarPlanificacion = useCallback(() => {
+    setShowConfirmFinalizar(true);
+  }, []);
+
+  const handleConfirmFinalizar = useCallback(async () => {
+    if (!assignment) return;
+    setShowConfirmFinalizar(false);
+    const ok = await updateAssignment({
+      id: assignment.id,
+      active: "true",
+      CategoryProvider_id: assignment.categoryProviderId,
+      isRecibir: assignment.isRecibir,
+      isPlanificar: "true",
+      isRepartir: assignment.isRepartir,
+    });
+    if (ok) {
+      updateAssignmentFlags(assignment.id, { isPlanificar: "true" });
+    }
+    onClose?.();
+  }, [assignment, updateAssignment, updateAssignmentFlags, onClose]);
+
   // Función para planificación automática
   const handleAutomaticPlanning = useCallback(() => {
     if (editableGroups.length === 0 || updatedDetalles.length === 0) return;
@@ -297,8 +325,11 @@ export default function Planificar({
           proveedor={proveedor}
           clienteOrigen={clienteOrigen}
           detalles={updatedDetalles}
+          isPlanificar={assignment?.isPlanificar}
+          isFinalizando={isFinalizando}
           onCancel={onClose}
           onAutomaticPlanning={handleAutomaticPlanning}
+          onFinalizarPlanificacion={handleFinalizarPlanificacion}
         />
 
         {/* Total Groups Section */}
@@ -329,6 +360,7 @@ export default function Planificar({
                   totalUnid={group.totalUnid}
                   clientes={group.clientes}
                   isExpanded={expandedGroups.includes(groupIdx)}
+                  readOnly={assignment?.isPlanificar === "true"}
                   onToggleExpand={() => toggleGroup(groupIdx)}
                   onSaveGroup={() => handleSaveGroup(groupIdx)}
                   onUpdateClientCode={(clientIndex, codeIndex, field, value) =>
@@ -350,6 +382,34 @@ export default function Planificar({
           </div>
         </div>
       </div>
+
+      {/* Modal Confirmar Finalizar Planificación */}
+      <Modal
+        isOpen={showConfirmFinalizar}
+        onClose={() => setShowConfirmFinalizar(false)}
+        title="Finalizar Planificación"
+        size="sm"
+      >
+        <p className="text-sm text-gray-600 mb-6">
+          ¿Está seguro de finalizar la planificación? Una vez finalizada no
+          podrá realizar cambios.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setShowConfirmFinalizar(false)}
+            className="px-4 py-2 rounded-lg text-sm font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirmFinalizar}
+            disabled={isFinalizando}
+            className="px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {isFinalizando ? "Finalizando..." : "Confirmar"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

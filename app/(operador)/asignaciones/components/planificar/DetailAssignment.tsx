@@ -12,17 +12,23 @@ interface DetailAssignmentProps {
     cajasExcedidas?: boolean;
     unidadesExcedidas?: boolean;
   }>;
+  isPlanificar?: string;
+  isFinalizando?: boolean;
   onCancel?: () => void;
   onAutomaticPlanning?: () => void;
   onSavePlanning?: () => void;
+  onFinalizarPlanificacion?: () => void;
 }
 
 export default function DetailAssignment({
   proveedor = "SOFIA",
   clienteOrigen = "Pollería El Rey",
   detalles,
+  isPlanificar,
+  isFinalizando,
   onCancel,
   onAutomaticPlanning,
+  onFinalizarPlanificacion,
 }: DetailAssignmentProps) {
   const parseComparativo = (valor: string) => {
     const [recibidoRaw, asignadoRaw] = valor.split("/");
@@ -46,20 +52,39 @@ export default function DetailAssignment({
               <span className="text-gray-900 ml-1">{clienteOrigen}</span>
             </p>
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 flex-wrap">
             <button
               onClick={onCancel}
               className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-[11px] font-bold shadow-sm bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors shrink-0"
             >
               Volver
             </button>
+            {isPlanificar !== "true" && (
+              <button
+                onClick={onAutomaticPlanning}
+                className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold shadow-sm bg-[#e11d48] hover:bg-rose-700 text-white transition-colors leading-tight text-center"
+              >
+                Planificación
+                <br />
+                Automática
+              </button>
+            )}
             <button
-              onClick={onAutomaticPlanning}
-              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold shadow-sm bg-[#e11d48] hover:bg-rose-700 text-white transition-colors leading-tight text-center"
+              onClick={onFinalizarPlanificacion}
+              disabled={isFinalizando || isPlanificar === "true"}
+              className={`px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white transition-colors ${
+                isPlanificar === "true"
+                  ? "bg-gray-400 cursor-not-allowed opacity-80"
+                  : isFinalizando
+                    ? "bg-green-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 cursor-pointer"
+              }`}
             >
-              Planificación
-              <br />
-              Automática
+              {isPlanificar === "true"
+                ? "Planif. Finalizada"
+                : isFinalizando
+                  ? "Finalizando..."
+                  : "Finalizar Planificación"}
             </button>
           </div>
         </div>
