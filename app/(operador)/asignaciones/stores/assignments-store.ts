@@ -34,6 +34,9 @@ export interface Assignment {
   providerId: string; // ID del proveedor necesario para eliminar assignment
   categoryId: string; // ID del grupo
   categoryProviderId: string; // CategoryProvider_id para updateassignment
+  isRecibir: string;
+  isPlanificar: string;
+  isRepartir: string;
   productos: ProductQuantity[];
 }
 
@@ -114,6 +117,10 @@ interface AssignmentsState {
   getPendingChanges: (
     assignmentId: string,
   ) => Map<string, Partial<ProductQuantity>>;
+  updateAssignmentFlags: (
+    assignmentId: string,
+    flags: { isRecibir?: string; isPlanificar?: string; isRepartir?: string },
+  ) => void;
 }
 
 // Función para transformar datos de la API
@@ -142,6 +149,9 @@ const transformApiDataToAssignments = (
           providerId: item.Provider_id.toString(),
           categoryId: item.Category_id.toString(),
           categoryProviderId: item.Assignment_CategoryProvider_id.toString(),
+          isRecibir: item.Assignment_isRecibir,
+          isPlanificar: item.Assignment_isPlanificar,
+          isRepartir: item.Assignment_isRepartir,
           productos: [],
         };
       }
@@ -434,6 +444,28 @@ export const useAssignmentsStore = create<AssignmentsState>()(
 
       getPendingChanges: (assignmentId) => {
         return get().pendingChanges.get(assignmentId) || new Map();
+      },
+
+      updateAssignmentFlags: (assignmentId, flags) => {
+        set(
+          (state) => {
+            const applyFlags = (a: Assignment | null): Assignment | null => {
+              if (!a || a.id !== assignmentId) return a;
+              return { ...a, ...flags };
+            };
+
+            return {
+              assignments: state.assignments.map((a) =>
+                a.id === assignmentId ? { ...a, ...flags } : a,
+              ),
+              selectedAssignment: applyFlags(state.selectedAssignment),
+              planningAssignment: applyFlags(state.planningAssignment),
+              distributeAssignment: applyFlags(state.distributeAssignment),
+            };
+          },
+          false,
+          "updateAssignmentFlags",
+        );
       },
     }),
     { name: "assignments-store" },

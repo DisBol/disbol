@@ -6,6 +6,9 @@ export interface GetAssignmentHistoryResponse {
 export interface Datum {
   Assignment_id: number;
   Assignment_created_at: Date;
+  Assignment_isRecibir: string;
+  Assignment_isPlanificar: string;
+  Assignment_isRepartir: string;
   Assignment_CategoryProvider_id: number;
   AssignmentStage_id: number;
   AssignmentStage_position: number;
