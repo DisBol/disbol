@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(ls \"c:/Users/Daniel/Desktop/DISBOL/disbol/app/\\(operador\\)/canastos/\")",
+      "Bash(ls \"c:/Users/Daniel/Desktop/DISBOL/disbol/app/\\(operador\\)/canastos/components/\")",
+      "Bash(find \"c:/Users/Daniel/Desktop/DISBOL/disbol/app/\\(operador\\)/canastos\" -type f)"
+    ]
+  }
+}
