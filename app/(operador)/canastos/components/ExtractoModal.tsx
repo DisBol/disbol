@@ -1,14 +1,6 @@
 "use client";
 import { Modal } from "@/components/ui/Modal";
-
-export interface ExtractoMovimiento {
-  fecha: string;
-  tipoMovimiento: string;
-  canastos: number;
-  almacen: string;
-  saldoCliente: number;
-  saldoAlmacen: number;
-}
+import { useGetContainerMovementsClientExtract } from "../hooks/useGetContainerMovementsClientExtract";
 
 interface Props {
   isOpen: boolean;
@@ -16,55 +8,29 @@ interface Props {
   clientId: number;
   clientName: string;
   containerId: number;
-  movimientos?: ExtractoMovimiento[];
-  loading?: boolean;
 }
 
 export function ExtractoModal({
   isOpen,
   onClose,
+  clientId,
   clientName,
-  movimientos = [],
-  loading = false,
+  containerId,
 }: Props) {
+  const { data, loading } = useGetContainerMovementsClientExtract(
+    clientId,
+    containerId,
+  );
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="xl"
-      title=""
-      showCloseButton={false}
-    >
-      {/* Header custom */}
-      <div className="flex items-start justify-between mb-5">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">
-            Extracto de {clientName}
-          </h2>
-          <p className="text-sm text-sky-500 mt-0.5">
-            Histórico de movimientos de canastos
-          </p>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 text-xl leading-none font-light"
-        >
-          ×
-        </button>
-      </div>
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" title={`Extracto de ${clientName}`} showCloseButton>
+      <p className="text-sm text-sky-500 -mt-2 mb-4">Histórico de movimientos de canastos</p>
 
       <div className="overflow-auto">
         <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-gray-100">
-              {[
-                "Fecha",
-                "Tipo Movimiento",
-                "Canastos (+/-)",
-                "Almacén",
-                "Saldo Cliente",
-                "Saldo Almacén",
-              ].map((h) => (
+              {["Fecha", "Tipo Movimiento", "Contenedor", "Canastos (+/-)"].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-3 text-left text-[11px] font-bold tracking-wider text-sky-500 uppercase whitespace-nowrap"
@@ -77,50 +43,36 @@ export function ExtractoModal({
           <tbody>
             {loading && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-10 text-center text-sm text-gray-400"
-                >
+                <td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">
                   Cargando...
                 </td>
               </tr>
             )}
-            {!loading &&
-              movimientos.map((m, i) => (
-                <tr
-                  key={i}
-                  className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3 text-sky-500 whitespace-nowrap">
-                    {m.fecha}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                    {m.tipoMovimiento}
-                  </td>
-                  <td
-                    className={`px-4 py-3 font-bold whitespace-nowrap ${
-                      m.canastos < 0 ? "text-red-500" : "text-emerald-500"
-                    }`}
-                  >
-                    {m.canastos > 0 ? `+${m.canastos}` : m.canastos}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                    {m.almacen}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                    {m.saldoCliente} can.
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                    {m.saldoAlmacen} can.
-                  </td>
-                </tr>
-              ))}
-            {!loading && movimientos.length === 0 && (
-              <tr>
+            {!loading && data.map((m, i) => (
+              <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 text-sky-500 whitespace-nowrap">
+                  {new Date(m.ContainerMovements_created_at).toLocaleDateString("es-BO")}
+                </td>
+                <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                  {m.Tipo_Operacion}
+                </td>
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                  {m.Contenedor_name}
+                </td>
                 <td
-                  colSpan={6}
-                  className="px-4 py-10 text-center text-sm text-gray-400"
+                  className={`px-4 py-3 font-bold whitespace-nowrap ${
+                    m.ContainerMovements_quantity < 0 ? "text-red-500" : "text-emerald-500"
+                  }`}
                 >
+                  {m.ContainerMovements_quantity > 0
+                    ? `+${m.ContainerMovements_quantity}`
+                    : m.ContainerMovements_quantity}
+                </td>
+              </tr>
+            ))}
+            {!loading && data.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">
                   Sin movimientos registrados.
                 </td>
               </tr>

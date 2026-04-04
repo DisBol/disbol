@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Box1Icon } from "@/components/icons/Box1Icon";
-import { clientes, movimientos, rutas, movimientosProveedor } from "./components/data";
+import { clientes, movimientos, movimientosProveedor } from "./components/data";
 import { useGetInventoryByContainer } from "./hooks/useGetInventoryByContainer";
 import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedores/useContainer";
 import { Select, SelectOption } from "@/components/ui/SelecMultipe";
@@ -100,7 +100,7 @@ export default function CanastosPage() {
         {/* Clientes en Mora + Canastos por Ruta */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
           <ClientesEnMora containerId={contenedorId} />
-          <CanastosPorRuta rutas={rutas} />
+          <CanastosPorRuta containerId={contenedorId} />
         </div>
 
         {/* Histórico de Movimientos por Cliente */}
