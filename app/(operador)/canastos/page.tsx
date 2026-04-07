@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Box1Icon } from "@/components/icons/Box1Icon";
-import { clientes, movimientos, movimientosProveedor } from "./components/data";
+import { movimientosProveedor } from "./components/data";
 import { useGetInventoryByContainer } from "./hooks/useGetInventoryByContainer";
 import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedores/useContainer";
 import { Select, SelectOption } from "@/components/ui/SelecMultipe";
@@ -104,7 +104,7 @@ export default function CanastosPage() {
         </div>
 
         {/* Histórico de Movimientos por Cliente */}
-        <HistoricoMovimientosCliente movimientos={movimientos} clientes={clientes} />
+        <HistoricoMovimientosCliente containerId={contenedorId} />
 
         {/* Histórico de Movimientos por Proveedor */}
         <HistoricoMovimientosProveedor movimientosProveedor={movimientosProveedor} />
