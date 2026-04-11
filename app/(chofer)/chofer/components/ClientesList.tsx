@@ -51,7 +51,6 @@ const metodosCobroOptions: SelectOption[] = [
   { value: "transferencia", label: "Transferencia" },
 ];
 
-
 /* ─────────────── Sub-componentes ─────────────── */
 
 function StepCircle({ done, step }: { done: boolean; step: number }) {
@@ -158,7 +157,7 @@ function ProductoCard({ producto }: { producto: Producto }) {
   return (
     <div className="shrink-0 w-32 snap-start bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-br from-red-50 to-orange-50 px-2 pt-2 pb-1.5 border-b border-red-100">
+      <div className="bg-linear-to-br from-red-50 to-orange-50 px-2 pt-2 pb-1.5 border-b border-red-100">
         <p className="text-[10px] font-bold text-red-700 text-center leading-tight line-clamp-2">
           {producto.nombre}
         </p>
@@ -237,8 +236,6 @@ function ProductoCard({ producto }: { producto: Producto }) {
 /* ─────────────── Componente principal ─────────────── */
 
 export default function ClientesList({ solicitudes }: ClientesListProps) {
-
-
   const [expandedClients, setExpandedClients] = useState<string[]>([
     solicitudes[0]?.id,
   ]);
@@ -335,7 +332,11 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                     {sol.requestStateName && (
                       <Chip
                         variant="flat"
-                        color={sol.requestStateName === "ENTREGADO" ? "success" : "warning"}
+                        color={
+                          sol.requestStateName === "ENTREGADO"
+                            ? "success"
+                            : "warning"
+                        }
                         size="sm"
                         radius="full"
                       >
@@ -354,7 +355,11 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                     {sol.paymentTypeName && (
                       <Chip
                         variant="flat"
-                        color={sol.paymentTypeName === "No Pagado" ? "warning" : "success"}
+                        color={
+                          sol.paymentTypeName === "No Pagado"
+                            ? "warning"
+                            : "success"
+                        }
                         size="sm"
                         radius="full"
                       >
