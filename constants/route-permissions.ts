@@ -7,6 +7,7 @@ export const ROUTE_TRANSACTION_MAP: Record<string, string> = {
   "/canastos": "Canastos",
   "/chofer": "App Chofer",
   "/configuraciones": "Configuracion",
+  "/cliente": "App Cliente",
 } as const;
 
 export type AllowedRoute = keyof typeof ROUTE_TRANSACTION_MAP;
