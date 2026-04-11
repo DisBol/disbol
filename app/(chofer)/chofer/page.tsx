@@ -1,9 +1,11 @@
+"use client";
+
 import React from "react";
 import { RouteProtection } from "@/components/shared/RouteProtection";
 import MapaChofer from "./components/MapaChofer";
 import ClientesList from "./components/ClientesList";
+import { useGetSolicitudesChofer, SolicitudChofer } from "./hooks/useGetSolicitudesChofer";
 
-// Datos estáticos de ejemplo
 const chofertData = {
   vehiculo: {
     id: "VH-01",
@@ -14,7 +16,6 @@ const chofertData = {
   },
   ruta: {
     nombre: "Ruta: El Alto Norte - R-001",
-    totalAcobrar: 1355.0,
   },
   clientes: [
     {
@@ -45,11 +46,6 @@ const chofertData = {
       solicitud: "SOL-003",
     },
   ],
-  resumenRuta: {
-    clientes: 3,
-    entregados: 0,
-    pagados: 0,
-  },
   resumenCobranza: {
     totalQR: 0,
     totalEfectivo: 0,
@@ -57,61 +53,77 @@ const chofertData = {
   },
 };
 
-const solicitudes = [
-  {
-    id: "SOL-001",
-    cliente: "Pollería El Rey",
-    totalACobrar: 450.0,
+function toDateInputValue(datetime: string) {
+  return datetime.split(" ")[0];
+}
+
+function fromDateInputValue(date: string, isEnd = false) {
+  return `${date} ${isEnd ? "23:59:59" : "00:00:00"}`;
+}
+
+function mapToSolicitudes(grouped: SolicitudChofer[]) {
+  return grouped.map((req) => ({
+    id: String(req.Request_id),
+    cliente: req.Client_name,
+    proveedor: req.Provider_name,
+    ruta: req.ClientGroup_name,
+    requestStateName: req.RequestState_name,
+    paymentTypeName: req.PaymentType_name,
+    totalACobrar: req.RequestStage_payment,
     estado: "pendiente" as const,
-    productos: [
-      { codigo: "104", cajas: 10, unidades: 5, kgBruto: 100.0, kgNeto: 95.0 },
-      { codigo: "105", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "106", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "107", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "108", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "109", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "110", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-    ],
-  },
-  {
-    id: "SOL-002",
-    cliente: "Feria Sector A",
-    totalACobrar: 620.0,
-    estado: "pendiente" as const,
-    productos: [
-      { codigo: "104", cajas: 8, unidades: 12, kgBruto: 100.0, kgNeto: 80.0 },
-      { codigo: "105", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "106", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "107", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "108", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "109", cajas: 5, unidades: 10, kgBruto: 0.0, kgNeto: 75.0 },
-      { codigo: "110", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-    ],
-  },
-  {
-    id: "SOL-003",
-    cliente: "Mercado Central",
-    totalACobrar: 285.0,
-    estado: "pendiente" as const,
-    productos: [
-      { codigo: "104", cajas: 6, unidades: 8, kgBruto: 80.0, kgNeto: 70.0 },
-      { codigo: "105", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "106", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "107", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "108", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "109", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-      { codigo: "110", cajas: 0, unidades: 0, kgBruto: 0.0, kgNeto: 0.0 },
-    ],
-  },
-];
+    productos: req.items.map((item) => ({
+      nombre: item.nombre,
+      categoria: item.categoria,
+      cajas: item.cajas,
+      unidades: item.unidades,
+      menudencia: item.menudencia,
+    })),
+  }));
+}
 
 export default function ChoferPage() {
+  const { data, loading, error, filters, updateFilter } = useGetSolicitudesChofer();
+
+  const solicitudes = mapToSolicitudes(data);
+  const totalACobrar = data.reduce((sum, r) => sum + r.RequestStage_payment, 0);
   const totalCobrado = 0;
   const totalRendir = totalCobrado - chofertData.resumenCobranza.totalGastos;
 
   return (
     <RouteProtection requiredTransaction="App Chofer">
-      <div className="min-h-screen bg-gray-100 p-4 lg:p-6 pb-12">
+      <div className="min-h-screen pb-12">
+        {/* Filtro de fechas */}
+        <div className="flex items-center gap-3 mb-4 bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+            Filtrar por fecha
+          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="date"
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+              value={toDateInputValue(filters.start_date)}
+              onChange={(e) =>
+                updateFilter("start_date", fromDateInputValue(e.target.value, false))
+              }
+            />
+            <span className="text-gray-400 text-sm">—</span>
+            <input
+              type="date"
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+              value={toDateInputValue(filters.end_date)}
+              onChange={(e) =>
+                updateFilter("end_date", fromDateInputValue(e.target.value, true))
+              }
+            />
+          </div>
+          {loading && (
+            <span className="text-xs text-gray-400 ml-auto">Cargando...</span>
+          )}
+          {error && (
+            <span className="text-xs text-red-500 ml-auto">{error}</span>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
           {/* Mapa - 3 columnas */}
           <div className="lg:col-span-3 flex flex-col gap-4 lg:gap-6">
@@ -128,7 +140,7 @@ export default function ChoferPage() {
                   </p>
                 </div>
                 <span className="text-sm font-semibold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
-                  Bs {chofertData.ruta.totalAcobrar.toFixed(2)}
+                  Bs {totalACobrar.toFixed(2)}
                 </span>
               </div>
 
@@ -144,7 +156,13 @@ export default function ChoferPage() {
             </div>
 
             {/* Lista de Clientes */}
-            <ClientesList solicitudes={solicitudes} />
+            {solicitudes.length === 0 && !loading ? (
+              <p className="text-sm text-gray-400 text-center py-8">
+                No hay solicitudes con estado ENVIADO para las fechas seleccionadas.
+              </p>
+            ) : (
+              <ClientesList solicitudes={solicitudes} />
+            )}
           </div>
 
           {/* Panel Derecho - 1 columna */}
@@ -156,7 +174,7 @@ export default function ChoferPage() {
                   Total a Cobrar
                 </p>
                 <p className="text-3xl font-bold text-white mt-1">
-                  Bs {chofertData.ruta.totalAcobrar.toFixed(2)}
+                  Bs {totalACobrar.toFixed(2)}
                 </p>
                 <button className="w-full mt-3 bg-white text-red-600 py-2 px-4 rounded-lg font-semibold text-sm hover:bg-red-50 transition">
                   Registrar Gastos
@@ -172,27 +190,25 @@ export default function ChoferPage() {
                   <div className="grid grid-cols-3 gap-2 mb-3">
                     <div className="bg-gray-50 rounded-lg p-2 text-center">
                       <p className="text-2xl font-bold text-gray-800">
-                        {chofertData.resumenRuta.clientes}
+                        {data.length}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">Clientes</p>
                     </div>
                     <div className="bg-blue-50 rounded-lg p-2 text-center">
-                      <p className="text-2xl font-bold text-blue-700">
-                        {chofertData.resumenRuta.entregados}
-                      </p>
+                      <p className="text-2xl font-bold text-blue-700">0</p>
                       <p className="text-xs text-blue-500 mt-0.5">Entregados</p>
                     </div>
                     <div className="bg-green-50 rounded-lg p-2 text-center">
-                      <p className="text-2xl font-bold text-green-700">
-                        {chofertData.resumenRuta.pagados}
-                      </p>
+                      <p className="text-2xl font-bold text-green-700">0</p>
                       <p className="text-xs text-green-500 mt-0.5">Pagados</p>
                     </div>
                   </div>
                   <div className="flex justify-between items-center py-2 border-t">
-                    <span className="text-sm text-gray-600">Total a Cobrar</span>
+                    <span className="text-sm text-gray-600">
+                      Total a Cobrar
+                    </span>
                     <span className="font-bold text-red-600 text-sm">
-                      Bs {chofertData.ruta.totalAcobrar.toFixed(2)}
+                      Bs {totalACobrar.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -210,9 +226,12 @@ export default function ChoferPage() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total Efectivo</span>
+                      <span className="text-sm text-gray-600">
+                        Total Efectivo
+                      </span>
                       <span className="text-sm font-semibold text-green-600">
-                        Bs {chofertData.resumenCobranza.totalEfectivo.toFixed(2)}
+                        Bs{" "}
+                        {chofertData.resumenCobranza.totalEfectivo.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-t border-b">
@@ -224,7 +243,9 @@ export default function ChoferPage() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total Gastos</span>
+                      <span className="text-sm text-gray-600">
+                        Total Gastos
+                      </span>
                       <span className="text-sm font-semibold text-orange-500">
                         Bs {chofertData.resumenCobranza.totalGastos.toFixed(2)}
                       </span>
