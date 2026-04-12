@@ -9,6 +9,9 @@ import { Select, SelectOption } from "@/components/ui/SelecMultipe";
 import { ArrowDownBoldIcon } from "@/components/icons/ArrowDownBold";
 import { User16Icon } from "@/components/icons/User16Icon";
 import { entregarSolicitud } from "@/app/(chofer)/chofer/service/entregarSolicitud";
+import { useGetPaymentType } from "@/app/(chofer)/chofer/hooks/useGetPaymentType";
+import { useUpdateRequestPaymentType } from "@/app/(chofer)/chofer/hooks/useUpdateRequestPaymentType";
+import { Box1Icon } from "@/components/icons/Box1Icon";
 
 /* ─────────────── Tipos ─────────────── */
 
@@ -44,12 +47,6 @@ interface SolicitudAcciones {
 }
 
 /* ─────────────── Constantes ─────────────── */
-
-const metodosCobroOptions: SelectOption[] = [
-  { value: "efectivo", label: "Efectivo" },
-  { value: "qr", label: "QR" },
-  { value: "transferencia", label: "Transferencia" },
-];
 
 /* ─────────────── Sub-componentes ─────────────── */
 
@@ -93,24 +90,6 @@ function CheckIcon() {
       strokeWidth={3}
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
-function IconBox() {
-  return (
-    <svg
-      className="w-3.5 h-3.5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"
-      />
     </svg>
   );
 }
@@ -168,7 +147,7 @@ function ProductoCard({ producto }: { producto: Producto }) {
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1 text-[10px] text-gray-400">
             <span className="text-blue-400">
-              <IconBox />
+              <Box1Icon className="w-3.5 h-3.5" />
             </span>
             Cajas
           </span>
@@ -236,6 +215,12 @@ function ProductoCard({ producto }: { producto: Producto }) {
 /* ─────────────── Componente principal ─────────────── */
 
 export default function ClientesList({ solicitudes }: ClientesListProps) {
+  const { data: paymentTypes } = useGetPaymentType();
+  const { addPaymentType } = useUpdateRequestPaymentType();
+  const metodosCobroOptions: SelectOption[] = paymentTypes.map((pt) => ({
+    value: String(pt.id),
+    label: pt.name,
+  }));
   const [expandedClients, setExpandedClients] = useState<string[]>([
     solicitudes[0]?.id,
   ]);
@@ -295,6 +280,10 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         const metodoLabel =
           metodosCobroOptions.find((o) => o.value === acc.metodoCobro)?.label ??
           null;
+        const displayStateName =
+          acc.entregado || sol.requestStateName === "ENTREGADO"
+            ? "ENTREGADO"
+            : sol.requestStateName;
         const productosConDatos = sol.productos.filter(
           (p) => p.cajas > 0 || p.unidades > 0,
         );
@@ -329,18 +318,18 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                         {sol.ruta}
                       </span>
                     )}
-                    {sol.requestStateName && (
+                    {displayStateName && (
                       <Chip
                         variant="flat"
                         color={
-                          sol.requestStateName === "ENTREGADO"
+                          displayStateName === "ENTREGADO"
                             ? "success"
                             : "warning"
                         }
                         size="sm"
                         radius="full"
                       >
-                        {sol.requestStateName}
+                        {displayStateName}
                       </Chip>
                     )}
                   </div>
@@ -352,18 +341,18 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                     Bs {sol.totalACobrar.toFixed(2)}
                   </span>
                   <div className="flex items-center gap-2">
-                    {sol.paymentTypeName && (
+                    {(metodoLabel ?? sol.paymentTypeName) && (
                       <Chip
                         variant="flat"
                         color={
-                          sol.paymentTypeName === "No Pagado"
+                          (metodoLabel ?? sol.paymentTypeName) === "No Pagado"
                             ? "warning"
                             : "success"
                         }
                         size="sm"
                         radius="full"
                       >
-                        {sol.paymentTypeName}
+                        {metodoLabel ?? sol.paymentTypeName}
                       </Chip>
                     )}
                     <ArrowDownBoldIcon
@@ -395,8 +384,13 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                 <div className="space-y-2.5">
                   {/* Paso 1 – Entregar */}
                   <div className="flex items-center gap-3">
-                    <StepCircle done={acc.entregado} step={1} />
-                    {acc.entregado ? (
+                    <StepCircle
+                      done={
+                        acc.entregado || sol.requestStateName === "ENTREGADO"
+                      }
+                      step={1}
+                    />
+                    {acc.entregado || sol.requestStateName === "ENTREGADO" ? (
                       <div className="flex-1 h-11 bg-green-500 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
                         <CheckIcon />
                         Entregado
@@ -433,9 +427,18 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                           selectedValues={
                             acc.metodoCobro ? [acc.metodoCobro] : []
                           }
-                          onSelect={(opt) =>
-                            update(sol.id, { metodoCobro: opt.value })
-                          }
+                          onSelect={async (opt) => {
+                            update(sol.id, { metodoCobro: opt.value });
+                            try {
+                              await addPaymentType(
+                                Number(sol.id),
+                                Number(opt.value),
+                              );
+                            } catch {
+                              // revertir si falla
+                              update(sol.id, { metodoCobro: acc.metodoCobro });
+                            }
+                          }}
                           placeholder="Seleccionar método de cobro..."
                           size="md"
                           radius="lg"
