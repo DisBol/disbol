@@ -11,7 +11,7 @@ import { User16Icon } from "@/components/icons/User16Icon";
 import { entregarSolicitud } from "@/app/(chofer)/chofer/service/entregarSolicitud";
 import { useGetPaymentType } from "@/app/(chofer)/chofer/hooks/useGetPaymentType";
 import { useUpdateRequestPaymentType } from "@/app/(chofer)/chofer/hooks/useUpdateRequestPaymentType";
-import { Box1Icon } from "@/components/icons/Box1Icon";
+import CardCode from "@/components/ui/CardCode";
 
 /* ─────────────── Tipos ─────────────── */
 
@@ -94,120 +94,18 @@ function CheckIcon() {
   );
 }
 
-function IconUnits() {
-  return (
-    <svg
-      className="w-3.5 h-3.5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 6h16M4 10h16M4 14h16M4 18h16"
-      />
-    </svg>
-  );
-}
-
-function IconLeaf() {
-  return (
-    <svg
-      className="w-3.5 h-3.5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-      />
-    </svg>
-  );
-}
-
 function ProductoCard({ producto }: { producto: Producto }) {
   const tieneMenudencia =
     producto.menudencia === "true" || producto.menudencia === "1";
   return (
-    <div className="shrink-0 w-32 snap-start bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="bg-linear-to-br from-red-50 to-orange-50 px-2 pt-2 pb-1.5 border-b border-red-100">
-        <p className="text-[10px] font-bold text-red-700 text-center leading-tight line-clamp-2">
-          {producto.nombre}
-        </p>
-      </div>
-
-      {/* Stats */}
-      <div className="px-2 py-1.5 space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1 text-[10px] text-gray-400">
-            <span className="text-blue-400">
-              <Box1Icon className="w-3.5 h-3.5" />
-            </span>
-            Cajas
-          </span>
-          <span className="text-xs font-bold text-gray-800">
-            {producto.cajas}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1 text-[10px] text-gray-400">
-            <span className="text-purple-400">
-              <IconUnits />
-            </span>
-            Unid.
-          </span>
-          <span className="text-xs font-bold text-gray-800">
-            {producto.unidades}
-          </span>
-        </div>
-        <div className="flex items-center justify-between border-t border-gray-100 pt-1">
-          <span className="flex items-center gap-1 text-[10px] text-gray-400">
-            <span className="text-green-400">
-              <IconLeaf />
-            </span>
-            Men.
-          </span>
-          {tieneMenudencia ? (
-            <span className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
-              <svg
-                className="w-2.5 h-2.5 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={3}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </span>
-          ) : (
-            <span className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center">
-              <svg
-                className="w-2.5 h-2.5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={3}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </span>
-          )}
-        </div>
-      </div>
+    <div className="shrink-0 w-20 snap-start">
+      <CardCode
+        label={producto.nombre}
+        cajas={producto.cajas}
+        unidades={producto.unidades}
+        menudencia={tieneMenudencia}
+        readOnly
+      />
     </div>
   );
 }
