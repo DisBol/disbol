@@ -18,11 +18,7 @@ const chofertData = {
   ruta: {
     nombre: "Ruta: El Alto Norte - R-001",
   },
-  resumenCobranza: {
-    totalQR: 0,
-    totalEfectivo: 0,
-    totalGastos: 150,
-  },
+  totalGastos: 150,
 };
 
 function toDateInputValue(datetime: string) {
@@ -75,8 +71,25 @@ export default function ChoferPage() {
       };
     })
     .filter((c): c is NonNullable<typeof c> => c !== null);
-  const totalCobrado = 0;
-  const totalRendir = totalCobrado - chofertData.resumenCobranza.totalGastos;
+
+  const totalEntregados = data.filter(
+    (r) => r.RequestState_name === "ENTREGADO",
+  ).length;
+
+  const totalPagados = data.filter(
+    (r) => r.PaymentType_name && r.PaymentType_name !== "No Pagado",
+  ).length;
+
+  const totalQR = data
+    .filter((r) => r.PaymentType_name?.toLowerCase().includes("qr"))
+    .reduce((sum, r) => sum + r.RequestStage_payment, 0);
+
+  const totalEfectivo = data
+    .filter((r) => r.PaymentType_name?.toLowerCase().includes("efectivo"))
+    .reduce((sum, r) => sum + r.RequestStage_payment, 0);
+
+  const totalCobrado = totalQR + totalEfectivo;
+  const totalRendir = totalCobrado - chofertData.totalGastos;
 
   return (
     <RouteProtection requiredTransaction="App Chofer">
@@ -184,11 +197,11 @@ export default function ChoferPage() {
                       <p className="text-xs text-gray-500 mt-0.5">Clientes</p>
                     </div>
                     <div className="bg-blue-50 rounded-lg p-2 text-center">
-                      <p className="text-2xl font-bold text-blue-700">0</p>
+                      <p className="text-2xl font-bold text-blue-700">{totalEntregados}</p>
                       <p className="text-xs text-blue-500 mt-0.5">Entregados</p>
                     </div>
                     <div className="bg-green-50 rounded-lg p-2 text-center">
-                      <p className="text-2xl font-bold text-green-700">0</p>
+                      <p className="text-2xl font-bold text-green-700">{totalPagados}</p>
                       <p className="text-xs text-green-500 mt-0.5">Pagados</p>
                     </div>
                   </div>
@@ -211,7 +224,7 @@ export default function ChoferPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Total QR</span>
                       <span className="text-sm font-semibold text-green-600">
-                        Bs {chofertData.resumenCobranza.totalQR.toFixed(2)}
+                        Bs {totalQR.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -219,8 +232,7 @@ export default function ChoferPage() {
                         Total Efectivo
                       </span>
                       <span className="text-sm font-semibold text-green-600">
-                        Bs{" "}
-                        {chofertData.resumenCobranza.totalEfectivo.toFixed(2)}
+                        Bs {totalEfectivo.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-t border-b">
@@ -236,7 +248,7 @@ export default function ChoferPage() {
                         Total Gastos
                       </span>
                       <span className="text-sm font-semibold text-orange-500">
-                        Bs {chofertData.resumenCobranza.totalGastos.toFixed(2)}
+                        Bs {chofertData.totalGastos.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center pt-1">
