@@ -5,6 +5,7 @@ import { RouteProtection } from "@/components/shared/RouteProtection";
 import MapaChofer from "./components/MapaChofer";
 import ClientesList from "./components/ClientesList";
 import { useGetSolicitudesChofer, SolicitudChofer } from "./hooks/useGetSolicitudesChofer";
+import { useClients } from "@/app/(operador)/configuraciones/hooks/clientes/useClients";
 
 const chofertData = {
   vehiculo: {
@@ -17,35 +18,6 @@ const chofertData = {
   ruta: {
     nombre: "Ruta: El Alto Norte - R-001",
   },
-  clientes: [
-    {
-      id: "CLI-001",
-      nombre: "Cliente 1",
-      lat: -16.51,
-      lng: -68.14,
-      monto: 450,
-      estado: "pendiente" as const,
-      solicitud: "SOL-001",
-    },
-    {
-      id: "CLI-002",
-      nombre: "Cliente 2",
-      lat: -16.5,
-      lng: -68.13,
-      monto: 650,
-      estado: "pendiente" as const,
-      solicitud: "SOL-002",
-    },
-    {
-      id: "CLI-003",
-      nombre: "Cliente 3",
-      lat: -16.49,
-      lng: -68.14,
-      monto: 255,
-      estado: "pendiente" as const,
-      solicitud: "SOL-003",
-    },
-  ],
   resumenCobranza: {
     totalQR: 0,
     totalEfectivo: 0,
@@ -83,9 +55,26 @@ function mapToSolicitudes(grouped: SolicitudChofer[]) {
 
 export default function ChoferPage() {
   const { data, loading, error, filters, updateFilter } = useGetSolicitudesChofer();
+  const { rawData: clientesRaw } = useClients();
 
   const solicitudes = mapToSolicitudes(data);
   const totalACobrar = data.reduce((sum, r) => sum + r.RequestStage_payment, 0);
+
+  const clientesEnMapa = data
+    .map((sol) => {
+      const clienteInfo = clientesRaw?.find((c) => c.id === sol.Client_id);
+      if (!clienteInfo || !clienteInfo.lat || !clienteInfo.long) return null;
+      return {
+        id: String(sol.Client_id),
+        nombre: sol.Client_name,
+        lat: clienteInfo.lat,
+        lng: clienteInfo.long,
+        monto: sol.RequestStage_payment,
+        estado: "pendiente" as const,
+        solicitud: String(sol.Request_id),
+      };
+    })
+    .filter((c): c is NonNullable<typeof c> => c !== null);
   const totalCobrado = 0;
   const totalRendir = totalCobrado - chofertData.resumenCobranza.totalGastos;
 
@@ -150,7 +139,7 @@ export default function ChoferPage() {
                   vehiculoLat={chofertData.vehiculo.lat}
                   vehiculoLng={chofertData.vehiculo.lng}
                   vehiculoNombre={chofertData.vehiculo.nombre}
-                  clientes={chofertData.clientes}
+                  clientes={clientesEnMapa}
                 />
               </div>
             </div>

@@ -17,6 +17,7 @@ export interface ProductoChofer {
 
 export interface SolicitudChofer {
   Request_id: number;
+  Client_id: number;
   Client_name: string;
   Provider_name: string;
   ClientGroup_name: string;
@@ -74,6 +75,7 @@ export function useGetSolicitudesChofer() {
         } else {
           acc.push({
             Request_id: curr.Request_id,
+            Client_id: curr.Client_id,
             Client_name: curr.Client_name,
             Provider_name: curr.Provider_name,
             ClientGroup_name: curr.ClientGroup_name,
