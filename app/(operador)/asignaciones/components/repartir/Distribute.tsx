@@ -62,6 +62,8 @@ export default function Repartir({
   const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
   const [cajasDistribuir, setCajasDistribuir] = useState<number>(0);
   const [cajasCanasto, setCajasCanasto] = useState<number>(0);
+  // Map de Request_id -> containers totales para hacer una llamada por request
+  const [requestTotals, setRequestTotals] = useState<Map<number, { containers: number; clientId: number; providerId: number }>>(new Map());
 
   const handleConfirmFinalizar = async () => {
     if (!assignment) return;
@@ -69,16 +71,31 @@ export default function Repartir({
 
     const providerId = assignment.providerId ? Number(assignment.providerId) : null;
 
-    // Registrar cajas que salen (negativo)
-    await addContainerMovements(
-      -cajasDistribuir,
-      "true",
-      1,
-      null,
-      null,
-      null,
-      providerId,
-    );
+    // Registrar cajas que salen: una llamada por cada Request_id
+    if (requestTotals.size > 0) {
+      for (const [requestId, data] of requestTotals) {
+        await addContainerMovements(
+          -data.containers,
+          "true",
+          1,
+          requestId,
+          data.clientId || null,
+          null,
+          data.providerId || providerId,
+        );
+      }
+    } else {
+      // Fallback si no hay data de requests
+      await addContainerMovements(
+        -cajasDistribuir,
+        "true",
+        1,
+        null,
+        null,
+        null,
+        providerId,
+      );
+    }
 
     // Registrar cajas que se quedan en canasto (positivo), solo si hay
     if (cajasCanasto > 0) {
@@ -343,8 +360,25 @@ export default function Repartir({
   const handleFinalizarRepartir = () => {
     const totalSolicit = detalles.reduce((sum, d) => {
       const parts = d.cajas.split("/");
-      return sum + (Number(parts[1]) || 0);
+      return sum + (Number(parts[0]) || 0);
     }, 0);
+
+    // Calcular totales por Request_id desde repartirData
+    const totalsMap = new Map<number, { containers: number; clientId: number; providerId: number }>();
+    repartirData?.data?.forEach((item) => {
+      const existing = totalsMap.get(item.Request_id);
+      if (existing) {
+        existing.containers += item.ProductRequest_containers;
+      } else {
+        totalsMap.set(item.Request_id, {
+          containers: item.ProductRequest_containers,
+          clientId: item.Client_id,
+          providerId: item.Provider_id,
+        });
+      }
+    });
+
+    setRequestTotals(totalsMap);
     setCajasDistribuir(totalSolicit);
     setCajasCanasto(0);
     setShowConfirmFinalizar(true);
