@@ -10,6 +10,7 @@ import { Datum as RepartirDatum } from "../../interfaces/repartir/getrequestforr
 import { useDistributeStore } from "../../stores/distribute-store";
 import { useAssignmentsStore } from "../../stores/assignments-store";
 import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
+import { useAddContainerMovements } from "../../hooks/repartir/useAddContainerMovements";
 import { Modal } from "@/components/ui/Modal";
 
 interface DistributeProps {
@@ -56,15 +57,42 @@ export default function Repartir({
   const { clientTotals } = useDistributeStore();
   const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
   const { updateAssignmentFlags } = useAssignmentsStore();
-  const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
+  const { addContainerMovements } = useAddContainerMovements();
 
-  const handleFinalizarRepartir = () => {
-    setShowConfirmFinalizar(true);
-  };
+  const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
+  const [cajasDistribuir, setCajasDistribuir] = useState<number>(0);
+  const [cajasCanasto, setCajasCanasto] = useState<number>(0);
 
   const handleConfirmFinalizar = async () => {
     if (!assignment) return;
     setShowConfirmFinalizar(false);
+
+    const providerId = assignment.providerId ? Number(assignment.providerId) : null;
+
+    // Registrar cajas que salen (negativo)
+    await addContainerMovements(
+      -cajasDistribuir,
+      "true",
+      1,
+      null,
+      null,
+      null,
+      providerId,
+    );
+
+    // Registrar cajas que se quedan en canasto (positivo), solo si hay
+    if (cajasCanasto > 0) {
+      await addContainerMovements(
+        cajasCanasto,
+        "true",
+        1,
+        null,
+        null,
+        null,
+        providerId,
+      );
+    }
+
     const ok = await updateAssignment({
       id: assignment.id,
       active: "true",
@@ -312,6 +340,16 @@ export default function Repartir({
 
   const displayGroups = editableGroups.length > 0 ? editableGroups : groups;
 
+  const handleFinalizarRepartir = () => {
+    const totalSolicit = detalles.reduce((sum, d) => {
+      const parts = d.cajas.split("/");
+      return sum + (Number(parts[1]) || 0);
+    }, 0);
+    setCajasDistribuir(totalSolicit);
+    setCajasCanasto(0);
+    setShowConfirmFinalizar(true);
+  };
+
   return (
     <div className="w-full bg-gray-50">
       {/* Contenido de Distribute */}
@@ -463,10 +501,36 @@ export default function Repartir({
         title="Finalizar Repartir"
         size="sm"
       >
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-gray-600 mb-4">
           ¿Está seguro de finalizar el repartir? Una vez finalizado no podrá
           realizar cambios.
         </p>
+        <div className="flex gap-3 mb-6">
+          <div className="flex-1">
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+              Cajas a distribuir (Solicit.)
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={cajasDistribuir}
+              onChange={(e) => setCajasDistribuir(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+              Cajas en canasto
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={cajasCanasto}
+              onChange={(e) => setCajasCanasto(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+        </div>
         <div className="flex justify-end gap-3">
           <button
             onClick={() => setShowConfirmFinalizar(false)}
