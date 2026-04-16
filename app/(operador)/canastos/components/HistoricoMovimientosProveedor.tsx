@@ -3,36 +3,40 @@ import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import type { MovimientoProveedor } from "./types";
+import { Select, SelectOption } from "@/components/ui/SelecMultipe";
+import { useGetContainerMovementsProviderHistory } from "../hooks/useGetContainerMovementsProviderHistory";
+import { useGetProvider } from "@/app/(operador)/configuraciones/hooks/proveedores/useGetProvider";
+
+const today = new Date();
+const defaultEndDate = today.toISOString().split("T")[0];
+const defaultStartDate = `${today.getFullYear()}-01-01`;
 
 interface Props {
-  movimientosProveedor: MovimientoProveedor[];
+  containerId: number;
 }
 
-export function HistoricoMovimientosProveedor({ movimientosProveedor }: Props) {
-  const [fechaInicio, setFechaInicio] = useState("");
-  const [fechaFin, setFechaFin] = useState("");
-  const [proveedor, setProveedor] = useState("Todos los proveedores");
+export function HistoricoMovimientosProveedor({ containerId }: Props) {
+  const [fechaInicio, setFechaInicio] = useState(defaultStartDate);
+  const [fechaFin, setFechaFin] = useState(defaultEndDate);
+  const [proveedorId, setProveedorId] = useState(0);
 
-  const filtered = movimientosProveedor.filter((m) => {
-    const movFecha = new Date(m.fecha.split(" ")[0]);
-    const inicio = fechaInicio ? new Date(fechaInicio) : null;
-    const fin = fechaFin ? new Date(fechaFin) : null;
+  const { options: proveedorOptions } = useGetProvider();
 
-    const fechaValida = (!inicio || movFecha >= inicio) && (!fin || movFecha <= fin);
-    const proveedorValido = proveedor === "Todos los proveedores" || m.proveedor === proveedor;
-
-    return fechaValida && proveedorValido;
-  });
+  const { data, loading, error } = useGetContainerMovementsProviderHistory(
+    `${fechaInicio} 00:00:00`,
+    `${fechaFin} 00:00:00`,
+    proveedorId,
+    containerId,
+  );
 
   const limpiar = () => {
-    setFechaInicio("");
-    setFechaFin("");
-    setProveedor("Todos los proveedores");
+    setFechaInicio(defaultStartDate);
+    setFechaFin(defaultEndDate);
+    setProveedorId(0);
   };
 
   return (
-    <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+    <Card className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6">
       <div className="px-5 pt-5 pb-4 border-b border-gray-100">
         <h2 className="text-base font-bold text-gray-900 mb-1">
           Histórico de Movimientos por Proveedor
@@ -49,7 +53,6 @@ export function HistoricoMovimientosProveedor({ movimientosProveedor }: Props) {
               value={fechaInicio}
               onChange={(e) => setFechaInicio(e.target.value)}
               inputSize="sm"
-              placeholder="dd/mm/aaaa"
               className="rounded-xl border-gray-200 bg-gray-50 text-[13px] focus-visible:ring-sky-200 focus-visible:border-sky-400"
             />
           </div>
@@ -60,23 +63,20 @@ export function HistoricoMovimientosProveedor({ movimientosProveedor }: Props) {
               value={fechaFin}
               onChange={(e) => setFechaFin(e.target.value)}
               inputSize="sm"
-              placeholder="dd/mm/aaaa"
               className="rounded-xl border-gray-200 bg-gray-50 text-[13px] focus-visible:ring-sky-200 focus-visible:border-sky-400"
             />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Proveedor</label>
-            <select
-              value={proveedor}
-              onChange={(e) => setProveedor(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
-            >
-              <option>Todos los proveedores</option>
-              <option value="SOFIA">SOFIA</option>
-              <option value="TRANSPORTES BOLIVIA">TRANSPORTES BOLIVIA</option>
-              <option value="LOGISTICA ANDINA">LOGISTICA ANDINA</option>
-            </select>
-          </div>
+          <Select
+            label="Proveedor"
+            options={[
+              { value: "0", label: "Todos los proveedores" },
+              ...proveedorOptions.map((p): SelectOption => ({ value: p.value, label: p.label })),
+            ]}
+            selectedValues={[proveedorId.toString()]}
+            onSelect={(opt) => setProveedorId(Number(opt.value))}
+            size="md"
+            radius="lg"
+          />
           <div className="flex items-end">
             <Button
               onClick={limpiar}
@@ -104,17 +104,37 @@ export function HistoricoMovimientosProveedor({ movimientosProveedor }: Props) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((m, i) => (
-              <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{m.fecha}</td>
-                <td className="px-5 py-3 font-semibold text-gray-800 whitespace-nowrap">{m.canastilla}</td>
-                <td className="px-5 py-3 text-gray-700 whitespace-nowrap">{m.proveedor}</td>
-                <td className="px-5 py-3 font-black whitespace-nowrap text-emerald-500">
-                  +{m.cantidad}
+            {loading && (
+              <tr>
+                <td colSpan={4} className="px-5 py-10 text-center text-sm text-gray-400">
+                  Cargando...
+                </td>
+              </tr>
+            )}
+            {!loading && error && (
+              <tr>
+                <td colSpan={4} className="px-5 py-10 text-center text-sm text-red-400">
+                  Error al cargar los datos.
+                </td>
+              </tr>
+            )}
+            {!loading && !error && data.map((m) => (
+              <tr key={m.ContainerMovements_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
+                  {new Date(m.ContainerMovements_created_at).toLocaleString("es-BO")}
+                </td>
+                <td className="px-5 py-3 font-semibold text-gray-800 whitespace-nowrap">
+                  {m.Container_name}
+                </td>
+                <td className="px-5 py-3 text-gray-700 whitespace-nowrap">
+                  {m.Provider_name}
+                </td>
+                <td className={`px-5 py-3 font-black whitespace-nowrap ${m.ContainerMovements_quantity < 0 ? "text-red-500" : "text-emerald-500"}`}>
+                  {m.ContainerMovements_quantity > 0 ? `+${m.ContainerMovements_quantity}` : m.ContainerMovements_quantity}
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {!loading && !error && data.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-5 py-10 text-center text-sm text-gray-400">
                   No hay movimientos para los filtros seleccionados.
