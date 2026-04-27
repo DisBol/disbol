@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { GetClients } from "../../services/clientes/getclient";
 import {
   Datum,
@@ -31,7 +31,7 @@ export function useClients(initialGroupId?: number): UseClientsReturn {
     initialGroupId,
   );
 
-  const fetchData = async (groupId?: number) => {
+  const fetchData = useCallback(async (groupId?: number) => {
     try {
       setLoading(true);
       const result: GetClientResponse = await GetClients(groupId);
@@ -44,19 +44,19 @@ export function useClients(initialGroupId?: number): UseClientsReturn {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const refetch = async (groupId?: number) => {
+  const refetch = useCallback(async (groupId?: number) => {
     await fetchData(groupId ?? currentGroupId);
-  };
+  }, [fetchData, currentGroupId]);
 
-  const fetchByGroup = async (groupId?: number) => {
+  const fetchByGroup = useCallback(async (groupId?: number) => {
     await fetchData(groupId);
-  };
+  }, [fetchData]);
 
   useEffect(() => {
     fetchData(currentGroupId);
-  }, [currentGroupId]);
+  }, [currentGroupId, fetchData]);
 
   // Listar clientes con su grupo correspondiente
   const clients: ClientView[] = useMemo(() => {
