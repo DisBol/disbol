@@ -46,13 +46,19 @@ export function useClients(initialGroupId?: number): UseClientsReturn {
     }
   }, []);
 
-  const refetch = useCallback(async (groupId?: number) => {
-    await fetchData(groupId ?? currentGroupId);
-  }, [fetchData, currentGroupId]);
+  const refetch = useCallback(
+    async (groupId?: number) => {
+      await fetchData(groupId ?? currentGroupId);
+    },
+    [fetchData, currentGroupId],
+  );
 
-  const fetchByGroup = useCallback(async (groupId?: number) => {
-    await fetchData(groupId);
-  }, [fetchData]);
+  const fetchByGroup = useCallback(
+    async (groupId?: number) => {
+      await fetchData(groupId);
+    },
+    [fetchData],
+  );
 
   useEffect(() => {
     fetchData(currentGroupId);
