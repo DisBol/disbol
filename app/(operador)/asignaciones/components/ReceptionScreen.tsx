@@ -850,12 +850,14 @@ export default function ReceptionScreen({
 
       const newTicketId = await addTicket({
         code: boleta.codigo || "0",
-        deferred_payment: boleta.precioDiferido ? "1" : "0",
+        deferred_payment: boleta.precioDiferido ? "true" : "false",
         total_payment: boleta.costoTotal || "0",
         product_payment: boleta.precioDiferido ? "0" : boleta.costoPorKg || "0",
-        AssignmentStage_id: stageId,
-        total_container: 0,
-        total_units: 0,
+        AssignmentStage_id: newStageId,
+        total_container: "0",
+        total_units: "0",
+        ticket_payment: 0.0, // TODO: Set appropriate value
+        Account_id: 1, // TODO: Set appropriate value
       });
 
       if (newTicketId) {

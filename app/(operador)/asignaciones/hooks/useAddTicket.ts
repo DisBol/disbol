@@ -7,10 +7,11 @@ interface UseAddTicketParams {
   deferred_payment: string;
   total_payment: string;
   product_payment: string;
-  AssignmentStage_id: string;
-  total_container: number;
-  total_units: number;
-
+  AssignmentStage_id: number;
+  total_container: string;
+  total_units: string;
+  ticket_payment: number;
+  Account_id: number;
 }
 
 interface UseAddTicketReturn {
@@ -38,8 +39,9 @@ export const useAddTicket = (): UseAddTicketReturn => {
         params.product_payment,
         params.AssignmentStage_id,
         params.total_container,
-        params.total_units
-
+        params.total_units,
+        params.ticket_payment,
+        params.Account_id
       );
 
       setData(response.data);

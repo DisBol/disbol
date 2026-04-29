@@ -201,9 +201,11 @@ export default function ProductAssignment({
         deferred_payment: "false",
         total_payment: "0", // Se puede calcular después con base en los productos asignados
         product_payment: "0",
-        AssignmentStage_id: assignmentStageId.toString(),
-        total_container: totalCajas,
-        total_units: totalUnidades,
+        AssignmentStage_id: assignmentStageId,
+        total_container: totalCajas.toString(),
+        total_units: totalUnidades.toString(),
+        ticket_payment: 0.0, // TODO: Set appropriate value
+        Account_id: 0, // TODO: Set appropriate value
       });
 
       if (!ticketId) {
