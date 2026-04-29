@@ -11,6 +11,8 @@ import { useUpdateRequestStage } from "../../hooks/repartir/useUpdateRequeststag
 import { useUpdateRequest } from "../../hooks/repartir/useUpdateRequest";
 import { useUpdateRequestRequestState } from "../../hooks/repartir/useUpdateRequestRequestState";
 import { useDistributeStore } from "../../stores/distribute-store";
+import { useAddContainerMovements } from "../../hooks/repartir/useAddContainerMovements";
+import { Modal } from "@/components/ui/Modal";
 
 interface Code {
   label: string;
@@ -25,6 +27,7 @@ interface ClienteData {
   estado: string;
   Request_id: number;
   Client_id: number;
+  Provider_id: number;
   CategoryProvider_id: number;
   codes: Array<{
     label: string;
@@ -78,6 +81,8 @@ export default function DistributeGroup({
   const { updateRequestStage } = useUpdateRequestStage();
   const { updateRequest } = useUpdateRequest();
   const { updateRequestRequestState } = useUpdateRequestRequestState();
+  const { addContainerMovements, loading: savingContainerMovements } =
+    useAddContainerMovements();
   const { setClientTotal } = useDistributeStore();
   const idCounterRef = useRef(0);
   const [savingClient, setSavingClient] = useState<number | null>(null);
@@ -95,6 +100,15 @@ export default function DistributeGroup({
     {},
   );
   const [preciosMap, setPreciosMap] = useState<Record<string, string>>({});
+  const [showMovementModal, setShowMovementModal] = useState(false);
+  const [movementQuantity, setMovementQuantity] = useState<number>(0);
+  const [remainingContainersInput, setRemainingContainersInput] =
+    useState<string>("");
+  const [pendingSaveData, setPendingSaveData] = useState<{
+    clienteIdx: number;
+    clienteCodes: ClienteData["codes"];
+    requestId: number;
+  } | null>(null);
 
   // Sincroniza isStarted cuando cambia isActive desde el padre
   useEffect(() => {
@@ -212,10 +226,12 @@ export default function DistributeGroup({
     clienteIdx: number,
     clienteCodes: ClienteData["codes"],
     requestId: number,
-  ) => {
+    movementContainers: number,
+    remainingContainers: number | null,
+  ): Promise<boolean> => {
     if (!vehiculo || !chofer) {
       alert("Por favor seleccione un vehículo y un chofer antes de guardar.");
-      return;
+      return false;
     }
 
     setSaveErrors((prev) => {
@@ -367,6 +383,36 @@ export default function DistributeGroup({
         const reqStateVal = await updateRequestRequestState(requestId);
         if (!reqStateVal) allOk = false;
       }
+
+      if (allOk) {
+        const movementVal = await addContainerMovements(
+          -movementContainers,
+          "true",
+          1,
+          requestId,
+          clientes[clienteIdx].Client_id,
+          null,
+          clientes[clienteIdx].Provider_id || null,
+        );
+        if (!movementVal) {
+          allOk = false;
+        }
+
+        if (allOk && remainingContainers !== null && remainingContainers > 0) {
+          const remainingVal = await addContainerMovements(
+            remainingContainers,
+            "true",
+            1,
+            requestId,
+            clientes[clienteIdx].Client_id,
+            null,
+            clientes[clienteIdx].Provider_id || null,
+          );
+          if (!remainingVal) {
+            allOk = false;
+          }
+        }
+      }
     }
 
     setSavingClient(null);
@@ -377,6 +423,46 @@ export default function DistributeGroup({
         ...prev,
         [clienteIdx]: "Error al guardar el pesaje",
       }));
+    }
+
+    return allOk;
+  };
+
+  const handleOpenMovementModal = (
+    clienteIdx: number,
+    clienteCodes: ClienteData["codes"],
+    requestId: number,
+  ) => {
+    const totalContainers = clienteCodes.reduce(
+      (sum, code) => sum + code.cajas,
+      0,
+    );
+    setPendingSaveData({ clienteIdx, clienteCodes, requestId });
+    setMovementQuantity(totalContainers);
+    setShowMovementModal(true);
+  };
+
+  const handleConfirmSaveClient = async () => {
+    if (!pendingSaveData) return;
+
+    const movementToSend = Math.max(0, Number(movementQuantity) || 0);
+    const remainingToSend =
+      remainingContainersInput.trim() === ""
+        ? null
+        : Math.max(0, Number(remainingContainersInput) || 0);
+
+    const ok = await handleGuardarPesaje(
+      pendingSaveData.clienteIdx,
+      pendingSaveData.clienteCodes,
+      pendingSaveData.requestId,
+      movementToSend,
+      remainingToSend,
+    );
+
+    if (ok) {
+      setShowMovementModal(false);
+      setPendingSaveData(null);
+      setRemainingContainersInput("");
     }
   };
 
@@ -570,276 +656,354 @@ export default function DistributeGroup({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
-      {!isStarted ? (
-        <>
-          {/* Vista Normal - Header */}
-          <div className="flex flex-col xl:flex-row items-center p-3 gap-4">
-            {/* Left group name */}
-            <div className="w-30 shrink-0 text-center xl:text-left xl:pl-4">
-              <span className="font-bold text-[#e11d48] text-[13px]">
-                {name}
-              </span>
-            </div>
-
-            {/* Center Code Cards */}
-            <div className="flex flex-wrap gap-2 flex-1 items-stretch py-1">
-              {initialCodes.map((code, codeIdx) => (
-                <div key={codeIdx} className="w-20 shrink-0">
-                  <CardCode
-                    label={code.label}
-                    cajas={code.cajas}
-                    unidades={code.unidades}
-                    readOnly={true}
-                  />
-                </div>
-              ))}
-
-              {/* TOTAL Card */}
-              <div className="w-20 shrink-0">
-                <div className="bg-[#e11d48] rounded-lg p-2 shadow-sm flex flex-col h-full border border-[#e11d48]">
-                  <h3 className="font-bold text-white text-[10px] mb-2 text-center uppercase tracking-wide">
-                    TOTAL
-                  </h3>
-                  <div className="space-y-1.5 flex-1 flex flex-col justify-end">
-                    <div>
-                      <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                        CAJAS
-                      </label>
-                      <div className="w-full px-1.5 py-0.5 bg-white rounded text-[11px] font-bold text-gray-900 text-center h-6 flex items-center justify-center shadow-inner">
-                        {totalCajas}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                        UNID.
-                      </label>
-                      <div className="w-full px-1.5 py-0.5 bg-white rounded text-[11px] font-bold text-gray-900 text-center h-6 flex items-center justify-center shadow-inner">
-                        {totalUnid}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Action Button & Chevron */}
-            <div className="flex items-center gap-2 shrink-0 pr-4">
-              {!readOnly && (
-                <button
-                  onClick={() => {
-                    setIsStarted(true);
-                    onStarted?.(true);
-                  }}
-                  className="bg-[#e11d48] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm hover:bg-rose-700 transition-colors"
-                >
-                  Empezar
-                </button>
-              )}
-
-              <div className="flex items-center gap-1 text-gray-500">
-                <span className="text-[11px] font-medium whitespace-nowrap">
-                  {clientesCount} {clientesCount === 1 ? "cliente" : "clientes"}
+    <>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+        {!isStarted ? (
+          <>
+            {/* Vista Normal - Header */}
+            <div className="flex flex-col xl:flex-row items-center p-3 gap-4">
+              {/* Left group name */}
+              <div className="w-30 shrink-0 text-center xl:text-left xl:pl-4">
+                <span className="font-bold text-[#e11d48] text-[13px]">
+                  {name}
                 </span>
               </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Vista Expandida - Solo Acordeón */}
-          <div className="bg-gray-50 px-4 py-4 space-y-4">
-            {clientes && clientes.length > 0 ? (
-              clientes.map((cliente, clienteIdx) => (
-                <div key={clienteIdx}>
-                  <div className="mb-4 flex items-start justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-[#e11d48]">
-                        {cliente.name}
-                      </h3>
-                      {/* Costo total calculado en tiempo real */}
-                      <div className="mt-1">
-                        <span className="text-[10px] font-bold text-gray-500 uppercase block">
-                          COSTO DE ESTA DISTRIBUCIÓN
-                        </span>
-                        <span className="text-lg font-bold text-[#e11d48]">
-                          Bs{" "}
-                          {calculateTotalDistribucion(
-                            clienteIdx,
-                            cliente.codes,
-                            precioVentaCliente[clienteIdx] || "",
-                          ).toFixed(2)}
-                        </span>
+
+              {/* Center Code Cards */}
+              <div className="flex flex-wrap gap-2 flex-1 items-stretch py-1">
+                {initialCodes.map((code, codeIdx) => (
+                  <div key={codeIdx} className="w-20 shrink-0">
+                    <CardCode
+                      label={code.label}
+                      cajas={code.cajas}
+                      unidades={code.unidades}
+                      readOnly={true}
+                    />
+                  </div>
+                ))}
+
+                {/* TOTAL Card */}
+                <div className="w-20 shrink-0">
+                  <div className="bg-[#e11d48] rounded-lg p-2 shadow-sm flex flex-col h-full border border-[#e11d48]">
+                    <h3 className="font-bold text-white text-[10px] mb-2 text-center uppercase tracking-wide">
+                      TOTAL
+                    </h3>
+                    <div className="space-y-1.5 flex-1 flex flex-col justify-end">
+                      <div>
+                        <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-0.5">
+                          CAJAS
+                        </label>
+                        <div className="w-full px-1.5 py-0.5 bg-white rounded text-[11px] font-bold text-gray-900 text-center h-6 flex items-center justify-center shadow-inner">
+                          {totalCajas}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-0.5">
+                          UNID.
+                        </label>
+                        <div className="w-full px-1.5 py-0.5 bg-white rounded text-[11px] font-bold text-gray-900 text-center h-6 flex items-center justify-center shadow-inner">
+                          {totalUnid}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      {!readOnly && (
-                        <button
-                          onClick={() =>
-                            handleGuardarPesaje(
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Action Button & Chevron */}
+              <div className="flex items-center gap-2 shrink-0 pr-4">
+                {!readOnly && (
+                  <button
+                    onClick={() => {
+                      setIsStarted(true);
+                      onStarted?.(true);
+                    }}
+                    className="bg-[#e11d48] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm hover:bg-rose-700 transition-colors"
+                  >
+                    Empezar
+                  </button>
+                )}
+
+                <div className="flex items-center gap-1 text-gray-500">
+                  <span className="text-[11px] font-medium whitespace-nowrap">
+                    {clientesCount}{" "}
+                    {clientesCount === 1 ? "cliente" : "clientes"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Vista Expandida - Solo Acordeón */}
+            <div className="bg-gray-50 px-4 py-4 space-y-4">
+              {clientes && clientes.length > 0 ? (
+                clientes.map((cliente, clienteIdx) => (
+                  <div key={clienteIdx}>
+                    <div className="mb-4 flex items-start justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-[#e11d48]">
+                          {cliente.name}
+                        </h3>
+                        {/* Costo total calculado en tiempo real */}
+                        <div className="mt-1">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase block">
+                            COSTO DE ESTA DISTRIBUCIÓN
+                          </span>
+                          <span className="text-lg font-bold text-[#e11d48]">
+                            Bs{" "}
+                            {calculateTotalDistribucion(
                               clienteIdx,
                               cliente.codes,
-                              cliente.Request_id,
-                            )
-                          }
-                          disabled={
-                            savingClient === clienteIdx ||
-                            savingWeighing ||
-                            savedClients.has(clienteIdx)
-                          }
-                          className={`text-xs font-bold text-white px-3 py-2 rounded-lg transition-colors ${
-                            savedClients.has(clienteIdx)
-                              ? "bg-emerald-500 hover:bg-emerald-600"
-                              : "bg-[#e11d48] hover:bg-rose-700"
-                          } disabled:opacity-60 disabled:cursor-not-allowed`}
-                        >
-                          {savingClient === clienteIdx
-                            ? "Guardando..."
-                            : savedClients.has(clienteIdx)
-                              ? "✓ Guardado"
-                              : "Guardar"}
-                        </button>
-                      )}
-                      <button
-                        onClick={() =>
-                          generateClientPDF(cliente.name, clienteIdx)
-                        }
-                        className="text-xs font-bold text-[#e11d48] hover:text-rose-700 transition-colors"
-                      >
-                        Imprimir
-                      </button>
-                    </div>
-                  </div>
-
-                  {saveErrors[clienteIdx] && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {saveErrors[clienteIdx]}
-                    </p>
-                  )}
-
-                  <div className="mb-4">
-                    <span className="text-xs font-bold text-gray-500 block mb-2">
-                      PRECIO VENTA (Bs/Kg):
-                    </span>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {!precioDiferido && (
-                        <InputField
-                          placeholder="0.00"
-                          className="w-32 text-xs"
-                          disabled={readOnly}
-                          value={precioVentaCliente[clienteIdx] || ""}
-                          onChange={(e) =>
-                            setPrecioVentaCliente((prev) => ({
-                              ...prev,
-                              [clienteIdx]: e.target.value,
-                            }))
-                          }
-                        />
-                      )}
-                      <label className={`flex items-center gap-1 ${readOnly ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4"
-                          checked={precioDiferido}
-                          disabled={readOnly}
-                          onChange={(e) => setPrecioDiferido(e.target.checked)}
-                        />
-                        <span className="text-xs text-gray-600">
-                          Precio diferido
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Códigos del cliente */}
-                  <div className="mb-4">
-                    <h4 className="text-xs font-bold text-gray-600 uppercase mb-3">
-                      Códigos en esta Distribución
-                    </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {cliente.codes.map((code, idx) => (
-                        <div key={idx} className="relative h-full">
-                          <CardCode
-                            label={
-                              <div className="flex items-center justify-center gap-2">
-                                <span className="text-[10px] font-bold">
-                                  {code.label}
-                                </span>
-                              </div>
-                            }
-                            cajas={code.cajas}
-                            unidades={code.unidades}
-                            readOnly={true}
-                            showPrecio={precioDiferido}
-                            precio={preciosMap[`${clienteIdx}-${idx}`] || ""}
-                            onPrecioChange={
-                              readOnly
-                                ? undefined
-                                : (val) => handleUpdatePrecio(clienteIdx, idx, val)
-                            }
-                            productName={code.label}
-                            variant="active"
-                            menudencia={
-                              menudenciaMap[`${clienteIdx}-${idx}`] ?? true
-                            }
-                            onMenudenciaChange={
-                              readOnly
-                                ? undefined
-                                : (checked) =>
-                                    setMenudenciaMap((prev) => ({
-                                      ...prev,
-                                      [`${clienteIdx}-${idx}`]: checked,
-                                    }))
-                            }
-                            weightInfo={{
-                              bruto: calcularPesos(clienteIdx, idx).bruto,
-                              neto: calcularPesos(clienteIdx, idx).neto,
-                            }}
-                            className="pointer-events-auto h-full"
-                            pesajes={pesajesMap[`${clienteIdx}-${idx}`] || []}
-                            onAgregarPesaje={
-                              readOnly
-                                ? undefined
-                                : () => handleAgregarPesaje(clienteIdx, idx)
-                            }
-                            onUpdatePesaje={
-                              readOnly
-                                ? undefined
-                                : (pesajeId, field, value) =>
-                                    handleUpdatePesaje(
-                                      clienteIdx,
-                                      idx,
-                                      pesajeId,
-                                      field,
-                                      value,
-                                    )
-                            }
-                            onRemovePesaje={
-                              readOnly
-                                ? undefined
-                                : (pesajeId) =>
-                                    handleRemovePesaje(clienteIdx, idx, pesajeId)
-                            }
-                            containers={containers}
-                          />
+                              precioVentaCliente[clienteIdx] || "",
+                            ).toFixed(2)}
+                          </span>
                         </div>
-                      ))}
+                      </div>
+                      <div className="flex gap-2">
+                        {!readOnly && (
+                          <button
+                            onClick={() =>
+                              handleOpenMovementModal(
+                                clienteIdx,
+                                cliente.codes,
+                                cliente.Request_id,
+                              )
+                            }
+                            disabled={
+                              savingClient === clienteIdx ||
+                              savingWeighing ||
+                              savingContainerMovements ||
+                              savedClients.has(clienteIdx)
+                            }
+                            className={`text-xs font-bold text-white px-3 py-2 rounded-lg transition-colors ${
+                              savedClients.has(clienteIdx)
+                                ? "bg-emerald-500 hover:bg-emerald-600"
+                                : "bg-[#e11d48] hover:bg-rose-700"
+                            } disabled:opacity-60 disabled:cursor-not-allowed`}
+                          >
+                            {savingClient === clienteIdx
+                              ? "Guardando..."
+                              : savedClients.has(clienteIdx)
+                                ? "✓ Guardado"
+                                : "Guardar"}
+                          </button>
+                        )}
+                        <button
+                          onClick={() =>
+                            generateClientPDF(cliente.name, clienteIdx)
+                          }
+                          className="text-xs font-bold text-[#e11d48] hover:text-rose-700 transition-colors"
+                        >
+                          Imprimir
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  {clienteIdx < clientes.length - 1 && (
-                    <hr className="border-gray-200 my-4" />
-                  )}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500 text-center py-4">
-                Sin clientes para este grupo
-              </p>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+                    {saveErrors[clienteIdx] && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {saveErrors[clienteIdx]}
+                      </p>
+                    )}
+
+                    <div className="mb-4">
+                      <span className="text-xs font-bold text-gray-500 block mb-2">
+                        PRECIO VENTA (Bs/Kg):
+                      </span>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {!precioDiferido && (
+                          <InputField
+                            placeholder="0.00"
+                            className="w-32 text-xs"
+                            disabled={readOnly}
+                            value={precioVentaCliente[clienteIdx] || ""}
+                            onChange={(e) =>
+                              setPrecioVentaCliente((prev) => ({
+                                ...prev,
+                                [clienteIdx]: e.target.value,
+                              }))
+                            }
+                          />
+                        )}
+                        <label
+                          className={`flex items-center gap-1 ${readOnly ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4"
+                            checked={precioDiferido}
+                            disabled={readOnly}
+                            onChange={(e) =>
+                              setPrecioDiferido(e.target.checked)
+                            }
+                          />
+                          <span className="text-xs text-gray-600">
+                            Precio diferido
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Códigos del cliente */}
+                    <div className="mb-4">
+                      <h4 className="text-xs font-bold text-gray-600 uppercase mb-3">
+                        Códigos en esta Distribución
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {cliente.codes.map((code, idx) => (
+                          <div key={idx} className="relative h-full">
+                            <CardCode
+                              label={
+                                <div className="flex items-center justify-center gap-2">
+                                  <span className="text-[10px] font-bold">
+                                    {code.label}
+                                  </span>
+                                </div>
+                              }
+                              cajas={code.cajas}
+                              unidades={code.unidades}
+                              readOnly={true}
+                              showPrecio={precioDiferido}
+                              precio={preciosMap[`${clienteIdx}-${idx}`] || ""}
+                              onPrecioChange={
+                                readOnly
+                                  ? undefined
+                                  : (val) =>
+                                      handleUpdatePrecio(clienteIdx, idx, val)
+                              }
+                              productName={code.label}
+                              variant="active"
+                              menudencia={
+                                menudenciaMap[`${clienteIdx}-${idx}`] ?? true
+                              }
+                              onMenudenciaChange={
+                                readOnly
+                                  ? undefined
+                                  : (checked) =>
+                                      setMenudenciaMap((prev) => ({
+                                        ...prev,
+                                        [`${clienteIdx}-${idx}`]: checked,
+                                      }))
+                              }
+                              weightInfo={{
+                                bruto: calcularPesos(clienteIdx, idx).bruto,
+                                neto: calcularPesos(clienteIdx, idx).neto,
+                              }}
+                              className="pointer-events-auto h-full"
+                              pesajes={pesajesMap[`${clienteIdx}-${idx}`] || []}
+                              onAgregarPesaje={
+                                readOnly
+                                  ? undefined
+                                  : () => handleAgregarPesaje(clienteIdx, idx)
+                              }
+                              onUpdatePesaje={
+                                readOnly
+                                  ? undefined
+                                  : (pesajeId, field, value) =>
+                                      handleUpdatePesaje(
+                                        clienteIdx,
+                                        idx,
+                                        pesajeId,
+                                        field,
+                                        value,
+                                      )
+                              }
+                              onRemovePesaje={
+                                readOnly
+                                  ? undefined
+                                  : (pesajeId) =>
+                                      handleRemovePesaje(
+                                        clienteIdx,
+                                        idx,
+                                        pesajeId,
+                                      )
+                              }
+                              containers={containers}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {clienteIdx < clientes.length - 1 && (
+                      <hr className="border-gray-200 my-4" />
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  Sin clientes para este grupo
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <Modal
+        isOpen={showMovementModal}
+        onClose={() => {
+          setShowMovementModal(false);
+          setPendingSaveData(null);
+        }}
+        title="Confirmar movimiento de cajas"
+        size="sm"
+      >
+        <p className="text-sm text-gray-600 mb-4">
+          Indique la cantidad de cajas a enviar a la API de movimientos para
+          este cliente.
+        </p>
+        <div className="mb-3">
+          <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+            Cajas a distribuir
+          </label>
+          <input
+            type="number"
+            min={0}
+            value={movementQuantity}
+            onChange={(e) => setMovementQuantity(Number(e.target.value))}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
+        </div>
+        <div className="mb-5">
+          <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+            Canastos que se quedan (opcional)
+          </label>
+          <input
+            type="number"
+            min={0}
+            value={remainingContainersInput}
+            onChange={(e) => setRemainingContainersInput(e.target.value)}
+            placeholder="0"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => {
+              setShowMovementModal(false);
+              setPendingSaveData(null);
+              setRemainingContainersInput("");
+            }}
+            className="px-4 py-2 rounded-lg text-sm font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirmSaveClient}
+            disabled={
+              savingClient !== null ||
+              savingWeighing ||
+              savingContainerMovements
+            }
+            className="px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {savingClient !== null || savingWeighing || savingContainerMovements
+              ? "Guardando..."
+              : "Confirmar"}
+          </button>
+        </div>
+      </Modal>
+    </>
   );
 }
