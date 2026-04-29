@@ -1,4 +1,5 @@
 "use client";
+
 import { MenuRoundedIcon } from "@/components/icons/MenuRoundedIcon";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useState, useEffect } from "react";
@@ -13,6 +14,8 @@ export default function OperadorLayout({
 
   // Auto-colapsar en pantallas medianas
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const handleResize = () => {
       const isLarge = window.innerWidth >= 1024; // lg breakpoint
       const isMedium = window.innerWidth >= 768 && window.innerWidth < 1024; // md breakpoint

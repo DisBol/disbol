@@ -1,18 +1,13 @@
 import { useState, useEffect } from "react";
+import { SelectOption } from "@/components/ui/SelecMultipe";
 import {
   Datum,
   GetClientGroupResponse,
 } from "../../interfaces/clientes/getclientgroup.interface";
 import { GetClientGroups } from "../../services/clientes/getclientgroup";
 
-export interface ClientGroupOption {
-  value: string;
-  label: string;
-  active: string;
-}
-
 interface UseClientGroupsReturn {
-  clientGroups: ClientGroupOption[];
+  clientGroups: SelectOption[];
   rawData: Datum[];
   isLoading: boolean;
   error: Error | null;
@@ -46,7 +41,7 @@ export function useClientGroups(): UseClientGroupsReturn {
   }, []);
 
   // Transformar datos para el SelectField (que espera value/label)
-  const clientGroups: ClientGroupOption[] =
+  const clientGroups: SelectOption[] =
     data?.map((group) => ({
       value: group.id.toString(),
       label: group.name,

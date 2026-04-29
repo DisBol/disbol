@@ -2,34 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-// Create truck icon as data URL
-const createTruckIconDataUrl = (color = "#dc2626") => {
-  const svgString = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 36 36">
-      <path fill="${color}" d="M36 27a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4v-3a4 4 0 0 1 4-4h28a4 4 0 0 1 4 4z"></path>
-      <path fill="#ffcc4d" d="m19 13l-.979-1H7.146C4 12 3 14 3 14l-3 5.959V25h19z"></path>
-      <path fill="#55acee" d="M9 20H2l2-4s1-2 3-2h2z"></path>
-      <circle cx="9" cy="31" r="4" fill="#292f33"></circle>
-      <circle cx="9" cy="31" r="2" fill="#ccd6dd"></circle>
-      <circle cx="27" cy="31" r="4" fill="#292f33"></circle>
-      <circle cx="27" cy="31" r="2" fill="#ccd6dd"></circle>
-      <path fill="${color}" d="M32 8H17a4 4 0 0 0-4 4v13h23V12a4 4 0 0 0-4-4"></path>
-    </svg>
-  `;
-  return `data:image/svg+xml;base64,${btoa(svgString)}`;
-};
-
-// Create client icon as data URL
-const createClientIconDataUrl = (color = "#22c55e") => {
-  const svgString = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" fill="${color}" opacity="0.3" stroke="${color}" stroke-width="2"/>
-      <circle cx="12" cy="12" r="4" fill="${color}"/>
-    </svg>
-  `;
-  return `data:image/svg+xml;base64,${btoa(svgString)}`;
-};
-
 interface Cliente {
   id: string;
   nombre: string;
@@ -63,6 +35,34 @@ export default function MapaChofer({
 
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current) return;
+
+    // Create truck icon as data URL
+    const createTruckIconDataUrl = (color = "#dc2626") => {
+      const svgString = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 36 36">
+          <path fill="${color}" d="M36 27a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4v-3a4 4 0 0 1 4-4h28a4 4 0 0 1 4 4z"></path>
+          <path fill="#ffcc4d" d="m19 13l-.979-1H7.146C4 12 3 14 3 14l-3 5.959V25h19z"></path>
+          <path fill="#55acee" d="M9 20H2l2-4s1-2 3-2h2z"></path>
+          <circle cx="9" cy="31" r="4" fill="#292f33"></circle>
+          <circle cx="9" cy="31" r="2" fill="#ccd6dd"></circle>
+          <circle cx="27" cy="31" r="4" fill="#292f33"></circle>
+          <circle cx="27" cy="31" r="2" fill="#ccd6dd"></circle>
+          <path fill="${color}" d="M32 8H17a4 4 0 0 0-4 4v13h23V12a4 4 0 0 0-4-4"></path>
+        </svg>
+      `;
+      return `data:image/svg+xml;base64,${btoa(svgString)}`;
+    };
+
+    // Create client icon as data URL
+    const createClientIconDataUrl = (color = "#22c55e") => {
+      const svgString = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" fill="${color}" opacity="0.3" stroke="${color}" stroke-width="2"/>
+          <circle cx="12" cy="12" r="4" fill="${color}"/>
+        </svg>
+      `;
+      return `data:image/svg+xml;base64,${btoa(svgString)}`;
+    };
 
     import("leaflet").then((L) => {
       // Initialize map only once

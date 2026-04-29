@@ -46,11 +46,15 @@ export function HistoricoMovimientosCliente({ containerId }: Props) {
         <h2 className="text-base font-bold text-gray-900 mb-1">
           Histórico de Movimientos por Cliente
         </h2>
-        <p className="text-xs text-gray-400 mb-4">Movimientos de canastillas por cliente</p>
+        <p className="text-xs text-gray-400 mb-4">
+          Movimientos de canastillas por cliente
+        </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Fecha Inicio</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+              Fecha Inicio
+            </label>
             <Input
               type="date"
               value={fechaInicio}
@@ -60,7 +64,9 @@ export function HistoricoMovimientosCliente({ containerId }: Props) {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Fecha Fin</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+              Fecha Fin
+            </label>
             <Input
               type="date"
               value={fechaFin}
@@ -73,7 +79,12 @@ export function HistoricoMovimientosCliente({ containerId }: Props) {
             label="Cliente"
             options={[
               { value: "0", label: "Todos los clientes" },
-              ...clients.map((c): SelectOption => ({ value: c.id.toString(), label: c.name })),
+              ...clients.map(
+                (c): SelectOption => ({
+                  value: c.id.toString(),
+                  label: c.name,
+                }),
+              ),
             ]}
             selectedValues={[clienteId.toString()]}
             onSelect={(opt) => setClienteId(Number(opt.value))}
@@ -84,7 +95,7 @@ export function HistoricoMovimientosCliente({ containerId }: Props) {
             label="Grupo de Cliente"
             options={[
               { value: "0", label: "Todos los grupos" },
-              ...(clientGroups as SelectOption[]),
+              ...clientGroups,
             ]}
             selectedValues={[grupoClienteId.toString()]}
             onSelect={(opt) => setGrupoClienteId(Number(opt.value))}
@@ -107,7 +118,13 @@ export function HistoricoMovimientosCliente({ containerId }: Props) {
         <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              {["Fecha / Hora", "Canastilla", "Cliente", "Grupo", "Cantidad (+/-)"].map((h) => (
+              {[
+                "Fecha / Hora",
+                "Canastilla",
+                "Cliente",
+                "Grupo",
+                "Cantidad (+/-)",
+              ].map((h) => (
                 <th
                   key={h}
                   className="px-5 py-3 text-left text-[11px] font-bold tracking-wider text-gray-600 uppercase"
@@ -120,34 +137,60 @@ export function HistoricoMovimientosCliente({ containerId }: Props) {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="px-5 py-10 text-center text-sm text-gray-400">
+                <td
+                  colSpan={5}
+                  className="px-5 py-10 text-center text-sm text-gray-400"
+                >
                   Cargando...
                 </td>
               </tr>
             )}
             {!loading && error && (
               <tr>
-                <td colSpan={5} className="px-5 py-10 text-center text-sm text-red-400">
+                <td
+                  colSpan={5}
+                  className="px-5 py-10 text-center text-sm text-red-400"
+                >
                   Error al cargar los datos.
                 </td>
               </tr>
             )}
-            {!loading && !error && data.map((m) => (
-              <tr key={m.ContainerMovements_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
-                  {new Date(m.ContainerMovements_created_at).toLocaleString("es-BO")}
-                </td>
-                <td className="px-5 py-3 font-semibold text-gray-800 whitespace-nowrap">{m.Container_name}</td>
-                <td className="px-5 py-3 text-gray-700 whitespace-nowrap">{m.Client_name}</td>
-                <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{m.ClientGroup_name}</td>
-                <td className={`px-5 py-3 font-black whitespace-nowrap ${m.ContainerMovements_quantity < 0 ? "text-red-500" : "text-emerald-500"}`}>
-                  {m.ContainerMovements_quantity > 0 ? `+${m.ContainerMovements_quantity}` : m.ContainerMovements_quantity}
-                </td>
-              </tr>
-            ))}
+            {!loading &&
+              !error &&
+              data.map((m) => (
+                <tr
+                  key={m.ContainerMovements_id}
+                  className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
+                    {new Date(m.ContainerMovements_created_at).toLocaleString(
+                      "es-BO",
+                    )}
+                  </td>
+                  <td className="px-5 py-3 font-semibold text-gray-800 whitespace-nowrap">
+                    {m.Container_name}
+                  </td>
+                  <td className="px-5 py-3 text-gray-700 whitespace-nowrap">
+                    {m.Client_name}
+                  </td>
+                  <td className="px-5 py-3 text-gray-600 whitespace-nowrap">
+                    {m.ClientGroup_name}
+                  </td>
+                  <td
+                    className={`px-5 py-3 font-black whitespace-nowrap ${m.ContainerMovements_quantity < 0 ? "text-red-500" : "text-emerald-500"}`}
+                  >
+                    {m.ContainerMovements_quantity > 0
+                      ? `+${m.ContainerMovements_quantity}`
+                      : m.ContainerMovements_quantity}
+                  </td>
+                </tr>
+              ))}
             {!loading && !error && data.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-10 text-center text-sm text-gray-400">
+                <td
+                  colSpan={5}
+                  className="px-5 py-10 text-center text-sm text-gray-400"
+                >
                   No hay movimientos para los filtros seleccionados.
                 </td>
               </tr>

@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { RouteProtection } from "@/components/shared/RouteProtection";
-import MapaChofer from "./components/MapaChofer";
 import ClientesList from "./components/ClientesList";
 import {
   useGetSolicitudesChofer,
@@ -10,8 +10,39 @@ import {
 } from "./hooks/useGetSolicitudesChofer";
 import { useClients } from "@/app/(operador)/configuraciones/hooks/clientes/useClients";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import NewRequest from "../solicitud-chofer/components/NewRequest";
-import TableResquest from "../solicitud-chofer/components/TableResquest";
+
+const MapaChofer = dynamic(() => import("./components/MapaChofer"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-gray-50">
+      <span className="text-sm text-gray-400">Cargando mapa...</span>
+    </div>
+  ),
+});
+
+const NewRequest = dynamic(
+  () => import("../solicitud-chofer/components/NewRequest"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full flex items-center justify-center py-8">
+        <span className="text-sm text-gray-400">Cargando formulario...</span>
+      </div>
+    ),
+  },
+);
+
+const TableResquest = dynamic(
+  () => import("../solicitud-chofer/components/TableResquest"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full flex items-center justify-center py-8">
+        <span className="text-sm text-gray-400">Cargando tabla...</span>
+      </div>
+    ),
+  },
+);
 
 const chofertData = {
   vehiculo: {
