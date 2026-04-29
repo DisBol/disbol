@@ -11,6 +11,8 @@ export async function UpdateTicket(
   AssignmentStage_id: number,
   total_container: number,
   total_units: number,
+  ticket_payment?: number,
+  Account_id?: number,
 ): Promise<UpdateTicketResponse> {
   return apiCall("updateticket", {
     id,
@@ -22,5 +24,7 @@ export async function UpdateTicket(
     AssignmentStage_id,
     total_container,
     total_units,
+    ...(ticket_payment !== undefined && { ticket_payment }),
+    ...(Account_id !== undefined && { Account_id }),
   });
 }

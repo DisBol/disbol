@@ -17,6 +17,7 @@ import { useGetTicketsHistory } from "../hooks/useGetTicketsHistory";
 import { useGetTicketsByAssignmentHistory } from "../hooks/useGetTicketsByAssignmentHistory";
 import { UpdateTicketsWeighing } from "../service/updateticketsweighing";
 import { useUpdateAssignment } from "../hooks/useUpdateAssignment";
+import { Boleta, BoletaDetail, PesajeData } from "../types/reception.types";
 
 // Interfaces
 interface ProductReception {
@@ -30,42 +31,6 @@ interface ProductReception {
   recibidosUnidades: number;
   productId: string;
   active: boolean; // Agregar estado activo
-}
-
-export interface PesajeData {
-  id: string;
-  cajas: number;
-  unidades: number;
-  kg: number;
-  contenedor?: string;
-  guardado?: boolean;
-}
-
-interface BoletaDetail {
-  cajas: number;
-  unidades: number;
-  precio?: string;
-  pesajes?: PesajeData[];
-  kgBruto?: number;
-  kgNeto?: number;
-  productAssignmentId?: string;
-  _isEdited?: boolean; // Flag para saber si los valores han sido editados por el usuario
-}
-
-interface Boleta {
-  id: string;
-  ticketId?: string;
-  assignmentStageId?: number;
-  flujoCompletado?: boolean;
-  hasPendingChanges?: boolean;
-  codigo: string;
-  costoPorKg: string;
-  costoTotal: string;
-  precioDiferido: boolean;
-  codigosSeleccionados: string[];
-  menudencias: string[];
-  detalles: Record<string, BoletaDetail>;
-  tiposContenedor: Record<string, "caja" | "pallet" | "contenedor">;
 }
 
 interface ReceptionScreenProps {
@@ -92,6 +57,8 @@ export default function ReceptionScreen({
       costoPorKg: "0.00",
       costoTotal: "0.00",
       precioDiferido: false,
+      ticket_payment: "0.00",
+      Account_id: 0,
       hasPendingChanges: false,
       codigosSeleccionados: [],
       menudencias: [],
@@ -219,6 +186,10 @@ export default function ReceptionScreen({
             costoPorKg: row.Tickets_product_payment?.toString() || "0",
             costoTotal: "0",
             precioDiferido: isDeferred,
+            ticket_payment: row.Tickets_ticket_payment?.toString() || "0.00",
+            Account_id: row.Account_id || 2,
+            Account_code: row.Account_code,
+            Account_name: row.Account_name,
             codigosSeleccionados: [],
             menudencias: [],
             detalles: {},
@@ -284,6 +255,10 @@ export default function ReceptionScreen({
             costoPorKg: row.Tickets_product_payment?.toString() || "0",
             costoTotal: row.Tickets_product_payment?.toString() || "0",
             precioDiferido: isDeferred,
+            ticket_payment: row.Tickets_ticket_payment?.toString() || "0.00",
+            Account_id: row.Account_id || 2,
+            Account_code: row.Account_code,
+            Account_name: row.Account_name,
             codigosSeleccionados: [],
             menudencias: [],
             detalles: {},
@@ -357,15 +332,18 @@ export default function ReceptionScreen({
   }, [assignment.id]);
 
   const { costoTotalGeneral, pesoTotalGeneral } = useMemo(() => {
-    let totalCost = 0;
+    // Calcular costo total como suma de ticket_payment de todas las boletas
+    const costoTotalGeneral = boletas.reduce((sum, boleta) => {
+      return sum + (Number(boleta.ticket_payment) || 0);
+    }, 0);
+
+    // Calcular peso total general basado en pesajes
     let totalWeight = 0;
 
     boletas.forEach((boleta) => {
-      let boletaCost = 0;
       let boletaWeight = 0;
 
       if (!boleta.precioDiferido) {
-        const costoPorKg = Number(boleta.costoPorKg) || 0;
         let totalNetWeight = 0;
 
         for (const codigo of boleta.codigosSeleccionados) {
@@ -387,13 +365,11 @@ export default function ReceptionScreen({
           }
         }
 
-        boletaCost = costoPorKg * totalNetWeight;
         boletaWeight = totalNetWeight;
       } else {
         for (const codigo of boleta.codigosSeleccionados) {
           const detalle = boleta.detalles[codigo];
           if (detalle?.pesajes) {
-            const precioProducto = Number(detalle.precio) || 0;
             let netWeightProducto = 0;
 
             for (const pesaje of detalle.pesajes) {
@@ -410,18 +386,16 @@ export default function ReceptionScreen({
               netWeightProducto += netWeight;
             }
 
-            boletaCost += precioProducto * netWeightProducto;
             boletaWeight += netWeightProducto;
           }
         }
       }
 
-      totalCost += boletaCost;
       totalWeight += boletaWeight;
     });
 
     return {
-      costoTotalGeneral: (Math.round(totalCost * 100) / 100).toFixed(2),
+      costoTotalGeneral: (Math.round(costoTotalGeneral * 100) / 100).toFixed(2),
       pesoTotalGeneral: (Math.round(totalWeight * 100) / 100).toFixed(2),
     };
   }, [boletas, containersData]);
@@ -435,6 +409,8 @@ export default function ReceptionScreen({
       costoPorKg: "0.00",
       costoTotal: "0.00",
       precioDiferido: false,
+      ticket_payment: "0.00",
+      Account_id: 0,
       hasPendingChanges: false,
       codigosSeleccionados: [],
       menudencias: [],
@@ -453,6 +429,7 @@ export default function ReceptionScreen({
     field: keyof Boleta,
     value:
       | string
+      | number
       | boolean
       | string[]
       | Record<string, BoletaDetail>
@@ -856,8 +833,8 @@ export default function ReceptionScreen({
         AssignmentStage_id: newStageId,
         total_container: "0",
         total_units: "0",
-        ticket_payment: 0.0, // TODO: Set appropriate value
-        Account_id: 1, // TODO: Set appropriate value
+        ticket_payment: Number(boleta.ticket_payment) || 0.0,
+        Account_id: boleta.Account_id,
       });
 
       if (newTicketId) {
@@ -1136,13 +1113,15 @@ export default function ReceptionScreen({
       const updateTicketOk = await updateTicket({
         id: boleta.ticketId,
         code: boleta.codigo || "0",
-        deferred_payment: boleta.precioDiferido ? "1" : "0",
+        deferred_payment: boleta.precioDiferido ? "true" : "false",
         total_payment: finalTotalPayment.toString(),
         product_payment: boleta.precioDiferido ? "0" : boleta.costoPorKg || "0",
         active: "true",
         AssignmentStage_id: boleta.assignmentStageId || 0,
         total_container: finalTotalContainer,
         total_units: finalTotalUnits,
+        ticket_payment: Number(boleta.ticket_payment) || 0.0,
+        Account_id: boleta.Account_id,
       });
 
       if (!updateTicketOk) {
@@ -1283,13 +1262,15 @@ export default function ReceptionScreen({
       const updateTicketOk = await updateTicket({
         id: boleta.ticketId,
         code: boleta.codigo || "0",
-        deferred_payment: boleta.precioDiferido ? "1" : "0",
+        deferred_payment: boleta.precioDiferido ? "true" : "false",
         total_payment: finalTotalPayment.toString(),
         product_payment: boleta.precioDiferido ? "0" : boleta.costoPorKg || "0",
         active: "true",
         AssignmentStage_id: boleta.assignmentStageId || 0,
         total_container: finalTotalContainer,
         total_units: finalTotalUnits,
+        ticket_payment: Number(boleta.ticket_payment) || 0.0,
+        Account_id: boleta.Account_id,
       });
 
       if (!updateTicketOk) {

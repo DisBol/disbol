@@ -7,6 +7,8 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Card } from "@/components/ui/Card";
 import CardCode from "@/components/ui/CardCode";
 import { useContainer } from "../../configuraciones/hooks/contenedores/useContainer";
+import { useGetAccount } from "../hooks/useGetAccount";
+import { Boleta, BoletaDetail, PesajeData } from "../types/reception.types";
 
 interface ProductReception {
   codigo: string;
@@ -15,40 +17,6 @@ interface ProductReception {
   kgBruto: number;
   kgNeto: number;
   kgRecibidos: number;
-}
-
-export interface PesajeData {
-  id: string;
-  cajas: number;
-  unidades: number;
-  kg: number;
-  contenedor?: string;
-  guardado?: boolean;
-}
-
-interface BoletaDetail {
-  cajas: number;
-  unidades: number;
-  precio?: string;
-  pesajes?: PesajeData[];
-  kgBruto?: number;
-  kgNeto?: number;
-  productAssignmentId?: string;
-}
-
-interface Boleta {
-  id: string;
-  ticketId?: string;
-  assignmentStageId?: number;
-  flujoCompletado?: boolean;
-  hasPendingChanges?: boolean;
-  codigo: string;
-  costoPorKg: string;
-  costoTotal: string;
-  precioDiferido: boolean;
-  codigosSeleccionados: string[];
-  menudencias: string[];
-  detalles: Record<string, BoletaDetail>;
 }
 
 interface ReceptionTicketsProps {
@@ -61,7 +29,7 @@ interface ReceptionTicketsProps {
   onUpdateBoleta: (
     boletaId: string,
     field: keyof Boleta,
-    value: string | boolean | string[] | Record<string, BoletaDetail>,
+    value: string | number | boolean | string[] | Record<string, BoletaDetail>,
   ) => void;
   onToggleCodigoEnBoleta: (boletaId: string, codigo: string) => void;
   onToggleMenudenciaEnBoleta: (boletaId: string, codigo: string) => void;
@@ -118,6 +86,7 @@ export default function ReceptionTickets({
   onCompletarFlujoBoleta,
 }: ReceptionTicketsProps) {
   const { containers, containersData } = useContainer();
+  const { accounts, loading: accountsLoading } = useGetAccount();
   const readOnly = isRecibir === "true";
   const [savingBoletas, setSavingBoletas] = useState<Set<string>>(new Set());
   const [completingBoletas, setCompletingBoletas] = useState<Set<string>>(
@@ -349,7 +318,8 @@ export default function ReceptionTickets({
                         {isSaved && (
                           <p className="text-xs text-gray-600">
                             Guardada - Codigo: {boleta.codigo || "Sin codigo"} -
-                            Costo: Bs {calculateTotalPayment(boleta).toFixed(2)}
+                            Costo Boleta: {boleta.ticket_payment || "N/A"} -
+                            Cuenta: {boleta.Account_code || "N/A"} - {boleta.Account_name || "N/A"}
                           </p>
                         )}
                         {isSaved &&
@@ -431,7 +401,7 @@ export default function ReceptionTickets({
 
                     {isExpanded && (
                       <>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-5 mb-5">
                           <div>
                             <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
                               CÓDIGO DE BOLETA
@@ -469,9 +439,51 @@ export default function ReceptionTickets({
 
                           <div>
                             <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
-                              COSTO DE ESTA BOLETA
+                              COSTO BOLETA
                             </span>
-                            <div className="text-2xl font-bold text-red-500">
+                            <InputField
+                              value={boleta.ticket_payment}
+                              disabled={readOnly}
+                              onChange={(e) =>
+                                onUpdateBoleta(
+                                  boleta.id,
+                                  "ticket_payment",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                              CUENTA
+                            </span>
+                            <select
+                              value={boleta.Account_id || ""}
+                              disabled={readOnly || accountsLoading}
+                              onChange={(e) =>
+                                onUpdateBoleta(
+                                  boleta.id,
+                                  "Account_id",
+                                  e.target.value ? Number(e.target.value) : 0,
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            >
+                              <option value="">Seleccionar cuenta...</option>
+                              {accounts.map((account) => (
+                                <option key={account.id} value={account.id}>
+                                  {account.name} ({account.code})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                              COSTO CALCULADO
+                            </span>
+                            <div className="text-2x1 font-bold text-black-500">
                               Bs {calculateTotalPayment(boleta).toFixed(2)}
                             </div>
                           </div>
