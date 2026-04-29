@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
@@ -17,6 +17,7 @@ import { useGetTicketsHistory } from "../hooks/useGetTicketsHistory";
 import { useGetTicketsByAssignmentHistory } from "../hooks/useGetTicketsByAssignmentHistory";
 import { UpdateTicketsWeighing } from "../service/updateticketsweighing";
 import { useUpdateAssignment } from "../hooks/useUpdateAssignment";
+import { useAddContainerMovements } from "../hooks/repartir/useAddContainerMovements";
 
 // Interfaces
 interface ProductReception {
@@ -791,14 +792,51 @@ export default function ReceptionScreen({
     setShowResumenModal(true);
   };
 
+  const { addContainerMovements } = useAddContainerMovements();
+
   const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
+  const [cajasFinalizacion, setCajasFinalizacion] = useState<number>(0);
+  const [cajasDevolver, setCajasDevolver] = useState<number>(0);
 
   const handleFinalizarRecepcion = () => {
+    const totalCajasRec = productosConComparacion.reduce(
+      (sum, p) => sum + p.recibidosCajas,
+      0,
+    );
+    setCajasFinalizacion(totalCajasRec);
+    setCajasDevolver(0);
     setShowConfirmFinalizar(true);
   };
 
   const handleConfirmFinalizar = async () => {
     setShowConfirmFinalizar(false);
+
+    const providerId = assignment.providerId ? Number(assignment.providerId) : null;
+
+    // 1. Registrar cajas recibidas (positivo)
+    await addContainerMovements(
+      cajasFinalizacion,
+      "true",
+      1,
+      null,
+      null,
+      Number(assignment.id),
+      providerId,
+    );
+
+    // 2. Registrar cajas a devolver (negativo)
+    if (cajasDevolver > 0) {
+      await addContainerMovements(
+        -cajasDevolver,
+        "true",
+        1,
+        null,
+        null,
+        Number(assignment.id),
+        providerId,
+      );
+    }
+
     const ok = await updateAssignment({
       id: assignment.id,
       active: "true",
@@ -1362,10 +1400,36 @@ export default function ReceptionScreen({
         title="Finalizar Recepción"
         size="sm"
       >
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-gray-600 mb-4">
           ¿Está seguro de finalizar la recepción? Una vez finalizada no podrá
           realizar cambios.
         </p>
+        <div className="flex gap-3 mb-6">
+          <div className="flex-1">
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+              Total cajas recibidas (REC)
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={cajasFinalizacion}
+              onChange={(e) => setCajasFinalizacion(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+              Cajas a devolver
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={cajasDevolver}
+              onChange={(e) => setCajasDevolver(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+        </div>
         <div className="flex justify-end gap-3">
           <button
             onClick={() => setShowConfirmFinalizar(false)}

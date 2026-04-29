@@ -44,6 +44,11 @@ export const sidebarOperadorMenu: SidebarMenu = {
       href: "/canastos",
       icon: BoxIcon,
     },
+    {
+      label: "App Chofer",
+      href: "/chofer",
+      icon: BoxIcon,
+    }
   ],
   footer: [
     {
