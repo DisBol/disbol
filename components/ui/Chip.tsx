@@ -93,21 +93,6 @@ const chipVariants = cva(
         color: "danger",
         class: "border-red-600 text-red-600 hover:bg-red-50",
       },
-      {
-        variant: "bordered",
-        color: "success",
-        class: "border-green-600 text-green-600 hover:bg-green-50",
-      },
-      {
-        variant: "bordered",
-        color: "info",
-        class: "border-blue-600 text-blue-600 hover:bg-blue-50",
-      },
-      {
-        variant: "bordered",
-        color: "warning",
-        class: "border-yellow-500 text-yellow-500 hover:bg-yellow-50",
-      },
 
       {
         variant: "flat",
@@ -139,11 +124,7 @@ const chipVariants = cva(
         color: "info",
         class: "bg-blue-100 text-blue-700 hover:bg-blue-200",
       },
-      {
-        variant: "flat",
-        color: "warning",
-        class: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200",
-      },
+
       {
         variant: "dot",
         class: "pl-3 text-gray-700",

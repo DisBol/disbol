@@ -5,7 +5,6 @@ export const ROUTE_TRANSACTION_MAP: Record<string, string> = {
   "/asignaciones": "Asignaciones",
   "/seguimiento": "Seguimiento",
   "/canastos": "Canastos",
-  "/chofer": "App Chofer",
   "/configuraciones": "Configuracion",
 } as const;
 
