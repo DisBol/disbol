@@ -31,6 +31,7 @@ export interface PesajeData {
   unidades: number;
   kg: number;
   contenedor?: string;
+  guardado?: boolean;
 }
 
 export interface CardCodeProps
@@ -81,9 +82,21 @@ export interface CardCodeProps
     value: number | string,
   ) => void;
   onRemovePesaje?: (id: string) => void;
+  onGuardarPesaje?: (id: string) => void;
+  isSavingPesaje?: (id: string) => boolean;
   // Visual indicators for exceeded values
   cajasExcedidas?: boolean;
   unidadesExcedidas?: boolean;
+  // Disable the "Agregar Pesaje" button
+  disableAgregarPesaje?: boolean;
+  // Optional read-only comparison mode (e.g., Asignado vs Recibido)
+  compareReadOnly?: {
+    leftLabel?: string;
+    rightLabel: string;
+    rightCajas: string | number;
+    rightUnidades: string | number;
+    rightCajasHidden?: boolean;
+  };
 }
 
 const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
@@ -111,8 +124,12 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       onAgregarPesaje,
       onUpdatePesaje,
       onRemovePesaje,
+      onGuardarPesaje,
+      isSavingPesaje,
       cajasExcedidas = false,
       unidadesExcedidas = false,
+      disableAgregarPesaje = false,
+      compareReadOnly,
       ...props
     },
     ref,
@@ -219,25 +236,69 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             </svg>
           </button>
         )}
-        <h3 className="font-bold text-gray-900 text-[10px] mb-1 text-center whitespace-nowrap tracking-tight">
+        <h3 className="font-bold text-gray-900 text-[10px] mb-1 text-left tracking-tight">
           {label}
         </h3>
 
         <div className="space-y-1.5 flex-1">
           <div>
-            <label className="block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               CAJAS
             </label>
             {readOnly ? (
-              <div
-                className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
-                  cajasExcedidas
-                    ? "bg-red-50 border-red-300 text-red-700"
-                    : "bg-white border-gray-200 text-gray-700"
-                }`}
-              >
-                {cajas}
-              </div>
+              compareReadOnly ? (
+                compareReadOnly.rightCajasHidden ? (
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase text-center mb-0.5">
+                      {compareReadOnly.leftLabel || "Plan."}
+                    </span>
+                    <div
+                      className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                        cajasExcedidas
+                          ? "bg-red-50 border-red-300 text-red-700"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {cajas}
+                    </div>
+                  </div>
+                ) : (
+                <div className="grid grid-cols-2 gap-1">
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase text-center mb-0.5">
+                      {compareReadOnly.leftLabel || "Asig."}
+                    </span>
+                    <div
+                      className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                        cajasExcedidas
+                          ? "bg-red-50 border-red-300 text-red-700"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {cajas}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-emerald-600 uppercase text-center mb-0.5">
+                      {compareReadOnly.rightLabel}
+                    </span>
+                    <div className="w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-700">
+                      {compareReadOnly.rightCajas}
+                    </div>
+                  </div>
+                </div>
+                )
+              ) : (
+                <div
+                  className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                    cajasExcedidas
+                      ? "bg-red-50 border-red-300 text-red-700"
+                      : "bg-white border-gray-200 text-gray-700"
+                  }`}
+                >
+                  {cajas}
+                </div>
+              )
             ) : (
               <input
                 type="number"
@@ -251,19 +312,46 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
           </div>
 
           <div>
-            <label className="block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+            <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               UNID.
             </label>
             {readOnly ? (
-              <div
-                className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
-                  unidadesExcedidas
-                    ? "bg-red-50 border-red-300 text-red-700"
-                    : "bg-white border-gray-200 text-gray-700"
-                }`}
-              >
-                {unidades}
-              </div>
+              compareReadOnly ? (
+                <div className="grid grid-cols-2 gap-1">
+                  <div>
+                    <span className="block text-[8px] font-bold text-gray-400 uppercase text-center mb-0.5">
+                      {compareReadOnly.leftLabel || "Asig."}
+                    </span>
+                    <div
+                      className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                        unidadesExcedidas
+                          ? "bg-red-50 border-red-300 text-red-700"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {unidades}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-emerald-600 uppercase text-center mb-0.5">
+                      {compareReadOnly.rightLabel}
+                    </span>
+                    <div className="w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center bg-emerald-50 border-emerald-200 text-emerald-700">
+                      {compareReadOnly.rightUnidades}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={`w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center ${
+                    unidadesExcedidas
+                      ? "bg-red-50 border-red-300 text-red-700"
+                      : "bg-white border-gray-200 text-gray-700"
+                  }`}
+                >
+                  {unidades}
+                </div>
+              )
             ) : (
               <input
                 type="number"
@@ -279,7 +367,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
           {/* Campo Precio - Solo se muestra cuando showPrecio es true */}
           {showPrecio && (
             <div>
-              <label className="block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
                 PRECIO
               </label>
               <input
@@ -319,7 +407,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                       </svg>
                     </Checkbox.Indicator>
                   </Checkbox.Root>
-                  <span className="text-[8px] font-bold text-gray-400 uppercase group-hover/checkbox:text-gray-600 transition-colors">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase group-hover/checkbox:text-gray-600 transition-colors">
                     MENUDENCIA
                   </span>
                 </label>
@@ -362,17 +450,17 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             {weightInfo && (
               <div className="border-t border-gray-200 pt-1 text-center space-y-0.5">
                 {weightInfo.bruto && (
-                  <div className="text-[9px] text-gray-600 font-medium">
+                  <div className="text-[10px] text-gray-600 font-medium">
                     {weightInfo.bruto} kg Bruto
                   </div>
                 )}
                 {weightInfo.neto && (
-                  <div className="text-[9px] text-gray-600 font-medium">
+                  <div className="text-[10px] text-gray-600 font-medium">
                     {weightInfo.neto} kg Neto
                   </div>
                 )}
                 {weightInfo.recibidos && (
-                  <div className="text-[9px] text-emerald-600 font-bold">
+                  <div className="text-[10px] text-emerald-600 font-bold">
                     {weightInfo.recibidos} kg Recibidos
                   </div>
                 )}
@@ -381,7 +469,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                     {weightInfo.adicional.map((info, index) => (
                       <div
                         key={index}
-                        className={`text-[9px] font-medium ${
+                        className={`text-[10px] font-medium ${
                           info.color === "success"
                             ? "text-emerald-600"
                             : info.color === "danger"
@@ -404,12 +492,17 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               <div className="mt-2 w-full px-1">
                 <button
                   type="button"
+                  disabled={disableAgregarPesaje}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     onAgregarPesaje();
                   }}
-                  className="w-full text-[9px] font-bold text-red-600 bg-white border border-red-200 hover:bg-red-50 hover:border-red-300 rounded py-1 px-2 transition-colors pointer-events-auto flex items-center justify-center gap-1 uppercase"
+                  className={`w-full text-[9px] font-bold rounded py-1 px-2 transition-colors pointer-events-auto flex items-center justify-center gap-1 uppercase ${
+                    disableAgregarPesaje
+                      ? "text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed opacity-50"
+                      : "text-red-600 bg-white border border-red-200 hover:bg-red-50 hover:border-red-300"
+                  }`}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -433,172 +526,243 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             {/* Pesajes List */}
             {pesajes && pesajes.length > 0 && (
               <div className="mt-2 space-y-2 px-1">
-                {pesajes.map((pesaje, idx) => (
-                  <div
-                    key={pesaje.id}
-                    className="border border-gray-200 rounded p-1.5 relative bg-white shadow-sm pointer-events-auto"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-bold text-gray-800">
-                        Pesaje {idx + 1}:
-                      </span>
-                      {onRemovePesaje && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onRemovePesaje(pesaje.id);
-                          }}
-                          className="w-4 h-4 rounded bg-red-500 hover:bg-red-600 flex justify-center items-center text-white"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-2 w-2"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
+                {pesajes.map((pesaje, idx) => {
+                  const pesajePersistido = /^\d+$/.test(String(pesaje.id));
+                  const isSaving = Boolean(isSavingPesaje?.(pesaje.id));
+                  const canSubmit = !pesaje.guardado && !isSaving;
+                  const submitLabel = isSaving
+                    ? "GUARDANDO..."
+                    : pesaje.guardado
+                      ? "GUARDADO"
+                      : pesajePersistido
+                        ? "EDITAR"
+                        : "GUARDAR";
+
+                  const limiteCajas = Number(cajas) || 0;
+                  const limiteUnidades = Number(unidades) || 0;
+                  const acumuladoHastaAqui = pesajes.slice(0, idx + 1).reduce(
+                    (acc, p) => ({
+                      cajas: acc.cajas + (Number(p.cajas) || 0),
+                      unidades: acc.unidades + (Number(p.unidades) || 0),
+                    }),
+                    { cajas: 0, unidades: 0 },
+                  );
+
+                  const excesoCajas = Math.max(
+                    0,
+                    acumuladoHastaAqui.cajas - limiteCajas,
+                  );
+                  const excesoUnidades = Math.max(
+                    0,
+                    acumuladoHastaAqui.unidades - limiteUnidades,
+                  );
+                  const pesajeExcedido = excesoCajas > 0 || excesoUnidades > 0;
+
+                  return (
+                    <div
+                      key={pesaje.id}
+                      className={`border rounded p-1.5 relative bg-white shadow-sm pointer-events-auto ${
+                        pesajeExcedido
+                          ? "border-red-300 bg-red-50/30"
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <div className="mb-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-1 min-w-0">
+                          <span className="text-[10px] font-bold text-gray-800">
+                            Pesaje {idx + 1}:
+                          </span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row w-full sm:w-auto sm:justify-end items-stretch sm:items-center gap-1">
+                          {onGuardarPesaje && (
+                            <button
+                              type="button"
+                              disabled={!canSubmit}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onGuardarPesaje(pesaje.id);
+                              }}
+                              className={`w-full sm:w-auto text-[9px] font-bold px-2 py-1 rounded border ${
+                                isSaving
+                                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                  : pesaje.guardado
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 cursor-not-allowed"
+                                    : pesajePersistido
+                                      ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                      : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                              }`}
+                            >
+                              {submitLabel}
+                            </button>
+                          )}
+                          {onRemovePesaje && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onRemovePesaje(pesaje.id);
+                              }}
+                              className="w-full sm:w-4 h-6 sm:h-4 rounded bg-red-500 hover:bg-red-600 flex justify-center items-center text-white"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-2 w-2"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {pesajeExcedido && (
+                        <div className="mb-1 text-[10px] font-bold text-red-600">
+                          Excedente: +{excesoCajas} cajas, +{excesoUnidades}{" "}
+                          unid.
+                        </div>
                       )}
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex gap-1 items-end">
-                        <div className="flex-1">
-                          <label className="block text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-                            CAJAS
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={pesaje.cajas || ""}
-                            onChange={(e) =>
-                              onUpdatePesaje?.(
-                                pesaje.id,
-                                "cajas",
-                                e.target.value === ""
-                                  ? 0
-                                  : Number(e.target.value),
-                              )
-                            }
-                            className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
-                          />
+
+                      <div className="space-y-1">
+                        <div className="flex gap-1 items-end">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                              CAJAS
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={pesaje.cajas || ""}
+                              onChange={(e) =>
+                                onUpdatePesaje?.(
+                                  pesaje.id,
+                                  "cajas",
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value),
+                                )
+                              }
+                              className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex gap-1 items-end">
-                        <div className="flex-1">
-                          <label className="block text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-                            UNID.
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={pesaje.unidades || ""}
-                            onChange={(e) =>
-                              onUpdatePesaje?.(
-                                pesaje.id,
-                                "unidades",
-                                e.target.value === ""
-                                  ? 0
-                                  : Number(e.target.value),
-                              )
-                            }
-                            className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
-                          />
+                        <div className="flex gap-1 items-end">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                              UNID.
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={pesaje.unidades || ""}
+                              onChange={(e) =>
+                                onUpdatePesaje?.(
+                                  pesaje.id,
+                                  "unidades",
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value),
+                                )
+                              }
+                              className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
+                            />
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <Dropdown
+                              value={pesaje.contenedor || "cajas"}
+                              onChange={(e) =>
+                                onUpdatePesaje?.(
+                                  pesaje.id,
+                                  "contenedor",
+                                  e.target.value,
+                                )
+                              }
+                              iconOnly={true}
+                              icon={
+                                <div className="flex items-center justify-center w-5 h-5 text-red-500 bg-white border border-gray-300 rounded hover:bg-red-50 transition-colors">
+                                  <BoxOutlineIcon size={12} />
+                                </div>
+                              }
+                            >
+                              {containers && containers.length > 0 ? (
+                                containers.map((c) => (
+                                  <option key={c.value} value={c.value}>
+                                    {c.label}
+                                  </option>
+                                ))
+                              ) : (
+                                <>
+                                  <option value="cajas">Cajas</option>
+                                  <option value="bolsas">Bolsas</option>
+                                  <option value="jabitas">Jabitas</option>
+                                  <option value="gavetas">Gavetas</option>
+                                  <option value="unidades">Unidades</option>
+                                </>
+                              )}
+                            </Dropdown>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-center">
-                          <Dropdown
-                            value={pesaje.contenedor || "cajas"}
-                            onChange={(e) =>
-                              onUpdatePesaje?.(
-                                pesaje.id,
-                                "contenedor",
-                                e.target.value,
-                              )
-                            }
-                            iconOnly={true}
-                            icon={
-                              <div className="flex items-center justify-center w-5 h-5 text-red-500 bg-white border border-gray-300 rounded hover:bg-red-50 transition-colors">
-                                <BoxOutlineIcon size={12} />
-                              </div>
+                        <div className="flex gap-1 items-end">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                              KG
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={pesaje.kg || ""}
+                              onChange={(e) =>
+                                onUpdatePesaje?.(
+                                  pesaje.id,
+                                  "kg",
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value),
+                                )
+                              }
+                              className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (balanzaConnected) {
+                                onUpdatePesaje?.(
+                                  pesaje.id,
+                                  "kg",
+                                  Number(balanzaWeight),
+                                );
+                              }
+                            }}
+                            disabled={!balanzaConnected}
+                            className={`w-5 h-5 flex items-center justify-center border border-gray-300 rounded transition-all ${
+                              balanzaConnected
+                                ? "bg-white text-red-500 hover:bg-red-50 cursor-pointer"
+                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            }`}
+                            title={
+                              balanzaConnected
+                                ? `Tomar peso: ${balanzaWeight} kg`
+                                : "Balanza no conectada"
                             }
                           >
-                            {containers && containers.length > 0 ? (
-                              containers.map((c) => (
-                                <option key={c.value} value={c.value}>
-                                  {c.label}
-                                </option>
-                              ))
-                            ) : (
-                              <>
-                                <option value="cajas">Cajas</option>
-                                <option value="bolsas">Bolsas</option>
-                                <option value="jabitas">Jabitas</option>
-                                <option value="gavetas">Gavetas</option>
-                                <option value="unidades">Unidades</option>
-                              </>
-                            )}
-                          </Dropdown>
+                            <BalanceIcon />
+                          </button>
                         </div>
-                      </div>
-                      <div className="flex gap-1 items-end">
-                        <div className="flex-1">
-                          <label className="block text-[8px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-                            KG
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={pesaje.kg || ""}
-                            onChange={(e) =>
-                              onUpdatePesaje?.(
-                                pesaje.id,
-                                "kg",
-                                e.target.value === ""
-                                  ? 0
-                                  : Number(e.target.value),
-                              )
-                            }
-                            className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (balanzaConnected) {
-                              onUpdatePesaje?.(
-                                pesaje.id,
-                                "kg",
-                                Number(balanzaWeight),
-                              );
-                            }
-                          }}
-                          disabled={!balanzaConnected}
-                          className={`w-5 h-5 flex items-center justify-center border border-gray-300 rounded transition-all ${
-                            balanzaConnected
-                              ? "bg-white text-red-500 hover:bg-red-50 cursor-pointer"
-                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          }`}
-                          title={
-                            balanzaConnected
-                              ? `Tomar peso: ${balanzaWeight} kg`
-                              : "Balanza no conectada"
-                          }
-                        >
-                          <BalanceIcon />
-                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -611,7 +775,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                 <div className="space-y-0.5 text-center">
                   {differences.cajas !== undefined && (
                     <div
-                      className={`text-[9px] font-medium ${
+                      className={`text-[10px] font-medium ${
                         differences.cajas === 0
                           ? "text-emerald-600"
                           : differences.cajas > 0
@@ -625,7 +789,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                   )}
                   {differences.unidades !== undefined && (
                     <div
-                      className={`text-[9px] font-medium ${
+                      className={`text-[10px] font-medium ${
                         differences.unidades === 0
                           ? "text-emerald-600"
                           : differences.unidades > 0
@@ -639,7 +803,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                   )}
                   {differences.kgBruto !== undefined && (
                     <div
-                      className={`text-[9px] font-medium ${
+                      className={`text-[10px] font-medium ${
                         differences.kgBruto === 0
                           ? "text-emerald-600"
                           : differences.kgBruto > 0

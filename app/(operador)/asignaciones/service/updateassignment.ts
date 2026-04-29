@@ -4,11 +4,17 @@ import { UpdateAssignmentResponse } from "../interfaces/updateassignment.interfa
 export async function UpdateAssignment(
   id: string,
   active: string,
-  Provider_id: string,
+  CategoryProvider_id: string,
+  isRecibir: string,
+  isPlanificar: string,
+  isRepartir: string,
 ): Promise<UpdateAssignmentResponse> {
   return apiCall("updateassignment", {
     id,
     active,
-    Provider_id,
+    CategoryProvider_id,
+    isRecibir,
+    isPlanificar,
+    isRepartir,
   });
 }

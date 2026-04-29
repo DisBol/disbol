@@ -8,13 +8,13 @@ export function useUpdateRequest() {
   const updateRequest = async (
     id: number,
     active: boolean,
-    Provider_id: number,
+    CategoryProvider_id: number,
     Client_id: number,
   ) => {
     setLoading(true);
     setError(null);
     try {
-      await UpdateRequest(id, active, Provider_id, Client_id);
+      await UpdateRequest(id, active, CategoryProvider_id, Client_id);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error updating request");

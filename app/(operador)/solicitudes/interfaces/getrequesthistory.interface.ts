@@ -6,6 +6,7 @@ export interface GetRequestHistoryResponse {
 export interface Datum {
   Request_id: number;
   Request_created_at: Date;
+  Request_CategoryProvider_id: number;
   RequestStage_position: number;
   RequestState_name: RequestStateName;
   PaymentType_name: PaymentTypeName;

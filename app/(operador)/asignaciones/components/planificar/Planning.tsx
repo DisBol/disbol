@@ -9,7 +9,12 @@ import { useAddProductRequest } from "../../../solicitudes/hooks/useAddproductre
 import { usePlanningData } from "../../hooks/planificar/usePlanningData";
 import { useAutomaticPlanning } from "../../hooks/planificar/useAutomaticPlanning";
 import { PlanningProps, EditableGroupData } from "../../types/planning.types";
+import { useAssignmentsStore } from "../../stores/assignments-store";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
+import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
+import { Modal } from "@/components/ui/Modal";
+import { AddAssignmentRequest } from "../../service/planificar/addassignmentrequest";
+import { useAddProductInventoryMovements } from "../../hooks/inventario/useAddProductInventoryMovements";
 
 export default function Planificar({
   assignment = null,
@@ -17,11 +22,21 @@ export default function Planificar({
   onClose,
 }: PlanningProps) {
   // Hook para obtener datos de planificación
-  const { data: requestData, loading, error } = useGetRequestForPlanning();
+  const categoryProviderId = rawData?.find(
+    (d) => d.Assignment_id.toString() === assignment?.id,
+  )?.Assignment_CategoryProvider_id;
+  const {
+    data: requestData,
+    loading,
+    error,
+  } = useGetRequestForPlanning(categoryProviderId);
 
   // Hooks para guardar datos
   const { addStage, loading: loadingStage } = useAddRequestStage();
+  const { updateAssignmentFlags } = useAssignmentsStore();
   const { addProduct, loading: loadingAdd } = useAddProductRequest();
+  const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
+  const { mutate: addMovement } = useAddProductInventoryMovements();
 
   // Hook para procesamiento de datos
   const { detalles, processedGroups, proveedor, clienteOrigen } =
@@ -123,6 +138,13 @@ export default function Planificar({
           // Obtener Request_id (igual para todos los items del cliente)
           const Request_id = clientRequestData[0].Request_id;
 
+          // Vincular asignación con solicitud
+          await AddAssignmentRequest(
+            parseInt(assignment!.id),
+            Request_id,
+            "true",
+          );
+
           // Crear RequestStage con position 2
           const stageResponse = await addStage(
             2, // position 2
@@ -194,7 +216,7 @@ export default function Planificar({
         console.error("Error saving group:", err);
       }
     },
-    [editableGroups, requestData, addStage, addProduct],
+    [editableGroups, requestData, addStage, addProduct, assignment],
   );
 
   // Calcular totales en tiempo real desde editableGroups
@@ -257,6 +279,57 @@ export default function Planificar({
     }
   };
 
+  const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
+
+  const handleFinalizarPlanificacion = useCallback(() => {
+    setShowConfirmFinalizar(true);
+  }, []);
+
+  const handleConfirmFinalizar = useCallback(async () => {
+    if (!assignment) return;
+    setShowConfirmFinalizar(false);
+
+    // Registrar movimiento de inventario por sobrado de cada producto
+    if (requestData?.data && updatedDetalles.length > 0) {
+      const productIdMap = new Map<string, number>();
+      requestData.data.forEach((item) => {
+        productIdMap.set(item.Product_name, item.Product_id);
+      });
+
+      await Promise.all(
+        updatedDetalles.map((detalle) => {
+          const [assignedCajas, receivedCajas] = detalle.cajas.split("/").map(Number);
+          const [assignedUnidades, receivedUnidades] = detalle.unidades.split("/").map(Number);
+          const ProductInventory_id = productIdMap.get(detalle.label);
+          if (!ProductInventory_id) return Promise.resolve();
+
+          return addMovement({
+            active: "true",
+            Assignment_id: parseInt(assignment.id),
+            Request_id: null,
+            Container_id: null,
+            ProductInventory_id,
+            container: (receivedCajas || 0) - (assignedCajas || 0),
+            units: (receivedUnidades || 0) - (assignedUnidades || 0),
+          });
+        }),
+      );
+    }
+
+    const ok = await updateAssignment({
+      id: assignment.id,
+      active: "true",
+      CategoryProvider_id: assignment.categoryProviderId,
+      isRecibir: assignment.isRecibir,
+      isPlanificar: "true",
+      isRepartir: assignment.isRepartir,
+    });
+    if (ok) {
+      updateAssignmentFlags(assignment.id, { isPlanificar: "true" });
+    }
+    onClose?.();
+  }, [assignment, requestData, updatedDetalles, addMovement, updateAssignment, updateAssignmentFlags, onClose]);
+
   // Función para planificación automática
   const handleAutomaticPlanning = useCallback(() => {
     if (editableGroups.length === 0 || updatedDetalles.length === 0) return;
@@ -294,8 +367,11 @@ export default function Planificar({
           proveedor={proveedor}
           clienteOrigen={clienteOrigen}
           detalles={updatedDetalles}
+          isPlanificar={assignment?.isPlanificar}
+          isFinalizando={isFinalizando}
           onCancel={onClose}
           onAutomaticPlanning={handleAutomaticPlanning}
+          onFinalizarPlanificacion={handleFinalizarPlanificacion}
         />
 
         {/* Total Groups Section */}
@@ -326,6 +402,7 @@ export default function Planificar({
                   totalUnid={group.totalUnid}
                   clientes={group.clientes}
                   isExpanded={expandedGroups.includes(groupIdx)}
+                  readOnly={assignment?.isPlanificar === "true"}
                   onToggleExpand={() => toggleGroup(groupIdx)}
                   onSaveGroup={() => handleSaveGroup(groupIdx)}
                   onUpdateClientCode={(clientIndex, codeIndex, field, value) =>
@@ -347,6 +424,34 @@ export default function Planificar({
           </div>
         </div>
       </div>
+
+      {/* Modal Confirmar Finalizar Planificación */}
+      <Modal
+        isOpen={showConfirmFinalizar}
+        onClose={() => setShowConfirmFinalizar(false)}
+        title="Finalizar Planificación"
+        size="sm"
+      >
+        <p className="text-sm text-gray-600 mb-6">
+          ¿Está seguro de finalizar la planificación? Una vez finalizada no
+          podrá realizar cambios.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setShowConfirmFinalizar(false)}
+            className="px-4 py-2 rounded-lg text-sm font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirmFinalizar}
+            disabled={isFinalizando}
+            className="px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {isFinalizando ? "Finalizando..." : "Confirmar"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

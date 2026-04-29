@@ -16,7 +16,7 @@ const HistoryAssignmentFilters: React.FC<HistoryAssignmentFiltersProps> = ({
   onApplyFilters,
   loading,
 }) => {
-  const { filters, setFilters } = useAssignmentsStore();
+  const { filters, setFilters, showInventarioScreen } = useAssignmentsStore();
   const { providers, loading: isLoadingProviders } = useCategoryProvider();
 
   const providerOptions = useMemo(() => {
@@ -83,6 +83,17 @@ const HistoryAssignmentFilters: React.FC<HistoryAssignmentFiltersProps> = ({
           disabled={loading}
         >
           Filtrar
+        </Button>
+      </div>
+      {/* Botón Inventario */}
+      <div>
+        <Button
+          variant="info"
+          size="sm"
+          onClick={showInventarioScreen}
+          disabled={loading}
+        >
+          Planificar desde Inventario
         </Button>
       </div>
     </div>

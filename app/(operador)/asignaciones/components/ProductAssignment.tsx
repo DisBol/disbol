@@ -156,8 +156,13 @@ export default function ProductAssignment({
 
     try {
       // Paso 1: Crear Assignment
+      const selectedCategory = categoriesWithProducts.find(
+        (c) => c.id.toString() === grupo,
+      );
+      if (!selectedCategory) throw new Error("No se encontró la categoría seleccionada");
+
       const assignmentId = await addAssignment({
-        Provider_id: proveedor,
+        CategoryProvider_id: selectedCategory.CategoryProvider_id.toString(),
       });
 
       if (!assignmentId) {
@@ -197,6 +202,8 @@ export default function ProductAssignment({
         total_payment: "0", // Se puede calcular después con base en los productos asignados
         product_payment: "0",
         AssignmentStage_id: assignmentStageId.toString(),
+        total_container: totalCajas,
+        total_units: totalUnidades,
       });
 
       if (!ticketId) {

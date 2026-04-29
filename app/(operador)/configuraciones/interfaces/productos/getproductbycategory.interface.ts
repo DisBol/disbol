@@ -8,6 +8,7 @@ export interface Datum {
   name_0: string; // Category Name
   id: number; // Product ID
   name: string; // Product Name
+  CategoryProvider_id: number; // Category Provider ID
 }
 
 export interface Metadata {

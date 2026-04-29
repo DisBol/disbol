@@ -25,6 +25,8 @@ export interface Datum {
     TicketsWeighing_units: number;
     TicketsWeighing_Container_id: number;
     Container_name: string;
+    total_container: number;
+    total_units: number;
 }
 
 export interface Metadata {

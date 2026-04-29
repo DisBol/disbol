@@ -54,6 +54,7 @@ export function useGetHistoryForRequest(
                 Provider_name: curr.Provider_name,
                 Provider_id: curr.Provider_id,
                 Client_id: curr.Client_id,
+                CategoryProvider_id: curr.Request_CategoryProvider_id,
                 pagado: isPaid,
                 RequestStage_payment: curr.RequestStage_payment,
                 PaymentType_name: String(curr.PaymentType_name),

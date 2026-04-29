@@ -33,6 +33,10 @@ export interface Assignment {
   proveedor: string;
   providerId: string; // ID del proveedor necesario para eliminar assignment
   categoryId: string; // ID del grupo
+  categoryProviderId: string; // CategoryProvider_id para updateassignment
+  isRecibir: string;
+  isPlanificar: string;
+  isRepartir: string;
   productos: ProductQuantity[];
 }
 
@@ -64,6 +68,9 @@ interface AssignmentsState {
   showDistribute: boolean;
   distributeAssignment: Assignment | null;
 
+  // Pantalla de inventario
+  showInventario: boolean;
+
   // Estado de edición
   editingAssignments: Set<string>;
   updatingProducts: Set<string>;
@@ -84,6 +91,10 @@ interface AssignmentsState {
   hidePlanningScreen: () => void;
   showDistributeScreen: (assignment: Assignment) => void;
   hideDistributeScreen: () => void;
+
+  // Inventario
+  showInventarioScreen: () => void;
+  hideInventarioScreen: () => void;
 
   // Acciones de edición
   startEditingAssignment: (assignmentId: string) => void;
@@ -106,6 +117,10 @@ interface AssignmentsState {
   getPendingChanges: (
     assignmentId: string,
   ) => Map<string, Partial<ProductQuantity>>;
+  updateAssignmentFlags: (
+    assignmentId: string,
+    flags: { isRecibir?: string; isPlanificar?: string; isRepartir?: string },
+  ) => void;
 }
 
 // Función para transformar datos de la API
@@ -133,6 +148,10 @@ const transformApiDataToAssignments = (
           proveedor: item.Provider_name,
           providerId: item.Provider_id.toString(),
           categoryId: item.Category_id.toString(),
+          categoryProviderId: item.Assignment_CategoryProvider_id.toString(),
+          isRecibir: item.Assignment_isRecibir,
+          isPlanificar: item.Assignment_isPlanificar,
+          isRepartir: item.Assignment_isRepartir,
           productos: [],
         };
       }
@@ -188,6 +207,9 @@ export const useAssignmentsStore = create<AssignmentsState>()(
       showDistribute: false,
       distributeAssignment: null,
 
+      // Estado de inventario
+      showInventario: false,
+
       // Estado de edición
       editingAssignments: new Set(),
       updatingProducts: new Set(),
@@ -231,6 +253,7 @@ export const useAssignmentsStore = create<AssignmentsState>()(
             planningAssignment: null,
             showDistribute: false,
             distributeAssignment: null,
+            showInventario: false,
             editingAssignments: new Set(),
             updatingProducts: new Set(),
             pendingChanges: new Map(),
@@ -298,6 +321,20 @@ export const useAssignmentsStore = create<AssignmentsState>()(
           },
           false,
           "hideDistributeScreen",
+        ),
+
+      showInventarioScreen: () =>
+        set(
+          { showInventario: true },
+          false,
+          "showInventarioScreen",
+        ),
+
+      hideInventarioScreen: () =>
+        set(
+          { showInventario: false },
+          false,
+          "hideInventarioScreen",
         ),
 
       // Acciones de edición
@@ -407,6 +444,28 @@ export const useAssignmentsStore = create<AssignmentsState>()(
 
       getPendingChanges: (assignmentId) => {
         return get().pendingChanges.get(assignmentId) || new Map();
+      },
+
+      updateAssignmentFlags: (assignmentId, flags) => {
+        set(
+          (state) => {
+            const applyFlags = (a: Assignment | null): Assignment | null => {
+              if (!a || a.id !== assignmentId) return a;
+              return { ...a, ...flags };
+            };
+
+            return {
+              assignments: state.assignments.map((a) =>
+                a.id === assignmentId ? { ...a, ...flags } : a,
+              ),
+              selectedAssignment: applyFlags(state.selectedAssignment),
+              planningAssignment: applyFlags(state.planningAssignment),
+              distributeAssignment: applyFlags(state.distributeAssignment),
+            };
+          },
+          false,
+          "updateAssignmentFlags",
+        );
       },
     }),
     { name: "assignments-store" },
