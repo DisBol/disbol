@@ -65,6 +65,8 @@ export interface CardCodeProps
   };
   // Optional containers config
   containers?: Array<{ value: string; label: string }>;
+  multiplier?: number;
+  onMultiplierChange?: (value: number | null) => void;
   // Optional differences info
   differences?: {
     cajas?: number;
@@ -118,6 +120,8 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       weightInfo,
       differences,
       containers,
+      multiplier,
+      onMultiplierChange,
       readOnly = false,
       onRemove,
       pesajes,
@@ -181,14 +185,83 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       return 0;
     };
 
+    const defaultMultiplier = getMultiplier();
+    const effectiveMultiplier = multiplier ?? defaultMultiplier;
+
+    const [isEditingMultiplier, setIsEditingMultiplier] = React.useState(false);
+    const [multiplierInput, setMultiplierInput] = React.useState<string>(
+      multiplier !== undefined && multiplier !== null
+        ? String(multiplier)
+        : defaultMultiplier > 0
+        ? String(defaultMultiplier)
+        : "",
+    );
+
+    React.useEffect(() => {
+      setMultiplierInput(
+        multiplier !== undefined && multiplier !== null
+          ? String(multiplier)
+          : defaultMultiplier > 0
+          ? String(defaultMultiplier)
+          : "",
+      );
+    }, [multiplier, defaultMultiplier]);
+
+    React.useEffect(() => {
+      if (effectiveMultiplier <= 0) return;
+      const cajasNum = parseFloat(inputCajas) || 0;
+      const unidadesNum = parseFloat(inputUnidades) || 0;
+
+      if (cajasNum > 0) {
+        const resultado = (cajasNum * effectiveMultiplier).toString();
+        setInputUnidades(resultado);
+        onUnidadesChange?.(resultado);
+      } else if (unidadesNum > 0) {
+        const result = unidadesNum / effectiveMultiplier;
+        const cajasCalc = Number.isInteger(result)
+          ? result.toString()
+          : Number(result.toFixed(2)).toString();
+        setInputCajas(cajasCalc === "0" ? "" : cajasCalc);
+        onCajasChange?.(cajasCalc === "0" ? "" : cajasCalc);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [effectiveMultiplier]);
+
+    const handleSaveMultiplier = () => {
+      const parsed = parseInt(multiplierInput, 10);
+      const nextValue = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+      onMultiplierChange?.(nextValue);
+      setIsEditingMultiplier(false);
+    };
+
+    const handleCancelMultiplier = () => {
+      setMultiplierInput(
+        effectiveMultiplier > 0 ? String(effectiveMultiplier) : "",
+      );
+      setIsEditingMultiplier(false);
+    };
+
     const handleCajasInput = (val: string) => {
-      setInputCajas(val); // muestra inmediatamente
-      onCajasChange?.(val); // notifica al padre
-      const multiplier = getMultiplier();
-      if (multiplier > 0) {
-        const valNum = val === "" ? 0 : parseFloat(val);
-        const resultado = (valNum * multiplier).toString();
-        setInputUnidades(valNum === 0 ? "" : resultado);
+      if (val === "") {
+        setInputCajas("");
+        onCajasChange?.("");
+        if (effectiveMultiplier > 0) {
+          setInputUnidades("");
+          onUnidadesChange?.("");
+        }
+        return;
+      }
+
+      const valNum = parseFloat(val) || 0;
+      const roundedCajas = valNum > 0 ? Math.ceil(valNum) : 0;
+      const cajasString = roundedCajas.toString();
+
+      setInputCajas(cajasString);
+      onCajasChange?.(cajasString);
+
+      if (effectiveMultiplier > 0) {
+        const resultado = (roundedCajas * effectiveMultiplier).toString();
+        setInputUnidades(roundedCajas === 0 ? "" : resultado);
         onUnidadesChange?.(resultado);
       }
     };
@@ -196,15 +269,13 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
     const handleUnidadesInput = (val: string) => {
       setInputUnidades(val); // muestra inmediatamente
       onUnidadesChange?.(val); // notifica al padre
-      const multiplier = getMultiplier();
-      if (multiplier > 0) {
+      if (effectiveMultiplier > 0) {
         const valNum = val === "" ? 0 : parseFloat(val);
-        const result = valNum / multiplier;
-        const cajasCalc = Number.isInteger(result)
-          ? result.toString()
-          : Number(result.toFixed(2)).toString();
+        const result = valNum / effectiveMultiplier;
+        const roundedCajas = valNum === 0 ? 0 : Math.ceil(result);
+        const cajasCalc = roundedCajas.toString();
         setInputCajas(valNum === 0 ? "" : cajasCalc);
-        onCajasChange?.(cajasCalc);
+        onCajasChange?.(valNum === 0 ? "" : cajasCalc);
       }
     };
 
@@ -236,9 +307,49 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             </svg>
           </button>
         )}
-        <h3 className="font-bold text-gray-900 text-[10px] mb-1 text-left tracking-tight">
-          {label}
-        </h3>
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-bold text-gray-900 text-[10px] text-left tracking-tight">
+            {label}
+          </h3>
+          {onMultiplierChange && (
+            <button
+              type="button"
+              onClick={() => setIsEditingMultiplier((prev) => !prev)}
+              className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+              title="Editar relación cajas/unidades"
+            >
+              {effectiveMultiplier > 0 ? `x${effectiveMultiplier}` : "Rel."}
+            </button>
+          )}
+        </div>
+
+        {isEditingMultiplier && (
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={multiplierInput}
+              onChange={(e) => setMultiplierInput(e.target.value)}
+              className="w-20 px-1.5 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-xs text-gray-900 h-7 transition-colors"
+              placeholder={defaultMultiplier > 0 ? String(defaultMultiplier) : "1"}
+            />
+            <button
+              type="button"
+              onClick={handleSaveMultiplier}
+              className="px-2 py-1 text-[10px] font-semibold text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+            >
+              Guardar
+            </button>
+            <button
+              type="button"
+              onClick={handleCancelMultiplier}
+              className="px-2 py-1 text-[10px] font-semibold text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
 
         <div className="space-y-1.5 flex-1">
           <div>

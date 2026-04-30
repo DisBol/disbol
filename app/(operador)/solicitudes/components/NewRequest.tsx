@@ -24,6 +24,7 @@ interface ProductState {
   cajas: string;
   unidades: string;
   menudencia: boolean;
+  multiplier?: string;
 }
 
 // Objeto que almacena el estado de todos los productos seleccionados (Clave: ID del producto)
@@ -133,6 +134,11 @@ export default function NewRequest() {
       // PASO 3: Asignar Estado de la Solicitud
       await addRequestState(request_id);
 
+      const parseContainerValue = (value: string) => {
+      const num = parseFloat(value || "0");
+      return Number.isFinite(num) ? Math.max(0, Math.ceil(num)) : 0;
+    };
+
       // PASO 4: Crear la Etapa (Stage)
       // Primero calculamos los totales de todos los productos seleccionados
       let totalUnits = 0;
@@ -142,7 +148,7 @@ export default function NewRequest() {
         const prod = productosData[id];
         if (prod) {
           totalUnits += parseInt(prod.unidades || "0");
-          totalCajas += parseInt(prod.cajas || "0");
+          totalCajas += parseContainerValue(prod.cajas || "0");
         }
       });
 
@@ -168,7 +174,7 @@ export default function NewRequest() {
           menudencia: true,
         };
         const units = parseInt(prodData.unidades || "0") || 0;
-        const cajas = parseInt(prodData.cajas || "0") || 0;
+        const cajas = parseContainerValue(prodData.cajas || "0");
         const menudencia = prodData.menudencia;
         const isActive = units > 0 || cajas > 0;
 
@@ -431,6 +437,18 @@ export default function NewRequest() {
                       menudencia={state.menudencia}
                       onMenudenciaChange={(val) =>
                         handleProductoChange(prodId, "menudencia", val)
+                      }
+                      multiplier={
+                        state.multiplier
+                          ? Number(state.multiplier)
+                          : undefined
+                      }
+                      onMultiplierChange={(val) =>
+                        handleProductoChange(
+                          prodId,
+                          "multiplier",
+                          val === null ? "" : String(val),
+                        )
                       }
                     />
                   );
