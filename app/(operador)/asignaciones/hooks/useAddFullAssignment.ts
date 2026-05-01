@@ -21,6 +21,8 @@ interface UseAddFullAssignmentParams {
   deferred_payment: string;
   total_payment: string;
   product_payment: string;
+  ticket_payment: number;
+  Account_id: number;
 
   // ProductAssignment params
   product_container: number;
@@ -100,9 +102,11 @@ export const useAddFullAssignment = (): UseAddFullAssignmentReturn => {
           deferred_payment: params.deferred_payment,
           total_payment: params.total_payment,
           product_payment: params.product_payment,
-          AssignmentStage_id: createdAssignmentStageId.toString(),
-          total_container: 0,
-          total_units: 0,
+          AssignmentStage_id: createdAssignmentStageId,
+          total_container: "0",
+          total_units: "0",
+          ticket_payment: params.ticket_payment,
+          Account_id: params.Account_id,
         });
 
         if (!createdTicketId) {

@@ -8,6 +8,10 @@ export interface Datum {
     Tickets_code: string;
     Tickets_deferred_payment: number | string;
     Tickets_product_payment: number;
+    Tickets_ticket_payment?: number;
+    Account_id?: number;
+    Account_code?: string;
+    Account_name?: string;
     ProductAssignment_id: number;
     ProductAssignment_container: number;
     ProductAssignment_units: number;

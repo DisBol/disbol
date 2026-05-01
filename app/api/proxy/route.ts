@@ -30,8 +30,12 @@ export async function POST(request: NextRequest) {
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
     return NextResponse.json(
-      { error: `API Error: ${response.statusText}` },
+      {
+        error: `API Error: ${response.statusText}`,
+        details: errorText,
+      },
       { status: response.status }
     );
   }

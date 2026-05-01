@@ -21,6 +21,7 @@ interface ProductState {
   unidades: string;
   menudencia: boolean;
   precio?: string;
+  multiplier?: string;
 }
 
 interface ProductsData {
@@ -115,6 +116,11 @@ export default function ProductAssignment({
     });
   };
 
+  const parseContainerValue = (value: string) => {
+    const num = parseFloat(value || "0");
+    return Number.isFinite(num) ? Math.max(0, Math.ceil(num)) : 0;
+  };
+
   // Función para procesar la asignación de productos
   const handleAsignarProductos = async () => {
     if (!proveedor) {
@@ -175,7 +181,7 @@ export default function ProductAssignment({
       }, 0);
 
       const totalCajas = productosConCantidades.reduce((sum, producto) => {
-        return sum + (parseInt(producto.data.cajas) || 0);
+        return sum + parseContainerValue(producto.data.cajas);
       }, 0);
 
       const precioTotal = precioDiferido ? "0" : precio || "0";
@@ -201,9 +207,11 @@ export default function ProductAssignment({
         deferred_payment: "false",
         total_payment: "0", // Se puede calcular después con base en los productos asignados
         product_payment: "0",
-        AssignmentStage_id: assignmentStageId.toString(),
-        total_container: totalCajas,
-        total_units: totalUnidades,
+        AssignmentStage_id: assignmentStageId,
+        total_container: totalCajas.toString(),
+        total_units: totalUnidades.toString(),
+        ticket_payment: 0.0, // TODO: Set appropriate value
+        Account_id: 0, // TODO: Set appropriate value
       });
 
       if (!ticketId) {
@@ -216,7 +224,7 @@ export default function ProductAssignment({
 
         // Para productos activos: usar valores reales
         // Para productos inactivos: usar valores en 0
-        const cajas = activo ? parseInt(data.cajas) || 0 : 0;
+        const cajas = activo ? parseContainerValue(data.cajas) : 0;
         const unidades = activo ? parseInt(data.unidades) || 0 : 0;
         const productPrice = activo
           ? precioDiferido
@@ -352,6 +360,16 @@ export default function ProductAssignment({
                       }
                       onUnidadesChange={(val) =>
                         handleProductoChange(prodId, "unidades", val)
+                      }
+                      multiplier={
+                        state.multiplier ? Number(state.multiplier) : undefined
+                      }
+                      onMultiplierChange={(val) =>
+                        handleProductoChange(
+                          prodId,
+                          "multiplier",
+                          val === null ? "" : String(val),
+                        )
                       }
                       menudencia={state.menudencia}
                       onMenudenciaChange={(val) =>

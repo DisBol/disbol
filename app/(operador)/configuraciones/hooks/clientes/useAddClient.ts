@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AddClient } from "../../services/clientes/addclient";
+import { AddUser } from "../../services/usuarios/adduser";
 import { AddClientResponse } from "../../interfaces/clientes/addclient.interface";
 
 interface UseAddClientReturn {
@@ -39,6 +40,29 @@ export function useAddClient(): UseAddClientReturn {
         phone,
         clientGroupId,
       );
+
+      const responseData = response as unknown as {
+        data?: Record<string, unknown> | Array<Record<string, unknown>>;
+      };
+
+      const dataArray = Array.isArray(responseData.data)
+        ? responseData.data
+        : responseData.data
+        ? [responseData.data]
+        : [];
+
+      const clientIdValue = dataArray[0]?.Client_id ?? dataArray[0]?.rowId ?? null;
+
+      if (clientIdValue === null || clientIdValue === undefined) {
+        throw new Error("No se pudo obtener el Client_id tras crear el cliente");
+      }
+
+      const clientId = Number(clientIdValue);
+      if (Number.isNaN(clientId)) {
+        throw new Error("Client_id inválido recibido tras crear el cliente");
+      }
+
+      await AddUser(name, document, "1", clientId);
 
       return response;
     } catch (err) {

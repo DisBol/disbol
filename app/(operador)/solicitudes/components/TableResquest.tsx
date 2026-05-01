@@ -62,7 +62,8 @@ export default function TableResquest() {
   ) => {
     let finalValue: string | boolean | number = value;
     if (field === "units" || field === "containers") {
-      finalValue = parseInt(value as string) || 0;
+      const parsed = parseFloat(value as string);
+      finalValue = Number.isFinite(parsed) ? Math.max(0, Math.ceil(parsed)) : 0;
     }
 
     setEditedItems((prev) => {

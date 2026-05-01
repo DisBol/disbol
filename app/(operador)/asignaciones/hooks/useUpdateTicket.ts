@@ -15,6 +15,8 @@ interface UseUpdateTicketParams {
   AssignmentStage_id: number;
   total_container: number;
   total_units: number;
+  ticket_payment?: number;
+  Account_id?: number;
 }
 
 interface UseUpdateTicketReturn {
@@ -48,6 +50,8 @@ export const useUpdateTicket = (): UseUpdateTicketReturn => {
         params.AssignmentStage_id,
         params.total_container,
         params.total_units,
+        params.ticket_payment,
+        params.Account_id,
       );
 
       setData(response.data);
@@ -79,6 +83,8 @@ export const useUpdateTicket = (): UseUpdateTicketReturn => {
           params.AssignmentStage_id,
           params.total_container,
           params.total_units,
+          params.ticket_payment,
+          params.Account_id,
         );
 
         setData(response.data);
