@@ -48,6 +48,11 @@ export const sidebarOperadorMenu: SidebarMenu = {
       label: "App Chofer",
       href: "/chofer",
       icon: BoxIcon,
+    },
+    {
+      label: "App cliente",
+      href: "/cliente",
+      icon: BoxIcon,
     }
   ],
   footer: [
