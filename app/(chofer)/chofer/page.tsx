@@ -69,6 +69,8 @@ function fromDateInputValue(date: string, isEnd = false) {
 function mapToSolicitudes(grouped: SolicitudChofer[]) {
   return grouped.map((req) => ({
     id: String(req.Request_id),
+    clientId: req.Client_id,
+    providerId: req.Provider_id,
     cliente: req.Client_name,
     proveedor: req.Provider_name,
     ruta: req.ClientGroup_name,

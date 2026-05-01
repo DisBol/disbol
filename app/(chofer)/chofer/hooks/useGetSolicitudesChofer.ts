@@ -18,6 +18,7 @@ export interface ProductoChofer {
 export interface SolicitudChofer {
   Request_id: number;
   Client_id: number;
+  Provider_id: number;
   Client_name: string;
   Provider_name: string;
   ClientGroup_name: string;
@@ -61,7 +62,11 @@ export function useGetSolicitudesChofer() {
         // Solo position 2
         if (Number(curr.RequestStage_position) !== 2) return acc;
         // Solo estados ENVIADO y ENTREGADO
-        if (curr.RequestState_name !== "ENVIADO" && (curr.RequestState_name as string) !== "ENTREGADO") return acc;
+        if (
+          curr.RequestState_name !== "ENVIADO" &&
+          (curr.RequestState_name as string) !== "ENTREGADO"
+        )
+          return acc;
 
         const existing = acc.find((r) => r.Request_id === curr.Request_id);
         if (existing) {
@@ -76,6 +81,7 @@ export function useGetSolicitudesChofer() {
           acc.push({
             Request_id: curr.Request_id,
             Client_id: curr.Client_id,
+            Provider_id: curr.Provider_id,
             Client_name: curr.Client_name,
             Provider_name: curr.Provider_name,
             ClientGroup_name: curr.ClientGroup_name,
@@ -98,7 +104,9 @@ export function useGetSolicitudesChofer() {
 
       setData(grouped);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar solicitudes");
+      setError(
+        err instanceof Error ? err.message : "Error al cargar solicitudes",
+      );
     } finally {
       setLoading(false);
     }
@@ -111,5 +119,12 @@ export function useGetSolicitudesChofer() {
   const updateFilter = (key: keyof SolicitudChoferFilters, value: string) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
-  return { data, loading, error, filters, updateFilter, refetch: fetchSolicitudes };
+  return {
+    data,
+    loading,
+    error,
+    filters,
+    updateFilter,
+    refetch: fetchSolicitudes,
+  };
 }

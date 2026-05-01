@@ -11,6 +11,7 @@ import { User16Icon } from "@/components/icons/User16Icon";
 import { entregarSolicitud } from "@/app/(chofer)/chofer/service/entregarSolicitud";
 import { useGetPaymentType } from "@/app/(chofer)/chofer/hooks/useGetPaymentType";
 import { useUpdateRequestPaymentType } from "@/app/(chofer)/chofer/hooks/useUpdateRequestPaymentType";
+import { useAddContainerMovements } from "@/app/(operador)/asignaciones/hooks/repartir/useAddContainerMovements";
 import CardCode from "@/components/ui/CardCode";
 
 /* ─────────────── Tipos ─────────────── */
@@ -25,6 +26,8 @@ interface Producto {
 
 interface Solicitud {
   id: string;
+  clientId: number;
+  providerId: number;
   cliente: string;
   proveedor?: string;
   ruta?: string;
@@ -115,6 +118,8 @@ function ProductoCard({ producto }: { producto: Producto }) {
 export default function ClientesList({ solicitudes }: ClientesListProps) {
   const { data: paymentTypes } = useGetPaymentType();
   const { addPaymentType } = useUpdateRequestPaymentType();
+  const { addContainerMovements } = useAddContainerMovements();
+  const [savingCanastos, setSavingCanastos] = useState<string | null>(null);
   const metodosCobroOptions: SelectOption[] = paymentTypes.map((pt) => ({
     value: String(pt.id),
     label: pt.name,
@@ -161,6 +166,42 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
       update(id, { entregado: true });
     } catch {
       // error manejado en el servicio
+    }
+  };
+
+  const handleConfirmarCanastos = async (
+    solicitudId: string,
+    cantidad: number,
+  ) => {
+    if (cantidad === 0) {
+      alert("Ingrese una cantidad de canastos devueltos");
+      return;
+    }
+
+    setSavingCanastos(solicitudId);
+    try {
+      const solicitud = solicitudes.find((item) => item.id === solicitudId);
+      if (!solicitud) {
+        throw new Error("No se encontró la solicitud");
+      }
+
+      await addContainerMovements(
+        Math.abs(cantidad),
+        "true",
+        1,
+        Number(solicitudId),
+        solicitud.clientId,
+        null, // Assignment_id
+        solicitud.providerId,
+      );
+      update(solicitudId, { canastosConfirmados: true });
+    } catch (error) {
+      alert(
+        "Error al registrar devolución de canastos: " +
+          (error instanceof Error ? error.message : "Error desconocido"),
+      );
+    } finally {
+      setSavingCanastos(null);
     }
   };
 
@@ -384,17 +425,25 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                             })
                           }
                           className="w-16 text-center"
+                          disabled={savingCanastos === sol.id}
                         />
                         <Button
                           variant="success"
                           size="md"
                           radius="lg"
                           className="shrink-0 px-3"
+                          disabled={savingCanastos === sol.id}
                           onClick={() =>
-                            update(sol.id, { canastosConfirmados: true })
+                            handleConfirmarCanastos(sol.id, acc.canastosCount)
                           }
                         >
-                          <CheckIcon />
+                          {savingCanastos === sol.id ? (
+                            <span className="inline-block animate-spin">
+                              ⏳
+                            </span>
+                          ) : (
+                            <CheckIcon />
+                          )}
                         </Button>
                       </div>
                     )}
