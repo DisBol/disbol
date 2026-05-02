@@ -378,14 +378,23 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
 
                   {/* Paso 2 – Cobrar */}
                   <div className="flex items-center gap-3">
-                    <StepCircle done={!!acc.metodoCobro} step={2} />
-                    {acc.metodoCobro ? (
+                    <StepCircle
+                      done={
+                        !!acc.metodoCobro ||
+                        sol.paymentTypeName === "Efectivo" ||
+                        sol.paymentTypeName === "Qr"
+                      }
+                      step={2}
+                    />
+                    {acc.metodoCobro ||
+                    sol.paymentTypeName === "Efectivo" ||
+                    sol.paymentTypeName === "Qr" ? (
                       <button
                         onClick={() => update(sol.id, { metodoCobro: null })}
                         className="flex-1 h-11 bg-green-500 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
                       >
                         <CheckIcon />
-                        Pagado ({metodoLabel})
+                        Pagado ({metodoLabel ?? sol.paymentTypeName})
                       </button>
                     ) : (
                       <div className="flex-1">
