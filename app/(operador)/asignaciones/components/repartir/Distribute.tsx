@@ -24,6 +24,7 @@ interface GroupData {
     name: string;
     estado: string;
     Request_id: number;
+    RequestStage_id: number;
     Client_id: number;
     Provider_id: number;
     CategoryProvider_id: number;
@@ -191,6 +192,7 @@ export default function Repartir({
                   name: clientName,
                   estado: "pendiente",
                   Request_id: clientItems[0]?.Request_id ?? 0,
+                  RequestStage_id: 0, // TODO: Obtener del API o datos de la planificación
                   Client_id: clientItems[0]?.Client_id ?? 0,
                   Provider_id: clientItems[0]?.Provider_id ?? 0,
                   CategoryProvider_id:
