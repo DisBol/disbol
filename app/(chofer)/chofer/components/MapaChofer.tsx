@@ -7,9 +7,12 @@ interface Cliente {
   nombre: string;
   lat: number;
   lng: number;
-  monto: number;
-  estado: "pendiente" | "entregado" | "pagado";
-  solicitud: string;
+  totalMonto: number;
+  solicitudes: Array<{
+    solicitud: string;
+    monto: number;
+    estado: "pendiente" | "entregado" | "pagado";
+  }>;
 }
 
 interface MapaChofertProps {
@@ -126,9 +129,19 @@ export default function MapaChofer({
             pagado: "#22c55e",
           };
 
-          const clientIconUrl = createClientIconDataUrl(
-            colorByEstado[cliente.estado],
+          const hasPending = cliente.solicitudes.some(
+            (sol) => sol.estado === "pendiente",
           );
+          const hasEntregado = cliente.solicitudes.some(
+            (sol) => sol.estado === "entregado",
+          );
+          const markerColor = hasPending
+            ? colorByEstado.pendiente
+            : hasEntregado
+              ? colorByEstado.entregado
+              : colorByEstado.pagado;
+
+          const clientIconUrl = createClientIconDataUrl(markerColor);
           const clientIcon = L.icon({
             iconUrl: clientIconUrl,
             iconSize: [28, 28],
@@ -136,12 +149,28 @@ export default function MapaChofer({
             popupAnchor: [0, -28],
           });
 
+          const solicitudesHtml = cliente.solicitudes
+            .map(
+              (sol) => `
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; margin-top: 6px;">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
+                    <b>Solicitud #${sol.solicitud}</b>
+                    <span style="font-size: 11px; color: ${colorByEstado[sol.estado]}; font-weight: 700; text-transform: uppercase;">${sol.estado}</span>
+                  </div>
+                  <div style="font-size: 12px; margin-top: 4px;">Monto: Bs. ${sol.monto.toFixed(2)}</div>
+                </div>
+              `,
+            )
+            .join("");
+
           const clientPopup = `
-            <div style="font-size: 13px;">
+            <div style="font-size: 13px; min-width: 220px; max-width: 280px;">
               <b>${cliente.nombre}</b><br/>
-              Solicitud: ${cliente.solicitud}<br/>
-              Estado: <span style="color: ${colorByEstado[cliente.estado]}">${cliente.estado}</span><br/>
-              Monto: Bs. ${cliente.monto}
+              <span style="font-size: 12px; color: #4b5563;">Solicitudes: ${cliente.solicitudes.length}</span><br/>
+              <span style="font-size: 12px; color: #111827; font-weight: 600;">Total: Bs. ${cliente.totalMonto.toFixed(2)}</span>
+              <div style="max-height: 170px; overflow-y: auto; margin-top: 6px; padding-right: 2px;">
+                ${solicitudesHtml}
+              </div>
             </div>
           `;
 

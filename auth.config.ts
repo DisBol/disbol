@@ -7,6 +7,7 @@ interface CustomUser {
   role: string;
   roleId: number;
   clientId: number;
+  client_id: number;
   employeeId: number;
 }
 
@@ -17,6 +18,7 @@ interface CustomSession {
     role: string;
     roleId: number;
     clientId: number;
+    client_id: number;
     employeeId: number;
   };
 }
@@ -68,6 +70,7 @@ export const authConfig = {
             role: userData.Role_name,
             roleId: userData.Role_id,
             clientId: userData.Client_id,
+            client_id: userData.Client_id,
             employeeId: userData.Employee_id,
           };
         } catch (error) {
@@ -92,6 +95,7 @@ export const authConfig = {
         token.role = customUser.role;
         token.roleId = customUser.roleId;
         token.clientId = customUser.clientId;
+        token.client_id = customUser.client_id;
         token.employeeId = customUser.employeeId;
       }
       return token;
@@ -104,6 +108,7 @@ export const authConfig = {
         customSession.user.role = token.role as string;
         customSession.user.roleId = token.roleId as number;
         customSession.user.clientId = token.clientId as number;
+        customSession.user.client_id = token.client_id as number;
         customSession.user.employeeId = token.employeeId as number;
       }
       return session;

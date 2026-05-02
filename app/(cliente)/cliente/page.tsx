@@ -1,36 +1,161 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { NuevaSolicitud } from "./components/NuevaSolicitud";
 import { ExtractoCanastos } from "./components/ExtractoCanastos";
-import { CODIGOS, type Codigo, type ProductoInput } from "./components/types";
+import type { ProductoInput } from "./components/types";
+import { useProductsByCategory } from "@/app/(operador)/configuraciones/hooks/productos/useProductsByCategory";
+import { useAddRequest } from "@/app/(operador)/solicitudes/hooks/useAddRequest";
+import { useAddRequestPaymentType } from "@/app/(operador)/solicitudes/hooks/useAddrequestpaymenttype";
+import { useAddRequestRequestState } from "@/app/(operador)/solicitudes/hooks/useAddrequestrequeststate";
+import { useAddRequestStage } from "@/app/(operador)/solicitudes/hooks/useAddrequeststage";
+import { useAddProductRequest } from "@/app/(operador)/solicitudes/hooks/useAddproductrequest";
 import { BoxOutlineIcon } from "@/components/icons/BoxOutlineIcon";
 import { BoxOutline2Icon } from "@/components/icons/BoxOutline2";
 
 export default function ClientePage() {
-  const [proveedor, setProveedor] = useState("pio");
+  const [proveedor, setProveedor] = useState("");
   const [fecha, setFecha] = useState("");
-  const [productos, setProductos] = useState<Record<Codigo, ProductoInput>>(
-    Object.fromEntries(
-      CODIGOS.map((c) => [c, { cajas: "", unidades: "" }]),
-    ) as Record<Codigo, ProductoInput>,
-  );
+  const [grupo, setGrupo] = useState("");
+
+  const { data: session } = useSession();
+  const [productos, setProductos] = useState<Record<string, ProductoInput>>({});
+
+  // Hooks needed for sending
+  const { categories } = useProductsByCategory();
+  const { addRequest } = useAddRequest();
+  const { addPaymentType } = useAddRequestPaymentType();
+  const { addRequestState } = useAddRequestRequestState();
+  const { addStage } = useAddRequestStage();
+  const { addProduct } = useAddProductRequest();
 
   const handleProductoChange = (
-    codigo: Codigo,
+    codigo: string,
     field: keyof ProductoInput,
     val: string,
   ) => {
     setProductos((prev) => ({
       ...prev,
-      [codigo]: { ...prev[codigo], [field]: val },
+      [codigo]: {
+        ...(prev[codigo] ?? { cajas: "", unidades: "" }),
+        [field]: val,
+      },
     }));
   };
 
-  const handleEnviar = () => {
-    // TODO: conectar con API
-    console.log({ proveedor, fecha, productos });
+  const availableProducts = useMemo(() => {
+    if (!grupo) return [];
+    const selected = categories.find((c) => c.id.toString() === grupo);
+    return selected ? selected.products : [];
+  }, [grupo, categories]);
+
+  const handleEnviar = async () => {
+    const clientId =
+      session?.user?.client_id ?? session?.user?.clientId ?? null;
+    if (!clientId) return alert("No se encontró clientId en la sesión");
+
+    // Validaciones
+    if (!proveedor || !grupo) {
+      return alert(
+        "Seleccione proveedor y grupo antes de enviar la solicitud.",
+      );
+    }
+
+    // Validar que exista al menos un producto con cantidad
+    const selectedProductIds = availableProducts.map((p) => p.id.toString());
+    const hasAny = selectedProductIds.some((id) => {
+      const p = productos[id];
+      return (
+        p && (parseInt(p.unidades || "0") > 0 || parseInt(p.cajas || "0") > 0)
+      );
+    });
+
+    if (!hasAny) return alert("Seleccione al menos un producto con cantidad.");
+
+    try {
+      // Obtener CategoryProvider_id desde categories
+      const selectedCategory = categories.find(
+        (c) => c.id.toString() === grupo,
+      );
+      if (!selectedCategory)
+        throw new Error("No se encontró la categoría seleccionada");
+
+      const reqResp = await addRequest(
+        selectedCategory.CategoryProvider_id,
+        Number(clientId),
+      );
+      const request_id = reqResp.data[0]?.request_id;
+      if (!request_id) throw new Error("No se obtuvo request_id del servidor");
+
+      // Agregar tipo de pago y estado
+      await addPaymentType(request_id);
+      await addRequestState(request_id);
+
+      // Calcular totales
+      let totalUnits = 0;
+      let totalCajas = 0;
+      const parseContainerValue = (value: string) => {
+        const num = parseFloat(value || "0");
+        return Number.isFinite(num) ? Math.max(0, Math.ceil(num)) : 0;
+      };
+
+      selectedProductIds.forEach((id) => {
+        const p = productos[id];
+        if (p) {
+          totalUnits += parseInt(p.unidades || "0") || 0;
+          totalCajas += parseContainerValue(p.cajas || "0");
+        }
+      });
+
+      const stageResp = await addStage(
+        1,
+        0,
+        0,
+        totalUnits,
+        totalCajas,
+        0.0,
+        request_id,
+      );
+      const requestStage_id = stageResp.data[0]?.requeststage_id;
+      if (!requestStage_id) throw new Error("No se obtuvo requeststage_id");
+
+      // Registrar productos
+      for (const pid of selectedProductIds) {
+        const pdata = productos[pid] || { unidades: "0", cajas: "0" };
+        const units = parseInt(pdata.unidades || "0") || 0;
+        const cajas = parseContainerValue(pdata.cajas || "0");
+        const active = units > 0 || cajas > 0;
+
+        if (!active) continue;
+
+        await addProduct(
+          cajas,
+          units,
+          true,
+          0.0,
+          0.0,
+          0.0,
+          active,
+          requestStage_id,
+          Number(pid),
+        );
+      }
+
+      alert("Solicitud registrada correctamente");
+
+      // limpiar
+      setProveedor("");
+      setGrupo("");
+      setProductos({});
+    } catch (err) {
+      console.error(err);
+      alert(
+        "Error al registrar la solicitud: " +
+          (err instanceof Error ? err.message : "Error desconocido"),
+      );
+    }
   };
 
   const sharedProps = {
@@ -38,6 +163,8 @@ export default function ClientePage() {
     setProveedor,
     fecha,
     setFecha,
+    grupo,
+    setGrupo,
     productos,
     onProductoChange: handleProductoChange,
     onEnviar: handleEnviar,
@@ -55,6 +182,7 @@ export default function ClientePage() {
 
       {/* ── Mobile: Tabs ── */}
       <div className="lg:hidden p-4">
+        {/* session available for client id */}
         <Tabs defaultValue="solicitud">
           <TabsList variant="solid" fullWidth className="mb-4 w-full">
             <TabsTrigger

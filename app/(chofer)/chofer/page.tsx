@@ -96,21 +96,58 @@ export default function ChoferPage() {
   const solicitudes = mapToSolicitudes(data);
   const totalACobrar = data.reduce((sum, r) => sum + r.RequestStage_payment, 0);
 
-  const clientesEnMapa = data
-    .map((sol) => {
-      const clienteInfo = clientesRaw?.find((c) => c.id === sol.Client_id);
-      if (!clienteInfo || !clienteInfo.lat || !clienteInfo.long) return null;
-      return {
-        id: String(sol.Client_id),
-        nombre: sol.Client_name,
-        lat: clienteInfo.lat,
-        lng: clienteInfo.long,
-        monto: sol.RequestStage_payment,
-        estado: "pendiente" as const,
+  const clientesEnMapa = data.reduce<
+    Array<{
+      id: string;
+      nombre: string;
+      lat: number;
+      lng: number;
+      totalMonto: number;
+      solicitudes: Array<{
+        solicitud: string;
+        monto: number;
+        estado: "pendiente" | "entregado" | "pagado";
+      }>;
+    }>
+  >((acc, sol) => {
+    const clienteInfo = clientesRaw?.find((c) => c.id === sol.Client_id);
+    if (!clienteInfo || !clienteInfo.lat || !clienteInfo.long) return acc;
+
+    const clientId = String(sol.Client_id);
+    const estadoSolicitud =
+      sol.PaymentType_name && sol.PaymentType_name !== "No Pagado"
+        ? "pagado"
+        : sol.RequestState_name === "ENTREGADO"
+          ? "entregado"
+          : "pendiente";
+
+    const existing = acc.find((c) => c.id === clientId);
+    if (existing) {
+      existing.solicitudes.push({
         solicitud: String(sol.Request_id),
-      };
-    })
-    .filter((c): c is NonNullable<typeof c> => c !== null);
+        monto: sol.RequestStage_payment,
+        estado: estadoSolicitud,
+      });
+      existing.totalMonto += sol.RequestStage_payment;
+      return acc;
+    }
+
+    acc.push({
+      id: clientId,
+      nombre: sol.Client_name,
+      lat: clienteInfo.lat,
+      lng: clienteInfo.long,
+      totalMonto: sol.RequestStage_payment,
+      solicitudes: [
+        {
+          solicitud: String(sol.Request_id),
+          monto: sol.RequestStage_payment,
+          estado: estadoSolicitud,
+        },
+      ],
+    });
+    return acc;
+  }, []);
 
   const totalEntregados = data.filter(
     (r) => r.RequestState_name === "ENTREGADO",
