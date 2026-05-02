@@ -435,7 +435,7 @@ export default function Repartir({
               ))
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p>Sin grupos disponibles para esta distribución</p>
+                <p>Sin grupos disponibles para esta distribución.</p>
               </div>
             )}
           </div>
