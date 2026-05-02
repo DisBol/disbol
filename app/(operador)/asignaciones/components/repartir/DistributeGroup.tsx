@@ -26,6 +26,7 @@ interface ClienteData {
   name: string;
   estado: string;
   Request_id: number;
+  RequestStage_id: number;
   Client_id: number;
   Provider_id: number;
   CategoryProvider_id: number;
@@ -352,16 +353,20 @@ export default function DistributeGroup({
 
     // --- UpdateRequestStage: UNA SOLA VEZ al final (solo en modo precio normal) ---
     if (allOk && !precioDiferido) {
-      const precioVenta = Number(precioVentaCliente[clienteIdx]) || 0;
+      const totalDistribucion = calculateTotalDistribucion(
+        clienteIdx,
+        clienteCodes,
+        precioVentaCliente[clienteIdx] || "",
+      );
       const resultRS = await updateRequestStage(
-        clienteCodes[0]?.ProductRequest_id ?? 0, // id del RequestStage
+        clientes[clienteIdx].RequestStage_id ?? 0, // id del RequestStage
         1, // position
         0, // in_container
         0, // out_container
         totalUnits, // units = total de todos los productos
         totalContainers, // container = total de todos los productos
-        precioVenta, // payment = PRECIO VENTA (Bs/Kg)
-        "1",
+        totalDistribucion, // payment = TOTAL CALCULADO (Bs)
+        "true",
         requestId,
       );
       if (!resultRS) allOk = false;
