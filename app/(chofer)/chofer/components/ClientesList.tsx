@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
-import { Input } from "@/components/ui/Input";
 import { Select, SelectOption } from "@/components/ui/SelecMultipe";
 import { ArrowDownBoldIcon } from "@/components/icons/ArrowDownBold";
 import { User16Icon } from "@/components/icons/User16Icon";
@@ -12,7 +11,9 @@ import { entregarSolicitud } from "@/app/(chofer)/chofer/service/entregarSolicit
 import { useGetPaymentType } from "@/app/(chofer)/chofer/hooks/useGetPaymentType";
 import { useUpdateRequestPaymentType } from "@/app/(chofer)/chofer/hooks/useUpdateRequestPaymentType";
 import { useAddContainerMovements } from "@/app/(operador)/asignaciones/hooks/repartir/useAddContainerMovements";
+import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedores/useContainer";
 import CardCode from "@/components/ui/CardCode";
+import ModalCanastos from "./ModalCanastos";
 
 /* ─────────────── Tipos ─────────────── */
 
@@ -45,8 +46,8 @@ interface ClientesListProps {
 interface SolicitudAcciones {
   entregado: boolean;
   metodoCobro: string | null;
-  canastosCount: number;
   canastosConfirmados: boolean;
+  canastosDevueltos: Record<string, number>;
 }
 
 /* ─────────────── Constantes ─────────────── */
@@ -119,7 +120,14 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
   const { data: paymentTypes } = useGetPaymentType();
   const { addPaymentType } = useUpdateRequestPaymentType();
   const { addContainerMovements } = useAddContainerMovements();
+  const { containers } = useContainer();
   const [savingCanastos, setSavingCanastos] = useState<string | null>(null);
+  const [modalOpenSolicitudId, setModalOpenSolicitudId] = useState<
+    string | null
+  >(null);
+  const [modalContainerQuantities, setModalContainerQuantities] = useState<
+    Record<string, number>
+  >({});
   const metodosCobroOptions: SelectOption[] = paymentTypes.map((pt) => ({
     value: String(pt.id),
     label: pt.name,
@@ -135,8 +143,8 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         {
           entregado: false,
           metodoCobro: null,
-          canastosCount: 0,
           canastosConfirmados: false,
+          canastosDevueltos: {},
         },
       ]),
     ),
@@ -145,8 +153,8 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
   const defaultAccion: SolicitudAcciones = {
     entregado: false,
     metodoCobro: null,
-    canastosCount: 0,
     canastosConfirmados: false,
+    canastosDevueltos: {},
   };
 
   const toggle = (id: string) =>
@@ -169,32 +177,52 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
     }
   };
 
-  const handleConfirmarCanastos = async (
-    solicitudId: string,
-    cantidad: number,
-  ) => {
-    if (cantidad === 0) {
-      alert("Ingrese una cantidad de canastos devueltos");
+  const handleAbrirModalCanastos = (solicitudId: string) => {
+    setModalOpenSolicitudId(solicitudId);
+    const acc = acciones[solicitudId];
+    setModalContainerQuantities({ ...(acc?.canastosDevueltos || {}) });
+  };
+
+  const handleConfirmarDevolucionCanastos = async () => {
+    if (!modalOpenSolicitudId) return;
+
+    const containeresAEnviar = Object.entries(modalContainerQuantities).filter(
+      ([, qty]) => qty > 0,
+    );
+
+    if (containeresAEnviar.length === 0) {
+      alert("Ingrese una cantidad mayor a 0 para al menos un contenedor");
       return;
     }
 
-    setSavingCanastos(solicitudId);
+    setSavingCanastos(modalOpenSolicitudId);
     try {
-      const solicitud = solicitudes.find((item) => item.id === solicitudId);
+      const solicitud = solicitudes.find(
+        (item) => item.id === modalOpenSolicitudId,
+      );
       if (!solicitud) {
         throw new Error("No se encontró la solicitud");
       }
 
-      await addContainerMovements(
-        Math.abs(cantidad),
-        "true",
-        1,
-        Number(solicitudId),
-        solicitud.clientId,
-        null, // Assignment_id
-        solicitud.providerId,
-      );
-      update(solicitudId, { canastosConfirmados: true });
+      for (const [containerId, cantidad] of containeresAEnviar) {
+        await addContainerMovements(
+          Math.abs(cantidad),
+          "true",
+          Number(containerId),
+          Number(modalOpenSolicitudId),
+          solicitud.clientId,
+          null,
+          solicitud.providerId,
+        );
+      }
+
+      update(modalOpenSolicitudId, {
+        canastosConfirmados: true,
+        canastosDevueltos: modalContainerQuantities,
+      });
+
+      setModalOpenSolicitudId(null);
+      setModalContainerQuantities({});
     } catch (error) {
       alert(
         "Error al registrar devolución de canastos: " +
@@ -212,8 +240,8 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         const acc = acciones[sol.id] ?? {
           entregado: false,
           metodoCobro: null,
-          canastosCount: 0,
           canastosConfirmados: false,
+          canastosDevueltos: {},
         };
 
         const metodoLabel =
@@ -392,60 +420,35 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                     <StepCircle done={acc.canastosConfirmados} step={3} />
                     {acc.canastosConfirmados ? (
                       <button
-                        onClick={() =>
-                          update(sol.id, { canastosConfirmados: false })
-                        }
+                        // onClick={() => {
+                        //   handleAbrirModalCanastos(sol.id);
+                        // }}
                         className="flex-1 h-11 bg-green-500 text-white rounded-xl font-semibold text-sm flex items-center justify-between px-4 hover:bg-green-600 transition-colors"
                       >
                         <span className="flex items-center gap-2">
                           <CheckIcon />
-                          Canastos devueltos: {acc.canastosCount}
-                        </span>
-                        <span className="text-xs text-green-100 underline">
-                          editar
-                        </span>
-                      </button>
-                    ) : (
-                      <div className="flex-1 flex items-center gap-2">
-                        <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">
                           Canastos devueltos
                         </span>
-                        <Input
-                          type="number"
-                          inputSize="md"
-                          value={acc.canastosCount}
-                          min={0}
-                          onChange={(e) =>
-                            update(sol.id, {
-                              canastosCount: Math.max(
-                                0,
-                                Number(e.target.value),
-                              ),
-                              canastosConfirmados: false,
-                            })
-                          }
-                          className="w-16 text-center"
-                          disabled={savingCanastos === sol.id}
-                        />
-                        <Button
-                          variant="success"
-                          size="md"
-                          radius="lg"
-                          className="shrink-0 px-3"
-                          disabled={savingCanastos === sol.id}
-                          onClick={() =>
-                            handleConfirmarCanastos(sol.id, acc.canastosCount)
-                          }
-                        >
-                          {savingCanastos === sol.id ? (
-                            <span className="inline-block animate-spin">
-                              ⏳
-                            </span>
-                          ) : (
-                            <CheckIcon />
-                          )}
-                        </Button>
-                      </div>
+                        {/* <span className="text-xs text-green-100 underline">
+                          editar
+                        </span> */}
+                      </button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="md"
+                        radius="lg"
+                        fullWidth
+                        className="h-11 text-sm"
+                        disabled={savingCanastos === sol.id}
+                        onClick={() => handleAbrirModalCanastos(sol.id)}
+                      >
+                        {savingCanastos === sol.id ? (
+                          <span className="inline-block animate-spin">⏳</span>
+                        ) : (
+                          "Devolver Canastos"
+                        )}
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -454,6 +457,19 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
           </Card>
         );
       })}
+
+      <ModalCanastos
+        isOpen={!!modalOpenSolicitudId}
+        onClose={() => {
+          setModalOpenSolicitudId(null);
+          setModalContainerQuantities({});
+        }}
+        containers={containers}
+        quantities={modalContainerQuantities}
+        setQuantities={setModalContainerQuantities}
+        onConfirm={handleConfirmarDevolucionCanastos}
+        saving={savingCanastos === modalOpenSolicitudId}
+      />
     </div>
   );
 }
