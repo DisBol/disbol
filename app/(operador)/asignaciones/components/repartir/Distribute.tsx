@@ -192,7 +192,7 @@ export default function Repartir({
                   name: clientName,
                   estado: "pendiente",
                   Request_id: clientItems[0]?.Request_id ?? 0,
-                  RequestStage_id: 0, // TODO: Obtener del API o datos de la planificación
+                  RequestStage_id: clientItems[0]?.RequestStage_id ?? 0,
                   Client_id: clientItems[0]?.Client_id ?? 0,
                   Provider_id: clientItems[0]?.Provider_id ?? 0,
                   CategoryProvider_id:

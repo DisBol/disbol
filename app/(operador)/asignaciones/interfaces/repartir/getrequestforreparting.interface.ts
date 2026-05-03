@@ -6,6 +6,7 @@ export interface GetRequestForrepartingResponse {
 export interface Datum {
   Request_id: number;
   Request_created_at: Date;
+  RequestStage_id: number;
   RequestStage_position: number;
   Request_CategoryProvider_id: number;
   RequestState_name: string;
