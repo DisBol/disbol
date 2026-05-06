@@ -717,6 +717,7 @@ export default function ReceptionTickets({
                                           )
                                         }
                                         containers={containers}
+                                        disableAutoComplete={true}
                                       />
                                     </div>
                                   ) : (
