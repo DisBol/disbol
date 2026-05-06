@@ -131,7 +131,10 @@ export default function TotalGroup({
         {/* Center Code Cards */}
         <div className="flex flex-wrap gap-1.5 flex-1 items-stretch">
           {codes.map((code, codeIdx) => (
-            <div key={codeIdx} className="w-20 shrink-0 pointer-events-none">
+            <div
+              key={codeIdx}
+              className={`w-20 shrink-0 pointer-events-none ${code.cajas === 0 && code.unidades === 0 ? "opacity-40" : ""}`}
+            >
               <CardCode
                 label={code.label}
                 cajas={code.cajas}
@@ -278,7 +281,10 @@ export default function TotalGroup({
                 {/* Client Code Cards */}
                 <div className="flex flex-wrap gap-1.5 flex-1 items-stretch">
                   {cliente.codes.map((code, clientCodeIdx) => (
-                    <div key={clientCodeIdx} className="w-20 shrink-0">
+                    <div
+                      key={clientCodeIdx}
+                      className={`w-20 shrink-0 ${code.cajas === 0 && code.unidades === 0 ? "opacity-40" : ""}`}
+                    >
                       <div className="bg-white rounded-lg p-1.5 shadow-sm flex flex-col h-full border border-gray-200">
                         <div className="flex flex-col items-center mb-1.5">
                           <h3 className="font-bold text-gray-900 text-[9px] text-center uppercase tracking-wide">
