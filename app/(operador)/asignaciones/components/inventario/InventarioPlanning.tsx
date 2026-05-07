@@ -16,7 +16,9 @@ interface InventarioPlanningProps {
   onClose?: () => void;
 }
 
-export default function InventarioPlanning({ onClose }: InventarioPlanningProps) {
+export default function InventarioPlanning({
+  onClose,
+}: InventarioPlanningProps) {
   const { providers, loading: isLoadingProviders } = useCategoryProvider();
   const { containers, isLoading: isLoadingContainers } = useContainer();
   const [proveedor, setProveedor] = useState("");
@@ -41,8 +43,12 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
   }, [proveedor, providers]);
 
   const selectedGroupMeta = useMemo(() => {
-    const selectedProvider = providers.find((p) => p.id.toString() === proveedor);
-    return selectedProvider?.grupos.find((g) => g.id.toString() === grupo) ?? null;
+    const selectedProvider = providers.find(
+      (p) => p.id.toString() === proveedor,
+    );
+    return (
+      selectedProvider?.grupos.find((g) => g.id.toString() === grupo) ?? null
+    );
   }, [proveedor, grupo, providers]);
 
   const categoryId = grupo ? Number(grupo) : null;
@@ -50,8 +56,11 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
 
   const { data: inventoryData, loading: loadingInventory } =
     useGetProductInventoryUnits(categoryId);
-  const { data: requestData, loading: loadingRequest, error: errorRequest } =
-    useGetRequestForPlanning(categoryProviderId);
+  const {
+    data: requestData,
+    loading: loadingRequest,
+    error: errorRequest,
+  } = useGetRequestForPlanning(categoryProviderId);
 
   // Build EditableGroupData from request data
   const processedGroups = useMemo((): EditableGroupData[] => {
@@ -59,12 +68,16 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
 
     const groupMap = new Map<string, RequestDatum[]>();
     requestData.data.forEach((item) => {
-      if (!groupMap.has(item.ClientGroup_name)) groupMap.set(item.ClientGroup_name, []);
+      if (!groupMap.has(item.ClientGroup_name))
+        groupMap.set(item.ClientGroup_name, []);
       groupMap.get(item.ClientGroup_name)!.push(item);
     });
 
     return Array.from(groupMap.entries()).map(([groupName, items]) => {
-      const productMap = new Map<string, { containers: number; units: number }>();
+      const productMap = new Map<
+        string,
+        { containers: number; units: number }
+      >();
       items.forEach((item) => {
         if (!productMap.has(item.Product_name))
           productMap.set(item.Product_name, { containers: 0, units: 0 });
@@ -81,36 +94,47 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
 
       const clientMap = new Map<string, RequestDatum[]>();
       items.forEach((item) => {
-        if (!clientMap.has(item.Client_name)) clientMap.set(item.Client_name, []);
+        if (!clientMap.has(item.Client_name))
+          clientMap.set(item.Client_name, []);
         clientMap.get(item.Client_name)!.push(item);
       });
 
-      const clientes = Array.from(clientMap.entries()).map(([clientName, clientItems]) => {
-        const clientProductMap = new Map<string, { containers: number; units: number }>();
-        clientItems.forEach((item) => {
-          if (!clientProductMap.has(item.Product_name))
-            clientProductMap.set(item.Product_name, { containers: 0, units: 0 });
-          const p = clientProductMap.get(item.Product_name)!;
-          p.containers += item.ProductRequest_containers;
-          p.units += item.ProductRequest_units;
-        });
+      const clientes = Array.from(clientMap.entries()).map(
+        ([clientName, clientItems]) => {
+          const clientProductMap = new Map<
+            string,
+            { containers: number; units: number }
+          >();
+          clientItems.forEach((item) => {
+            if (!clientProductMap.has(item.Product_name))
+              clientProductMap.set(item.Product_name, {
+                containers: 0,
+                units: 0,
+              });
+            const p = clientProductMap.get(item.Product_name)!;
+            p.containers += item.ProductRequest_containers;
+            p.units += item.ProductRequest_units;
+          });
 
-        const clientCodes = Array.from(clientProductMap.entries()).map(([name, t]) => ({
-          label: name,
-          solicitado: t.units,
-          cajas: t.containers,
-          unidades: t.units,
-          restante: 0,
-        }));
+          const clientCodes = Array.from(clientProductMap.entries()).map(
+            ([name, t]) => ({
+              label: name,
+              solicitado: t.units,
+              cajas: t.containers,
+              unidades: t.units,
+              restante: 0,
+            }),
+          );
 
-        return {
-          name: clientName,
-          estado: "pendiente",
-          codes: clientCodes,
-          totalCajas: clientCodes.reduce((s, c) => s + c.cajas, 0),
-          totalUnid: clientCodes.reduce((s, c) => s + c.unidades, 0),
-        };
-      });
+          return {
+            name: clientName,
+            estado: "pendiente",
+            codes: clientCodes,
+            totalCajas: clientCodes.reduce((s, c) => s + c.cajas, 0),
+            totalUnid: clientCodes.reduce((s, c) => s + c.unidades, 0),
+          };
+        },
+      );
 
       return {
         name: groupName,
@@ -145,7 +169,8 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
     const totals = new Map<string, { cajas: number; unidades: number }>();
     editableGroups.forEach((group) => {
       group.codes.forEach((code) => {
-        if (!totals.has(code.label)) totals.set(code.label, { cajas: 0, unidades: 0 });
+        if (!totals.has(code.label))
+          totals.set(code.label, { cajas: 0, unidades: 0 });
         const t = totals.get(code.label)!;
         t.cajas += code.cajas;
         t.unidades += code.unidades;
@@ -156,7 +181,9 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
 
   const totalPlannedCajas = useMemo(() => {
     let total = 0;
-    plannedTotals.forEach((t) => { total += t.cajas; });
+    plannedTotals.forEach((t) => {
+      total += t.cajas;
+    });
     return total;
   }, [plannedTotals]);
 
@@ -173,7 +200,10 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
     ]);
 
     return Array.from(allProducts).map((productName) => {
-      const planned = plannedTotals.get(productName) ?? { cajas: 0, unidades: 0 };
+      const planned = plannedTotals.get(productName) ?? {
+        cajas: 0,
+        unidades: 0,
+      };
       const inventoryUnits = inventoryMap.get(productName) ?? 0;
 
       return {
@@ -212,10 +242,14 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
         clientes[clientIndex] = cliente;
         group.clientes = clientes;
 
-        const productTotals = new Map<string, { cajas: number; unidades: number }>();
+        const productTotals = new Map<
+          string,
+          { cajas: number; unidades: number }
+        >();
         group.clientes.forEach((cl) => {
           cl.codes.forEach((c) => {
-            if (!productTotals.has(c.label)) productTotals.set(c.label, { cajas: 0, unidades: 0 });
+            if (!productTotals.has(c.label))
+              productTotals.set(c.label, { cajas: 0, unidades: 0 });
             const t = productTotals.get(c.label)!;
             t.cajas += c.cajas;
             t.unidades += c.unidades;
@@ -248,49 +282,68 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
   const { mutate: addMovement } = useAddProductInventoryMovements();
 
   const [savingGroups, setSavingGroups] = useState<number[]>([]);
-  const handleSaveGroup = useCallback(async (groupIndex: number) => {
-    const group = editableGroups[groupIndex];
-    if (!group || !contenedor || !requestData?.data || !inventoryData?.data) return;
+  const handleSaveGroup = useCallback(
+    async (groupIndex: number) => {
+      const group = editableGroups[groupIndex];
+      if (!group || !contenedor || !requestData?.data || !inventoryData?.data)
+        return;
 
-    const Container_id = Number(contenedor);
+      const Container_id = Number(contenedor);
 
-    const inventoryMap = new Map<string, number>();
-    inventoryData.data.forEach((item) => {
-      inventoryMap.set(item.Product_name, item.Product_id);
-    });
-
-    const requestMap = new Map<string, number>();
-    requestData.data.forEach((item) => {
-      requestMap.set(`${item.Client_name}__${item.Product_name}`, item.Request_id);
-    });
-
-    setSavingGroups((prev) => [...prev, groupIndex]);
-    try {
-      const promises: Promise<unknown>[] = [];
-      group.clientes.forEach((cliente) => {
-        cliente.codes.forEach((code) => {
-          const Request_id = requestMap.get(`${cliente.name}__${code.label}`);
-          const ProductInventory_id = inventoryMap.get(code.label);
-          if (Request_id == null || ProductInventory_id == null) return;
-
-          promises.push(
-            addMovement({
-              active: "true",
-              Assignment_id: null,
-              Request_id,
-              ProductInventory_id,
-              Container_id,
-              container: -code.cajas,
-              units: -code.unidades,
-            }),
-          );
-        });
+      const inventoryMap = new Map<string, number>();
+      inventoryData.data.forEach((item) => {
+        inventoryMap.set(item.Product_name, item.Product_id);
       });
-      await Promise.all(promises);
-    } finally {
-      setSavingGroups((prev) => prev.filter((i) => i !== groupIndex));
-    }
-  }, [editableGroups, contenedor, requestData, inventoryData, addMovement]);
+
+      const requestMap = new Map<string, number>();
+      requestData.data.forEach((item) => {
+        requestMap.set(
+          `${item.Client_name}__${item.Product_name}`,
+          item.Request_id,
+        );
+      });
+
+      setSavingGroups((prev) => [...prev, groupIndex]);
+      try {
+        const promises: Promise<unknown>[] = [];
+        group.clientes.forEach((cliente) => {
+          cliente.codes.forEach((code) => {
+            const Request_id = requestMap.get(`${cliente.name}__${code.label}`);
+            const ProductInventory_id = inventoryMap.get(code.label);
+            if (Request_id == null || ProductInventory_id == null) return;
+
+            promises.push(
+              addMovement({
+                active: "true",
+                Assignment_id: null,
+                Request_id,
+                ProductInventory_id,
+                Container_id,
+                container: -code.cajas,
+                units: -code.unidades,
+              }),
+            );
+          });
+        });
+        await Promise.all(promises);
+
+        // Marcar el grupo como guardado (comportamiento similar a Planning)
+        setEditableGroups((prevGroups) => {
+          const newGroups = [...prevGroups];
+          if (newGroups[groupIndex]) {
+            newGroups[groupIndex] = {
+              ...newGroups[groupIndex],
+              status: "guardado",
+            };
+          }
+          return newGroups;
+        });
+      } finally {
+        setSavingGroups((prev) => prev.filter((i) => i !== groupIndex));
+      }
+    },
+    [editableGroups, contenedor, requestData, inventoryData, addMovement],
+  );
 
   const loading = loadingInventory || loadingRequest;
 
@@ -304,7 +357,10 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
           selectedProveedor={proveedor}
           selectedGrupo={grupo}
           isLoadingProviders={isLoadingProviders}
-          containerOptions={containers.map((c) => ({ value: c.value, label: c.label }))}
+          containerOptions={containers.map((c) => ({
+            value: c.value,
+            label: c.label,
+          }))}
           selectedContenedor={contenedor}
           isLoadingContainers={isLoadingContainers}
           onProviderChange={handleProviderChange}
@@ -339,6 +395,7 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
                 <InventarioTotalGroup
                   key={groupIdx}
                   name={group.name}
+                  status={group.status}
                   codes={group.codes}
                   totalCajas={group.totalCajas}
                   totalUnid={group.totalUnid}
@@ -348,7 +405,13 @@ export default function InventarioPlanning({ onClose }: InventarioPlanningProps)
                   onSave={() => handleSaveGroup(groupIdx)}
                   isSaving={savingGroups.includes(groupIdx)}
                   onUpdateClientCode={(clientIndex, codeIndex, field, value) =>
-                    updateClientCode(groupIdx, clientIndex, codeIndex, field, value)
+                    updateClientCode(
+                      groupIdx,
+                      clientIndex,
+                      codeIndex,
+                      field,
+                      value,
+                    )
                   }
                 />
               ))

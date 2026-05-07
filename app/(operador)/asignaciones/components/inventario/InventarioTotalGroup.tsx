@@ -26,6 +26,7 @@ interface Cliente {
 
 interface InventarioTotalGroupProps {
   name: string;
+  status?: "guardado" | "pendiente";
   codes: Code[];
   totalCajas: number;
   totalUnid: number;
@@ -44,6 +45,7 @@ interface InventarioTotalGroupProps {
 
 export default function InventarioTotalGroup({
   name,
+  status,
   codes,
   totalCajas,
   totalUnid,
@@ -75,7 +77,12 @@ export default function InventarioTotalGroup({
     onUpdateClientCode?.(clienteIdx, clientCodeIdx, "cajas", value);
     const multiplier = getMultiplier(productCode);
     if (multiplier > 0) {
-      onUpdateClientCode?.(clienteIdx, clientCodeIdx, "unidades", value * multiplier);
+      onUpdateClientCode?.(
+        clienteIdx,
+        clientCodeIdx,
+        "unidades",
+        value * multiplier,
+      );
     }
   };
 
@@ -88,7 +95,12 @@ export default function InventarioTotalGroup({
     onUpdateClientCode?.(clienteIdx, clientCodeIdx, "unidades", value);
     const multiplier = getMultiplier(productCode);
     if (multiplier > 0) {
-      onUpdateClientCode?.(clienteIdx, clientCodeIdx, "cajas", Math.ceil(value / multiplier));
+      onUpdateClientCode?.(
+        clienteIdx,
+        clientCodeIdx,
+        "cajas",
+        Math.ceil(value / multiplier),
+      );
     }
   };
 
@@ -164,36 +176,76 @@ export default function InventarioTotalGroup({
         </div>
 
         {/* Save button */}
-        {onSave && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onSave(); }}
-            disabled={isSaving}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors border ${
-              isSaving
-                ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-[#e11d48] hover:bg-rose-700 border-[#e11d48] text-white shadow-sm"
-            }`}
-          >
-            {isSaving ? (
-              <>
-                <svg className="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-                Guardando...
-              </>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17 21 17 13 7 13 7 21" />
-                  <polyline points="7 3 7 8 15 8" />
-                </svg>
-                Guardar
-              </>
-            )}
-          </button>
-        )}
+        {onSave &&
+          (status === "guardado" ? (
+            <button
+              disabled
+              className="bg-[#10b981] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-not-allowed opacity-90 flex items-center gap-1"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              Guardado
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSave();
+              }}
+              disabled={isSaving}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors border ${
+                isSaving
+                  ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-[#e11d48] hover:bg-rose-700 border-[#e11d48] text-white shadow-sm"
+              }`}
+            >
+              {isSaving ? (
+                <>
+                  <svg
+                    className="animate-spin w-3 h-3"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
+                  </svg>
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Guardar
+                </>
+              )}
+            </button>
+          ))}
 
         {/* Chevron */}
         <div className="flex items-center shrink-0 ml-1">
