@@ -11,6 +11,7 @@ import { entregarSolicitud } from "@/app/(chofer)/chofer/service/entregarSolicit
 import { useGetPaymentType } from "@/app/(chofer)/chofer/hooks/useGetPaymentType";
 import { useUpdateRequestPaymentType } from "@/app/(chofer)/chofer/hooks/useUpdateRequestPaymentType";
 import { useAddContainerMovements } from "@/app/(operador)/asignaciones/hooks/repartir/useAddContainerMovements";
+import { useUpdateRequestStage } from "@/app/(operador)/asignaciones/hooks/repartir/useUpdateRequeststage";
 import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedores/useContainer";
 import CardCode from "@/components/ui/CardCode";
 import ModalCanastos from "./ModalCanastos";
@@ -36,6 +37,12 @@ interface Solicitud {
   paymentTypeName?: string;
   totalACobrar: number;
   estado: "pendiente" | "entregado" | "pagado";
+  requestStagePosition: number;
+  requestStateOutContainer: number;
+  requestStateInContainer: number;
+  productRequestActive: string;
+  productRequestUnits: number;
+  productRequestContainers: number;
   productos: Producto[];
 }
 
@@ -120,6 +127,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
   const { data: paymentTypes } = useGetPaymentType();
   const { addPaymentType } = useUpdateRequestPaymentType();
   const { addContainerMovements } = useAddContainerMovements();
+  const { updateRequestStage } = useUpdateRequestStage();
   const { containers } = useContainer();
   const [savingCanastos, setSavingCanastos] = useState<string | null>(null);
   const [modalOpenSolicitudId, setModalOpenSolicitudId] = useState<
@@ -143,7 +151,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         {
           entregado: false,
           metodoCobro: null,
-          canastosConfirmados: false,
+          canastosConfirmados: s.requestStateInContainer > 0,
           canastosDevueltos: {},
         },
       ]),
@@ -204,6 +212,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         throw new Error("No se encontró la solicitud");
       }
 
+      // Registrar movimiento de contenedores (uno por uno)
       for (const [containerId, cantidad] of containeresAEnviar) {
         await addContainerMovements(
           Math.abs(cantidad),
@@ -215,6 +224,24 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
           solicitud.providerId,
         );
       }
+
+      // Calcular el total consolidado de contenedores devueltos
+      const totalContainersReturned = Object.values(
+        modalContainerQuantities,
+      ).reduce((sum, qty) => sum + qty, 0);
+
+      // Actualizar el RequestStage con el total consolidado de contenedores
+      await updateRequestStage(
+        1, // RequestStage_id (siempre 1)
+        solicitud.requestStagePosition,
+        totalContainersReturned, // in_container: total consolidado
+        solicitud.requestStateOutContainer,
+        solicitud.productRequestUnits, // units
+        solicitud.productRequestContainers, // container
+        solicitud.totalACobrar,
+        solicitud.productRequestActive,
+        Number(modalOpenSolicitudId),
+      );
 
       update(modalOpenSolicitudId, {
         canastosConfirmados: true,
@@ -240,7 +267,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         const acc = acciones[sol.id] ?? {
           entregado: false,
           metodoCobro: null,
-          canastosConfirmados: false,
+          canastosConfirmados: sol.requestStateInContainer > 0,
           canastosDevueltos: {},
         };
 

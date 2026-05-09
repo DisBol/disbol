@@ -15,6 +15,12 @@ export interface ProductoChofer {
   menudencia: string;
 }
 
+interface DatumExtended extends Datum {
+  RequestState_out_container?: number;
+  RequestState_in_container?: number;
+  ProductRequest_active?: string;
+}
+
 export interface SolicitudChofer {
   Request_id: number;
   Client_id: number;
@@ -25,6 +31,12 @@ export interface SolicitudChofer {
   RequestState_name: string;
   PaymentType_name: string;
   RequestStage_payment: number;
+  RequestStage_position: number;
+  RequestState_out_container?: number;
+  RequestState_in_container?: number;
+  ProductRequest_active?: string;
+  ProductRequest_units: number;
+  ProductRequest_containers: number;
   items: ProductoChofer[];
 }
 
@@ -58,7 +70,7 @@ export function useGetSolicitudesChofer() {
         0,
       );
 
-      const grouped = response.data.reduce((acc, curr: Datum) => {
+      const grouped = response.data.reduce((acc, curr: DatumExtended) => {
         // Solo position 2
         if (Number(curr.RequestStage_position) !== 2) return acc;
         // Solo estados ENVIADO y ENTREGADO
@@ -88,6 +100,12 @@ export function useGetSolicitudesChofer() {
             RequestState_name: curr.RequestState_name,
             PaymentType_name: curr.PaymentType_name,
             RequestStage_payment: curr.RequestStage_payment ?? 0,
+            RequestStage_position: curr.RequestStage_position,
+            RequestState_out_container: curr.RequestState_out_container ?? 0,
+            RequestState_in_container: curr.RequestState_in_container ?? 0,
+            ProductRequest_active: curr.ProductRequest_active ?? "true",
+            ProductRequest_units: curr.ProductRequest_units,
+            ProductRequest_containers: curr.ProductRequest_containers,
             items: [
               {
                 nombre: curr.Product_name,
