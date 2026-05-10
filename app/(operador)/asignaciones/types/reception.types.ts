@@ -9,6 +9,7 @@ export interface Boleta {
   costoTotal: string;
   precioDiferido: boolean;
   ticket_payment: string;
+  ticket_weight: string;
   Tickets_ticket_payment?: string;
   Account_id: number;
   Account_code?: string;

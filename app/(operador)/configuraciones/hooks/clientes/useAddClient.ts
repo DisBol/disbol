@@ -62,7 +62,7 @@ export function useAddClient(): UseAddClientReturn {
         throw new Error("Client_id inválido recibido tras crear el cliente");
       }
 
-      await AddUser(name, document, "1", clientId);
+      await AddUser(name, document, "4", clientId);
 
       return response;
     } catch (err) {

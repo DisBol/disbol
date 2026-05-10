@@ -10,6 +10,7 @@ export async function AddTicket(
   total_container: string,
   total_units: string,
   ticket_payment: number,
+  ticket_weight: number,
   Account_id: number
 ): Promise<AddTicketResponse> {
   return apiCall("addticket", {
@@ -22,6 +23,7 @@ export async function AddTicket(
     active: "true",
     AssignmentStage_id,
     ticket_payment,
+    ticket_weight,
     Account_id,
   });
 }

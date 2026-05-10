@@ -91,6 +91,8 @@ export interface CardCodeProps
   unidadesExcedidas?: boolean;
   // Disable the "Agregar Pesaje" button
   disableAgregarPesaje?: boolean;
+  // Disable auto-completion between cajas and unidades
+  disableAutoComplete?: boolean;
   // Optional read-only comparison mode (e.g., Asignado vs Recibido)
   compareReadOnly?: {
     leftLabel?: string;
@@ -133,6 +135,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       cajasExcedidas = false,
       unidadesExcedidas = false,
       disableAgregarPesaje = false,
+      disableAutoComplete = false,
       compareReadOnly,
       ...props
     },
@@ -208,7 +211,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
     }, [multiplier, defaultMultiplier]);
 
     React.useEffect(() => {
-      if (effectiveMultiplier <= 0) return;
+      if (effectiveMultiplier <= 0 || disableAutoComplete) return;
       const cajasNum = parseFloat(inputCajas) || 0;
       const unidadesNum = parseFloat(inputUnidades) || 0;
 
@@ -225,7 +228,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
         onCajasChange?.(cajasCalc === "0" ? "" : cajasCalc);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [effectiveMultiplier]);
+    }, [effectiveMultiplier, disableAutoComplete]);
 
     const handleSaveMultiplier = () => {
       const parsed = parseInt(multiplierInput, 10);
@@ -245,7 +248,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       if (val === "") {
         setInputCajas("");
         onCajasChange?.("");
-        if (effectiveMultiplier > 0) {
+        if (effectiveMultiplier > 0 && !disableAutoComplete) {
           setInputUnidades("");
           onUnidadesChange?.("");
         }
@@ -259,7 +262,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       setInputCajas(cajasString);
       onCajasChange?.(cajasString);
 
-      if (effectiveMultiplier > 0) {
+      if (effectiveMultiplier > 0 && !disableAutoComplete) {
         const resultado = (roundedCajas * effectiveMultiplier).toString();
         setInputUnidades(roundedCajas === 0 ? "" : resultado);
         onUnidadesChange?.(resultado);
@@ -269,7 +272,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
     const handleUnidadesInput = (val: string) => {
       setInputUnidades(val); // muestra inmediatamente
       onUnidadesChange?.(val); // notifica al padre
-      if (effectiveMultiplier > 0) {
+      if (effectiveMultiplier > 0 && !disableAutoComplete) {
         const valNum = val === "" ? 0 : parseFloat(val);
         const result = valNum / effectiveMultiplier;
         const roundedCajas = valNum === 0 ? 0 : Math.ceil(result);

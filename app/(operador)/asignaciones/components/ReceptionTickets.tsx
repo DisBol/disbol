@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -96,6 +96,20 @@ export default function ReceptionTickets({
   const [expandedSavedBoletas, setExpandedSavedBoletas] = useState<Set<string>>(
     new Set(),
   );
+
+  const codigoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const prevBoletasCount = useRef<number>(0);
+
+  useEffect(() => {
+    if (boletas.length > prevBoletasCount.current) {
+      const lastBoleta = boletas[boletas.length - 1];
+      const input = codigoInputRefs.current[lastBoleta.id];
+      if (input) {
+        input.focus();
+      }
+    }
+    prevBoletasCount.current = boletas.length;
+  }, [boletas]);
 
   const getPesajeSaveKey = (
     boletaId: string,
@@ -319,6 +333,7 @@ export default function ReceptionTickets({
                           <p className="text-xs text-gray-600">
                             Guardada - Codigo: {boleta.codigo || "Sin codigo"} -
                             Costo Boleta: {boleta.ticket_payment || "N/A"} -
+                            Peso Boleta: {boleta.ticket_weight || "N/A"} -
                             Cuenta: {boleta.Account_code || "N/A"} - {boleta.Account_name || "N/A"}
                           </p>
                         )}
@@ -401,12 +416,17 @@ export default function ReceptionTickets({
 
                     {isExpanded && (
                       <>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-5 mb-5">
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-5 mb-5">
                           <div>
                             <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
                               CÓDIGO DE BOLETA
                             </span>
                             <InputField
+                              ref={(el) => {
+                                if (el) {
+                                  codigoInputRefs.current[boleta.id] = el;
+                                }
+                              }}
                               placeholder="Ingrese código"
                               value={boleta.codigo}
                               disabled={readOnly}
@@ -448,6 +468,23 @@ export default function ReceptionTickets({
                                 onUpdateBoleta(
                                   boleta.id,
                                   "ticket_payment",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
+                              PESO BOLETA
+                            </span>
+                            <InputField
+                              value={boleta.ticket_weight ?? ""}
+                              disabled={readOnly}
+                              onChange={(e) =>
+                                onUpdateBoleta(
+                                  boleta.id,
+                                  "ticket_weight",
                                   e.target.value,
                                 )
                               }
@@ -717,6 +754,7 @@ export default function ReceptionTickets({
                                           )
                                         }
                                         containers={containers}
+                                        disableAutoComplete={true}
                                       />
                                     </div>
                                   ) : (

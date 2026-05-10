@@ -11,6 +11,7 @@ interface UseAddTicketParams {
   total_container: string;
   total_units: string;
   ticket_payment: number;
+  ticket_weight?: number;
   Account_id: number;
 }
 
@@ -41,6 +42,7 @@ export const useAddTicket = (): UseAddTicketReturn => {
         params.total_container,
         params.total_units,
         params.ticket_payment,
+        params.ticket_weight ?? 0,
         params.Account_id
       );
 

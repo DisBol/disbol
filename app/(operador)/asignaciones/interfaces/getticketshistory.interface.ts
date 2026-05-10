@@ -9,6 +9,7 @@ export interface Datum {
     Tickets_deferred_payment: number | string;
     Tickets_product_payment: number;
     Tickets_ticket_payment?: number;
+    Tickets_ticket_weight?: number;
     Account_id?: number;
     Account_code?: string;
     Account_name?: string;
