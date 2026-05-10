@@ -89,8 +89,8 @@ export default function ClientePage() {
       const request_id = reqResp.data[0]?.request_id;
       if (!request_id) throw new Error("No se obtuvo request_id del servidor");
 
-      // Agregar tipo de pago y estado
-      await addPaymentType(request_id);
+      // Agregar tipo de pago y estado (amount = 0 cuando se crea desde Cliente page)
+      await addPaymentType(request_id, 3, 0);
       await addRequestState(request_id);
 
       // Calcular totales

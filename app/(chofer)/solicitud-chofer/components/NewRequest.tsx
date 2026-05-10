@@ -124,8 +124,8 @@ export default function NewRequest() {
       const request_id = reqResponse.data[0]?.request_id;
       if (!request_id) throw new Error("No se obtuvo request_id del servidor");
 
-      // PASO 2: Asignar Tipo de Pago
-      await addPaymentType(request_id);
+      // PASO 2: Asignar Tipo de Pago (amount = 0 cuando se crea desde NewRequest)
+      await addPaymentType(request_id, 3, 0);
 
       // PASO 3: Asignar Estado de la Solicitud
       await addRequestState(request_id);

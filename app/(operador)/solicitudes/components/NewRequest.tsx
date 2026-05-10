@@ -117,7 +117,8 @@ export default function NewRequest() {
       const selectedCategory = categoriesWithProducts.find(
         (c) => c.id.toString() === grupo,
       );
-      if (!selectedCategory) throw new Error("No se encontró la categoría seleccionada");
+      if (!selectedCategory)
+        throw new Error("No se encontró la categoría seleccionada");
 
       const reqResponse = await addRequest(
         selectedCategory.CategoryProvider_id,
@@ -128,16 +129,16 @@ export default function NewRequest() {
       const request_id = reqResponse.data[0]?.request_id;
       if (!request_id) throw new Error("No se obtuvo request_id del servidor");
 
-      // PASO 2: Asignar Tipo de Pago
-      await addPaymentType(request_id);
+      // PASO 2: Asignar Tipo de Pago (amount = 0 cuando se crea desde NewRequest)
+      await addPaymentType(request_id, 3, 0);
 
       // PASO 3: Asignar Estado de la Solicitud
       await addRequestState(request_id);
 
       const parseContainerValue = (value: string) => {
-      const num = parseFloat(value || "0");
-      return Number.isFinite(num) ? Math.max(0, Math.ceil(num)) : 0;
-    };
+        const num = parseFloat(value || "0");
+        return Number.isFinite(num) ? Math.max(0, Math.ceil(num)) : 0;
+      };
 
       // PASO 4: Crear la Etapa (Stage)
       // Primero calculamos los totales de todos los productos seleccionados
@@ -439,9 +440,7 @@ export default function NewRequest() {
                         handleProductoChange(prodId, "menudencia", val)
                       }
                       multiplier={
-                        state.multiplier
-                          ? Number(state.multiplier)
-                          : undefined
+                        state.multiplier ? Number(state.multiplier) : undefined
                       }
                       onMultiplierChange={(val) =>
                         handleProductoChange(

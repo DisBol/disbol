@@ -109,7 +109,10 @@ export default function DetailAssignment({
                   const sobradoUnidades = unidades.asignado - unidades.recibido;
 
                   return (
-                    <div key={i} className="min-w-0 flex flex-col gap-1">
+                    <div
+                      key={i}
+                      className={`min-w-0 flex flex-col gap-1 ${cajas.recibido === 0 && unidades.recibido === 0 && cajas.asignado === 0 && unidades.asignado === 0 ? "opacity-40" : ""}`}
+                    >
                       <CardCode
                         label={d.label}
                         cajas={cajas.recibido}
@@ -124,32 +127,54 @@ export default function DetailAssignment({
                           rightUnidades: unidades.asignado,
                         }}
                       />
-                      <div className={`rounded-lg px-2 py-1.5 text-center border ${
-                        sobradoUnidades < 0 || sobradoCajas < 0
-                          ? "bg-red-50 border-red-100"
-                          : sobradoUnidades === 0 && sobradoCajas === 0
-                            ? "bg-gray-50 border-gray-100"
-                            : "bg-emerald-50 border-emerald-100"
-                      }`}>
+                      <div
+                        className={`rounded-lg px-2 py-1.5 text-center border ${
+                          sobradoUnidades < 0 || sobradoCajas < 0
+                            ? "bg-red-50 border-red-100"
+                            : sobradoUnidades === 0 && sobradoCajas === 0
+                              ? "bg-gray-50 border-gray-100"
+                              : "bg-emerald-50 border-emerald-100"
+                        }`}
+                      >
                         <p className="text-[7px] font-bold uppercase tracking-widest text-gray-400 mb-1">
                           Sobrado
                         </p>
                         <div className="flex items-center justify-center gap-2">
                           <div className="flex flex-col items-center">
-                            <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">Caj.</span>
-                            <span className={`text-[13px] font-black leading-none tabular-nums ${
-                              sobradoCajas > 0 ? "text-emerald-500" : sobradoCajas < 0 ? "text-red-500" : "text-gray-300"
-                            }`}>
-                              {sobradoCajas > 0 ? `+${sobradoCajas}` : sobradoCajas}
+                            <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">
+                              Caj.
+                            </span>
+                            <span
+                              className={`text-[13px] font-black leading-none tabular-nums ${
+                                sobradoCajas > 0
+                                  ? "text-emerald-500"
+                                  : sobradoCajas < 0
+                                    ? "text-red-500"
+                                    : "text-gray-300"
+                              }`}
+                            >
+                              {sobradoCajas > 0
+                                ? `+${sobradoCajas}`
+                                : sobradoCajas}
                             </span>
                           </div>
                           <div className="w-px h-5 bg-gray-200" />
                           <div className="flex flex-col items-center">
-                            <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">Unid.</span>
-                            <span className={`text-[13px] font-black leading-none tabular-nums ${
-                              sobradoUnidades > 0 ? "text-emerald-500" : sobradoUnidades < 0 ? "text-red-500" : "text-gray-300"
-                            }`}>
-                              {sobradoUnidades > 0 ? `+${sobradoUnidades}` : sobradoUnidades}
+                            <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">
+                              Unid.
+                            </span>
+                            <span
+                              className={`text-[13px] font-black leading-none tabular-nums ${
+                                sobradoUnidades > 0
+                                  ? "text-emerald-500"
+                                  : sobradoUnidades < 0
+                                    ? "text-red-500"
+                                    : "text-gray-300"
+                              }`}
+                            >
+                              {sobradoUnidades > 0
+                                ? `+${sobradoUnidades}`
+                                : sobradoUnidades}
                             </span>
                           </div>
                         </div>

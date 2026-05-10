@@ -78,6 +78,12 @@ function mapToSolicitudes(grouped: SolicitudChofer[]) {
     paymentTypeName: req.PaymentType_name,
     totalACobrar: req.RequestStage_payment,
     estado: "pendiente" as const,
+    requestStagePosition: req.RequestStage_position,
+    requestStateOutContainer: req.RequestState_out_container ?? 0,
+    requestStateInContainer: req.RequestState_in_container ?? 0,
+    productRequestActive: req.ProductRequest_active ?? "true",
+    productRequestUnits: req.ProductRequest_units,
+    productRequestContainers: req.ProductRequest_containers,
     productos: req.items.map((item) => ({
       nombre: item.nombre,
       categoria: item.categoria,
@@ -164,6 +170,11 @@ export default function ChoferPage() {
   const totalEfectivo = data
     .filter((r) => r.PaymentType_name?.toLowerCase().includes("efectivo"))
     .reduce((sum, r) => sum + r.RequestStage_payment, 0);
+
+  const totalCajasEnviadas = data.reduce(
+    (sum, r) => sum + (r.RequestState_in_container ?? 0),
+    0,
+  );
 
   const totalCobrado = totalQR + totalEfectivo;
   const totalRendir = totalCobrado - chofertData.totalGastos;
@@ -319,6 +330,42 @@ export default function ChoferPage() {
                         <span className="font-bold text-red-600 text-sm">
                           Bs {totalACobrar.toFixed(2)}
                         </span>
+                      </div>
+                    </div>
+
+                    {/* Resumen de Cajas */}
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                        Resumen de Cajas
+                      </h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Cajas recogidas
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {solicitudes.reduce((sum, sol) => {
+                              const productosConDatos = sol.productos.filter(
+                                (p) => p.cajas > 0 || p.unidades > 0,
+                              );
+                              return (
+                                sum +
+                                productosConDatos.reduce(
+                                  (psum, p) => psum + p.cajas,
+                                  0,
+                                )
+                              );
+                            }, 0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Cajas enviadas
+                          </span>
+                          <span className="text-sm font-semibold text-green-600">
+                            {totalCajasEnviadas}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
