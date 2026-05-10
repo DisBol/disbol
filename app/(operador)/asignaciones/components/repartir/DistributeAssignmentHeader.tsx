@@ -5,6 +5,52 @@ import { Select, type SelectOption } from "@/components/ui/SelecMultipe";
 import { useGetEmployeeDriver } from "../../hooks/chofer/useGetEmployeeDriver";
 import jsPDF from "jspdf";
 
+export interface RouteReportPesaje {
+  id: string;
+  contenedor: string;
+  cajas: number;
+  unidades: number;
+  kg: number;
+  destare: number;
+  neto: number;
+}
+
+export interface RouteReportCode {
+  label: string;
+  solicitado: number;
+  cajas: number;
+  unidades: number;
+  bruto: number;
+  neto: number;
+  precioUnitario: number;
+  totalBs: number;
+  pesajes: RouteReportPesaje[];
+}
+
+export interface RouteReportClient {
+  nombre: string;
+  requestId: number;
+  montoACobrar: number;
+  deudaCajas: number;
+  deudaDinero: number;
+  codes: RouteReportCode[];
+  totalBruto: number;
+  totalNeto: number;
+  totalBs: number;
+}
+
+export interface RouteReportData {
+  groupName: string;
+  proveedor: string;
+  costoPorKg: string;
+  precioDiferido: boolean;
+  vehiculo: string;
+  chofer: string;
+  totalCajas: number;
+  totalUnid: number;
+  clientes: RouteReportClient[];
+}
+
 interface DistributeAssignmentHeaderProps {
   proveedor?: string;
   costoPorKg?: string;
@@ -32,6 +78,7 @@ interface DistributeAssignmentHeaderProps {
     deudaCajas: number;
     deudaDinero: number;
   }>;
+  routeReport?: RouteReportData | null;
 }
 
 export default function DistributeAssignmentHeader({
@@ -52,6 +99,7 @@ export default function DistributeAssignmentHeader({
   onVehiculoChange,
   onChoferChange,
   clientes = [],
+  routeReport = null,
 }: DistributeAssignmentHeaderProps) {
   const { cars } = useCar();
   const { drivers } = useGetEmployeeDriver();
@@ -90,8 +138,196 @@ export default function DistributeAssignmentHeader({
     };
   };
 
+  const formatMoney = (value: number) =>
+    value.toLocaleString("es-BO", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  const buildRoutePdfHtml = (report: RouteReportData) => {
+    const clientsHtml = report.clientes
+      .map((cliente) => {
+        const codesHtml = cliente.codes
+          .map((code) => {
+            const pesajesHtml = code.pesajes
+              .map(
+                (pesaje) => `
+                  <tr>
+                    <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">${pesaje.contenedor}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: right;">${pesaje.cajas}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: right;">${pesaje.unidades}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: right;">${formatMoney(pesaje.kg)}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: right;">${formatMoney(pesaje.destare)}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: right; font-weight: 700;">${formatMoney(pesaje.neto)}</td>
+                  </tr>
+                `,
+              )
+              .join("");
+
+            return `
+              <tr style="background-color: #f9fafb;">
+                <td style="padding: 10px 12px; border: 1px solid #e5e7eb; font-weight: 700;">${code.label}</td>
+                <td style="padding: 10px 12px; border: 1px solid #e5e7eb; text-align: right;">${code.solicitado}</td>
+                <td style="padding: 10px 12px; border: 1px solid #e5e7eb; text-align: right;">${code.cajas}</td>
+                <td style="padding: 10px 12px; border: 1px solid #e5e7eb; text-align: right;">${code.unidades}</td>
+                <td style="padding: 10px 12px; border: 1px solid #e5e7eb; text-align: right;">${formatMoney(code.bruto)}</td>
+                <td style="padding: 10px 12px; border: 1px solid #e5e7eb; text-align: right;">${formatMoney(code.neto)}</td>
+                <td style="padding: 10px 12px; border: 1px solid #e5e7eb; text-align: right;">Bs ${formatMoney(code.precioUnitario)}</td>
+                <td style="padding: 10px 12px; border: 1px solid #e5e7eb; text-align: right; font-weight: 700;">Bs ${formatMoney(code.totalBs)}</td>
+              </tr>
+              <tr>
+                <td colspan="8" style="padding: 0; border: 1px solid #e5e7eb; background: #fff;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                      <tr style="background: #fff7ed; color: #9a3412;">
+                        <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid #fed7aa;">Pesaje</th>
+                        <th style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #fed7aa;">Cajas</th>
+                        <th style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #fed7aa;">Unid.</th>
+                        <th style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #fed7aa;">Bruto kg</th>
+                        <th style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #fed7aa;">Destare</th>
+                        <th style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #fed7aa;">Neto kg</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${pesajesHtml || `<tr><td colspan="6" style="padding: 8px 10px; text-align: center; color: #9ca3af;">Sin pesajes registrados</td></tr>`}
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        return `
+          <section style="margin-bottom: 24px; page-break-inside: avoid;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 10px;">
+              <div>
+                <h3 style="margin: 0; font-size: 18px; color: #111827;">${cliente.nombre}</h3>
+                <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 12px;">Solicitud #${cliente.requestId}</p>
+              </div>
+              <div style="text-align: right; font-size: 12px; color: #6b7280;">
+                <div>Monto a cobrar: <strong style="color: #111827;">Bs ${formatMoney(cliente.montoACobrar)}</strong></div>
+                <div>Peso bruto: <strong style="color: #111827;">${formatMoney(cliente.totalBruto)} kg</strong></div>
+                <div>Peso neto: <strong style="color: #111827;">${formatMoney(cliente.totalNeto)} kg</strong></div>
+              </div>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px;">
+              <thead>
+                <tr style="background: #e11d48; color: #fff;">
+                  <th style="padding: 10px 12px; text-align: left;">Código</th>
+                  <th style="padding: 10px 12px; text-align: right;">Solic.</th>
+                  <th style="padding: 10px 12px; text-align: right;">Cajas</th>
+                  <th style="padding: 10px 12px; text-align: right;">Unid.</th>
+                  <th style="padding: 10px 12px; text-align: right;">Bruto kg</th>
+                  <th style="padding: 10px 12px; text-align: right;">Neto kg</th>
+                  <th style="padding: 10px 12px; text-align: right;">Precio kg</th>
+                  <th style="padding: 10px 12px; text-align: right;">Total Bs</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${codesHtml}
+              </tbody>
+            </table>
+            <div style="display: flex; justify-content: flex-end; gap: 20px; font-size: 12px; color: #111827;">
+              <div><strong>Costo de distribución:</strong> Bs ${formatMoney(cliente.totalBs)}</div>
+            </div>
+          </section>
+        `;
+      })
+      .join("");
+
+    return `
+      <div style="margin-bottom: 40px; color: #111827; background-color: #ffffff;">
+        <h1 style="font-size: 30px; font-weight: 800; color: #e11d48; margin: 0 0 10px 0; text-align: center; letter-spacing: 0.02em;">
+          Ruta de Distribución
+        </h1>
+        <p style="margin: 0; text-align: center; color: #6b7280; font-size: 12px;">Detalle completo de entrega, pesajes y costo de distribución</p>
+
+        <div style="margin-top: 18px; background-color: #ffffff; border: 1px solid #fecdd3; border-radius: 14px; padding: 18px 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+          <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Grupo</div>
+            <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${report.groupName}</div>
+          </div>
+          <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Vehículo</div>
+            <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${vehiculoNombre}</div>
+          </div>
+          <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Chofer</div>
+            <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${choferNombre}</div>
+          </div>
+          <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Proveedor</div>
+            <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${report.proveedor}</div>
+          </div>
+          <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Costo por kg</div>
+            <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">Bs ${report.costoPorKg}</div>
+          </div>
+          <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Precio diferido</div>
+            <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${report.precioDiferido ? "Sí" : "No"}</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+          <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700;">Total cajas</div>
+            <div style="font-size: 24px; font-weight: 800; color: #e11d48; margin-top: 4px;">${report.totalCajas}</div>
+          </div>
+          <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700;">Total unidades</div>
+            <div style="font-size: 24px; font-weight: 800; color: #e11d48; margin-top: 4px;">${report.totalUnid}</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 26px; background-color: #ffffff;">
+          <h2 style="font-size: 20px; font-weight: 800; color: #111827; margin: 0 0 14px 0;">Clientes y detalle de códigos</h2>
+          ${clientsHtml || `<div style="padding: 18px; border: 1px dashed #d1d5db; border-radius: 12px; color: #6b7280; text-align: center;">Sin clientes registrados</div>`}
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 14px; border-top: 2px solid #fecdd3; text-align: center; color: #6b7280; font-size: 11px;">
+          Documento generado el ${new Date().toLocaleDateString("es-ES", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </div>
+      </div>
+    `;
+  };
+
   const generatePDF = async () => {
     try {
+      if (routeReport) {
+        const pdfContent = document.createElement("div");
+        pdfContent.style.width = "900px";
+        pdfContent.style.padding = "32px";
+        pdfContent.style.backgroundColor = "#ffffff";
+        pdfContent.style.fontFamily = "Arial, sans-serif";
+        pdfContent.innerHTML = buildRoutePdfHtml(routeReport);
+
+        document.body.appendChild(pdfContent);
+
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4",
+        });
+
+        pdf.html(pdfContent, {
+          callback: function (doc) {
+            window.open(doc.output("bloburi"), "_blank");
+            document.body.removeChild(pdfContent);
+          },
+          x: 10,
+          y: 10,
+          width: 190,
+          windowWidth: 900,
+        });
+        return;
+      }
+
       // Crear un contenedor temporal con el contenido del PDF
       const pdfContent = document.createElement("div");
       pdfContent.style.width = "900px";
