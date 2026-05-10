@@ -53,6 +53,7 @@ interface ClientesListProps {
 interface SolicitudAcciones {
   entregado: boolean;
   metodoCobro: string | null;
+  montoCobro: string;
   canastosConfirmados: boolean;
   canastosDevueltos: Record<string, number>;
 }
@@ -130,6 +131,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
   const { updateRequestStage } = useUpdateRequestStage();
   const { containers } = useContainer();
   const [savingCanastos, setSavingCanastos] = useState<string | null>(null);
+  const [savingPaymentId, setSavingPaymentId] = useState<string | null>(null);
   const [modalOpenSolicitudId, setModalOpenSolicitudId] = useState<
     string | null
   >(null);
@@ -151,6 +153,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         {
           entregado: false,
           metodoCobro: null,
+          montoCobro: "",
           canastosConfirmados: s.requestStateInContainer > 0,
           canastosDevueltos: {},
         },
@@ -161,6 +164,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
   const defaultAccion: SolicitudAcciones = {
     entregado: false,
     metodoCobro: null,
+    montoCobro: "",
     canastosConfirmados: false,
     canastosDevueltos: {},
   };
@@ -182,6 +186,27 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
       update(id, { entregado: true });
     } catch {
       // error manejado en el servicio
+    }
+  };
+
+  const handleConfirmarPago = async (solicitudId: string) => {
+    const acc = acciones[solicitudId];
+    if (!acc?.metodoCobro) return;
+
+    const monto = Number(acc.montoCobro);
+    if (!Number.isFinite(monto) || monto <= 0) {
+      alert("Ingrese un monto válido mayor a 0");
+      return;
+    }
+
+    setSavingPaymentId(solicitudId);
+    try {
+      await addPaymentType(Number(solicitudId), Number(acc.metodoCobro), monto);
+      update(solicitudId, { montoCobro: monto.toFixed(2) });
+    } catch {
+      alert("No se pudo registrar el tipo de pago");
+    } finally {
+      setSavingPaymentId(null);
     }
   };
 
@@ -267,6 +292,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         const acc = acciones[sol.id] ?? {
           entregado: false,
           metodoCobro: null,
+          montoCobro: "",
           canastosConfirmados: sol.requestStateInContainer > 0,
           canastosDevueltos: {},
         };
@@ -424,29 +450,53 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                         Pagado ({metodoLabel ?? sol.paymentTypeName})
                       </button>
                     ) : (
-                      <div className="flex-1">
+                      <div className="flex-1 space-y-2">
                         <Select
                           options={metodosCobroOptions}
                           selectedValues={
                             acc.metodoCobro ? [acc.metodoCobro] : []
                           }
                           onSelect={async (opt) => {
-                            update(sol.id, { metodoCobro: opt.value });
-                            try {
-                              await addPaymentType(
-                                Number(sol.id),
-                                Number(opt.value),
-                              );
-                            } catch {
-                              // revertir si falla
-                              update(sol.id, { metodoCobro: acc.metodoCobro });
-                            }
+                            update(sol.id, {
+                              metodoCobro: opt.value,
+                              montoCobro: sol.totalACobrar.toFixed(2),
+                            });
                           }}
                           placeholder="Seleccionar método de cobro..."
                           size="md"
                           radius="lg"
                           closeOnSelect
                         />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            inputMode="decimal"
+                            value={acc.montoCobro}
+                            onChange={(event) =>
+                              update(sol.id, { montoCobro: event.target.value })
+                            }
+                            placeholder="Monto a pagar"
+                            className="flex-1 h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          />
+                          <Button
+                            variant="primary"
+                            size="md"
+                            radius="lg"
+                            className="h-11 px-4 text-sm shrink-0"
+                            disabled={
+                              !acc.metodoCobro ||
+                              !acc.montoCobro ||
+                              savingPaymentId === sol.id
+                            }
+                            onClick={() => handleConfirmarPago(sol.id)}
+                          >
+                            {savingPaymentId === sol.id
+                              ? "Guardando..."
+                              : "Cobrar"}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
