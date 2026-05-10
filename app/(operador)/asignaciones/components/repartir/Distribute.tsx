@@ -10,6 +10,7 @@ import { Datum as RepartirDatum } from "../../interfaces/repartir/getrequestforr
 import { useDistributeStore } from "../../stores/distribute-store";
 import { useAssignmentsStore } from "../../stores/assignments-store";
 import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
+import type { RouteReportData } from "./DistributeAssignmentHeader";
 
 interface DistributeProps {
   assignment?: Assignment | null;
@@ -78,6 +79,7 @@ export default function Repartir({
   const [activeGroupIdx, setActiveGroupIdx] = useState<number | null>(null);
   const [vehiculo, setVehiculo] = useState<string>("");
   const [chofer, setChofer] = useState<string>("");
+  const [routeReport, setRouteReport] = useState<RouteReportData | null>(null);
 
   // Procesar datos del hook y del assignment en paralelo
   const { detalles, proveedor, costoPorKg, precioDiferido, groups } =
@@ -130,13 +132,13 @@ export default function Repartir({
               product.units += item.ProductRequest_units;
             });
 
-            const groupCodes = Array.from(productMap.entries()).map(
-              ([productName, totals]) => ({
+            const groupCodes = Array.from(productMap.entries())
+              .filter(([, totals]) => totals.containers > 0 || totals.units > 0)
+              .map(([productName, totals]) => ({
                 label: productName,
                 cajas: totals.containers,
                 unidades: totals.units,
-              }),
-            );
+              }));
 
             // Procesar clientes del grupo
             const clientes = Array.from(clientMap.entries()).map(
@@ -167,8 +169,11 @@ export default function Repartir({
                   product.units += item.ProductRequest_units;
                 });
 
-                const clientCodes = Array.from(clientProductMap.entries()).map(
-                  ([productName, totals]) => ({
+                const clientCodes = Array.from(clientProductMap.entries())
+                  .filter(
+                    ([, totals]) => totals.containers > 0 || totals.units > 0,
+                  )
+                  .map(([productName, totals]) => ({
                     label: productName,
                     solicitado: totals.units,
                     cajas: totals.containers,
@@ -176,8 +181,7 @@ export default function Repartir({
                     ProductRequest_id: totals.ProductRequest_id,
                     Product_id: totals.Product_id,
                     menudencia: totals.menudencia,
-                  }),
-                );
+                  }));
 
                 const totalCajas = clientCodes.reduce(
                   (sum, c) => sum + c.cajas,
@@ -358,6 +362,7 @@ export default function Repartir({
                 }))
               : []
           }
+          routeReport={routeReport}
         />
 
         {/* Bottom Section - Groups */}
@@ -385,9 +390,11 @@ export default function Repartir({
                 readOnly={assignment?.isRepartir === "true"}
                 vehiculo={vehiculo}
                 chofer={chofer}
+                proveedor={proveedor}
                 onStarted={(isStarted) => {
                   setActiveGroupIdx(isStarted ? activeGroupIdx : null);
                 }}
+                onRouteReportChange={setRouteReport}
                 onCajasChange={(codeIdx, val) => {
                   const newGroups = [...editableGroups];
                   newGroups[activeGroupIdx].codes[codeIdx].cajas = val;
@@ -417,9 +424,11 @@ export default function Repartir({
                   readOnly={assignment?.isRepartir === "true"}
                   vehiculo={vehiculo}
                   chofer={chofer}
+                  proveedor={proveedor}
                   onStarted={(isStarted) => {
                     setActiveGroupIdx(isStarted ? groupIdx : null);
                   }}
+                  onRouteReportChange={setRouteReport}
                   onCajasChange={(codeIdx, val) => {
                     const newGroups = [...editableGroups];
                     newGroups[groupIdx].codes[codeIdx].cajas = val;

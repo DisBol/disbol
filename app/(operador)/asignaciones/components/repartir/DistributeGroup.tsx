@@ -13,6 +13,12 @@ import { useUpdateRequestRequestState } from "../../hooks/repartir/useUpdateRequ
 import { useDistributeStore } from "../../stores/distribute-store";
 import { useAddContainerMovements } from "../../hooks/repartir/useAddContainerMovements";
 import { Modal } from "@/components/ui/Modal";
+import type {
+  RouteReportData,
+  RouteReportClient,
+  RouteReportCode,
+  RouteReportPesaje,
+} from "./DistributeAssignmentHeader";
 
 interface Code {
   label: string;
@@ -60,6 +66,8 @@ interface DistributeGroupProps {
   encargado?: string;
   vehiculo?: string;
   chofer?: string;
+  proveedor?: string;
+  onRouteReportChange?: (report: RouteReportData | null) => void;
 }
 
 export default function DistributeGroup({
@@ -75,6 +83,9 @@ export default function DistributeGroup({
   encargado = "",
   vehiculo = "",
   chofer = "",
+  costoPorKg = "10.00",
+  proveedor = "",
+  onRouteReportChange,
 }: DistributeGroupProps) {
   const { containers, containersData } = useContainer();
   const { addWeighing, loading: savingWeighing } = useAddRequestWeighing();
@@ -473,14 +484,18 @@ export default function DistributeGroup({
 
   const handleAgregarPesaje = (clienteIdx: number, codeIdx: number) => {
     idCounterRef.current++;
+    const code = clientes[clienteIdx]?.codes[codeIdx];
+    const key = `${clienteIdx}-${codeIdx}`;
+    const existingPesajes = pesajesMap[key] || [];
+
+    // Solo auto-completar si es el primer pesaje
     const newPesaje: PesajeData = {
       id: `pesaje-${idCounterRef.current}`,
-      cajas: 0,
-      unidades: 0,
+      cajas: existingPesajes.length === 0 ? (code?.cajas ?? 0) : 0,
+      unidades: existingPesajes.length === 0 ? (code?.unidades ?? 0) : 0,
       kg: 0,
       contenedor: "1",
     };
-    const key = `${clienteIdx}-${codeIdx}`;
     setPesajesMap((prev) => ({
       ...prev,
       [key]: [...(prev[key] || []), newPesaje],
@@ -529,6 +544,120 @@ export default function DistributeGroup({
     const key = `${clienteIdx}-${codeIdx}`;
     setPreciosMap((prev) => ({ ...prev, [key]: precio }));
   };
+
+  const routeReport = useMemo<RouteReportData | null>(() => {
+    if (!isStarted || clientes.length === 0) {
+      return null;
+    }
+
+    const reportClients: RouteReportClient[] = clientes.map(
+      (cliente, clienteIdx) => {
+        let totalBruto = 0;
+        let totalNeto = 0;
+        let totalBs = 0;
+
+        const reportCodes: RouteReportCode[] = cliente.codes.map(
+          (code, codeIdx) => {
+            const pesajes = pesajesMap[`${clienteIdx}-${codeIdx}`] || [];
+            let bruto = 0;
+            let neto = 0;
+
+            const pesajesReport: RouteReportPesaje[] = pesajes.map((pesaje) => {
+              const grossWeight = Number(pesaje.kg) || 0;
+              const cantidadCajas = Number(pesaje.cajas) || 0;
+              const container = containersData?.find(
+                (c) => c.id.toString() === pesaje.contenedor,
+              );
+              const destare = container?.destare || 0;
+              const netWeight = grossWeight - destare * cantidadCajas;
+
+              bruto += grossWeight;
+              neto += netWeight;
+
+              return {
+                id: pesaje.id,
+                contenedor: pesaje.contenedor || "1",
+                cajas: cantidadCajas,
+                unidades: Number(pesaje.unidades) || 0,
+                kg: grossWeight,
+                destare,
+                neto: netWeight,
+              };
+            });
+
+            const precioUnitario = precioDiferido
+              ? Number(preciosMap[`${clienteIdx}-${codeIdx}`]) || 0
+              : Number(precioVentaCliente[clienteIdx]) || 0;
+            const totalProducto = precioUnitario * neto;
+
+            totalBruto += bruto;
+            totalNeto += neto;
+            totalBs += totalProducto;
+
+            return {
+              label: code.label,
+              solicitado: code.solicitado,
+              cajas: code.cajas,
+              unidades: code.unidades,
+              bruto,
+              neto,
+              precioUnitario,
+              totalBs: totalProducto,
+              pesajes: pesajesReport,
+            };
+          },
+        );
+
+        return {
+          nombre: cliente.name,
+          requestId: cliente.Request_id,
+          montoACobrar: calculateTotalDistribucion(
+            clienteIdx,
+            cliente.codes,
+            precioVentaCliente[clienteIdx] || "",
+          ),
+          deudaCajas: 0,
+          deudaDinero: 0,
+          codes: reportCodes,
+          totalBruto,
+          totalNeto,
+          totalBs,
+        };
+      },
+    );
+
+    return {
+      groupName: name,
+      proveedor,
+      costoPorKg: String(costoPorKg ?? "10.00"),
+      precioDiferido,
+      vehiculo: vehiculo || "No asignado",
+      chofer: chofer || "No asignado",
+      totalCajas,
+      totalUnid,
+      clientes: reportClients,
+    };
+  }, [
+    calculateTotalDistribucion,
+    chofer,
+    clientes,
+    containersData,
+    costoPorKg,
+    isStarted,
+    name,
+    precioDiferido,
+    precioVentaCliente,
+    preciosMap,
+    totalCajas,
+    totalUnid,
+    vehiculo,
+    pesajesMap,
+    proveedor,
+  ]);
+
+  useEffect(() => {
+    onRouteReportChange?.(routeReport);
+  }, [onRouteReportChange, routeReport]);
 
   const generateClientPDF = async (
     clienteNombre: string,
@@ -676,16 +805,18 @@ export default function DistributeGroup({
 
               {/* Center Code Cards */}
               <div className="flex flex-wrap gap-2 flex-1 items-stretch py-1">
-                {initialCodes.map((code, codeIdx) => (
-                  <div key={codeIdx} className="w-20 shrink-0">
-                    <CardCode
-                      label={code.label}
-                      cajas={code.cajas}
-                      unidades={code.unidades}
-                      readOnly={true}
-                    />
-                  </div>
-                ))}
+                {initialCodes
+                  .filter((code) => code.cajas > 0 || code.unidades > 0)
+                  .map((code, codeIdx) => (
+                    <div key={codeIdx} className="w-20 shrink-0">
+                      <CardCode
+                        label={code.label}
+                        cajas={code.cajas}
+                        unidades={code.unidades}
+                        readOnly={true}
+                      />
+                    </div>
+                  ))}
 
                 {/* TOTAL Card */}
                 <div className="w-20 shrink-0">
