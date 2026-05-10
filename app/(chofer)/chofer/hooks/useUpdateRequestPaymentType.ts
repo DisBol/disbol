@@ -9,11 +9,16 @@ export function useUpdateRequestPaymentType() {
   const addPaymentType = async (
     Request_id: number,
     PaymentType_id: number,
+    amount?: number,
   ): Promise<AddRequestPaymentTypeResponse> => {
     setLoading(true);
     setError(null);
     try {
-      const response = await AddRequestPaymentType(Request_id, PaymentType_id);
+      const response = await AddRequestPaymentType(
+        Request_id,
+        PaymentType_id,
+        amount ?? 0,
+      );
       return response;
     } catch (err) {
       const errorMessage =

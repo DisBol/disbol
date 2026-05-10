@@ -44,8 +44,8 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
         document: client.document || "",
         phone: client.phone || "",
         clientGroupId: client.ClientGroup_id?.toString() || "",
-        lat: client.lat || -16.5,
-        lng: client.long || -68.15,
+        lat: client.lat || -16.5709943,
+        lng: client.long || -68.1922443,
       };
     }
     return {
@@ -53,8 +53,8 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
       document: "",
       phone: "",
       clientGroupId: "",
-      lat: -16.5,
-      lng: -68.15,
+      lat: -16.5709943,
+      lng: -68.1922443,
     };
   }, [client, isOpen]);
 
