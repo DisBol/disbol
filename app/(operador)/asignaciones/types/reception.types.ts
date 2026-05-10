@@ -18,6 +18,16 @@ export interface Boleta {
   menudencias: string[];
   detalles: Record<string, BoletaDetail>;
   tiposContenedor: Record<string, "caja" | "pallet" | "contenedor">;
+  // Productos específicos si la boleta fue creada desde una categoría
+  categoryProducts?: {
+    codigo: string;
+    cajas?: number;
+    unidades?: number;
+    kgBruto?: number;
+    kgNeto?: number;
+    productId?: string;
+    active?: boolean;
+  }[];
 }
 
 export interface BoletaDetail {
@@ -28,6 +38,7 @@ export interface BoletaDetail {
   kgBruto?: number;
   kgNeto?: number;
   productAssignmentId?: string;
+  productId?: string;
   _isEdited?: boolean; // Flag para saber si los valores han sido editados por el usuario
 }
 

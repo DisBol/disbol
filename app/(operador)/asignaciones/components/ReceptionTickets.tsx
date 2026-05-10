@@ -6,9 +6,11 @@ import { InputField } from "@/components/ui/InputField";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Card } from "@/components/ui/Card";
 import CardCode from "@/components/ui/CardCode";
+import { Modal } from "@/components/ui/Modal";
 import { useContainer } from "../../configuraciones/hooks/contenedores/useContainer";
+import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
 import { useGetAccount } from "../hooks/useGetAccount";
-import { Boleta, BoletaDetail, PesajeData } from "../types/reception.types";
+import { Boleta, BoletaDetail } from "../types/reception.types";
 
 interface ProductReception {
   codigo: string;
@@ -25,6 +27,7 @@ interface ReceptionTicketsProps {
   pesoTotalGeneral: string;
   isRecibir?: string;
   onAgregarBoleta: () => void;
+  onAgregarBoletaFromCategory?: (categoryId: number) => void;
   onEliminarBoleta: (boletaId: string) => void;
   onUpdateBoleta: (
     boletaId: string,
@@ -72,6 +75,7 @@ export default function ReceptionTickets({
   pesoTotalGeneral,
   isRecibir,
   onAgregarBoleta,
+  onAgregarBoletaFromCategory,
   onEliminarBoleta,
   onUpdateBoleta,
   onToggleCodigoEnBoleta,
@@ -87,6 +91,11 @@ export default function ReceptionTickets({
 }: ReceptionTicketsProps) {
   const { containers, containersData } = useContainer();
   const { accounts, loading: accountsLoading } = useGetAccount();
+  const {
+    categories,
+    loading: categoriesLoading,
+    error: categoriesError,
+  } = useProductsByCategory();
   const readOnly = isRecibir === "true";
   const [savingBoletas, setSavingBoletas] = useState<Set<string>>(new Set());
   const [completingBoletas, setCompletingBoletas] = useState<Set<string>>(
@@ -96,6 +105,17 @@ export default function ReceptionTickets({
   const [expandedSavedBoletas, setExpandedSavedBoletas] = useState<Set<string>>(
     new Set(),
   );
+  const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
+
+  const handleAddCategoryBoleta = (categoryId: number) => {
+    // Prefer explicit handler if provided, otherwise fallback to generic add
+    if (typeof onAgregarBoletaFromCategory === "function") {
+      onAgregarBoletaFromCategory(categoryId);
+    } else {
+      onAgregarBoleta();
+    }
+    setIsCategoriesModalOpen(false);
+  };
 
   const codigoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const prevBoletasCount = useRef<number>(0);
@@ -261,6 +281,63 @@ export default function ReceptionTickets({
     );
   };
 
+  const resolveBoletaProducts = (boleta: Boleta) => {
+    if (boleta.categoryProducts && boleta.categoryProducts.length > 0) {
+      return boleta.categoryProducts;
+    }
+
+    const loadedProductIds = Object.values(boleta.detalles)
+      .map((detalle) => detalle.productId)
+      .filter((productId): productId is string => Boolean(productId));
+
+    if (loadedProductIds.length === 0) {
+      return productos;
+    }
+
+    const matchedCategory = categories.find((category) => {
+      const categoryProductIds = new Set(
+        category.products.map((product) => product.id.toString()),
+      );
+
+      return loadedProductIds.every((productId) =>
+        categoryProductIds.has(productId),
+      );
+    });
+
+    if (matchedCategory) {
+      return matchedCategory.products.map((product) => ({
+        codigo: product.name,
+        cajas: 0,
+        unidades: 0,
+        kgBruto: 0,
+        kgNeto: 0,
+        kgRecibidos: 0,
+      }));
+    }
+
+    const productsById = new Map(
+      categories
+        .flatMap((category) => category.products)
+        .map((product) => [product.id.toString(), product]),
+    );
+
+    const resolvedProducts = loadedProductIds
+      .map((productId) => productsById.get(productId))
+      .filter((product): product is { id: number; name: string } =>
+        Boolean(product),
+      )
+      .map((product) => ({
+        codigo: product.name,
+        cajas: 0,
+        unidades: 0,
+        kgBruto: 0,
+        kgNeto: 0,
+        kgRecibidos: 0,
+      }));
+
+    return resolvedProducts.length > 0 ? resolvedProducts : productos;
+  };
+
   return (
     <Card className="p-4 md:p-6 mt-4">
       {/* Boletas de Recepción */}
@@ -270,14 +347,23 @@ export default function ReceptionTickets({
             Boletas de Recepción
           </h2>
           {!readOnly && (
-            <Button
-              variant="primary"
-              color="danger"
-              leftIcon={<span>+</span>}
-              onClick={onAgregarBoleta}
-            >
-              Agregar Boleta
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="primary"
+                color="danger"
+                leftIcon={<span>+</span>}
+                onClick={onAgregarBoleta}
+              >
+                Agregar Boleta
+              </Button>
+              <Button
+                variant="outline"
+                color="danger"
+                onClick={() => setIsCategoriesModalOpen(true)}
+              >
+                Agregar boleta de otra categoria
+              </Button>
+            </div>
           )}
         </div>
 
@@ -293,6 +379,7 @@ export default function ReceptionTickets({
                   !isSaved || expandedSavedBoletas.has(boleta.id);
                 const { totalCajas, totalUnidades } =
                   calculateBoletaTotals(boleta);
+                const boletaProducts = resolveBoletaProducts(boleta);
 
                 return (
                   <>
@@ -334,7 +421,8 @@ export default function ReceptionTickets({
                             Guardada - Codigo: {boleta.codigo || "Sin codigo"} -
                             Costo Boleta: {boleta.ticket_payment || "N/A"} -
                             Peso Boleta: {boleta.ticket_weight || "N/A"} -
-                            Cuenta: {boleta.Account_code || "N/A"} - {boleta.Account_name || "N/A"}
+                            Cuenta: {boleta.Account_code || "N/A"} -{" "}
+                            {boleta.Account_name || "N/A"}
                           </p>
                         )}
                         {isSaved &&
@@ -368,7 +456,7 @@ export default function ReceptionTickets({
                                 completingBoletas.has(boleta.id) ||
                                 Boolean(
                                   boleta.flujoCompletado &&
-                                    !boleta.hasPendingChanges,
+                                  !boleta.hasPendingChanges,
                                 )
                               }
                               onClick={() =>
@@ -547,7 +635,7 @@ export default function ReceptionTickets({
                             Códigos en esta Boleta
                           </h4>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                            {productos.map((producto) => {
+                            {boletaProducts.map((producto) => {
                               const isSelected =
                                 boleta.codigosSeleccionados.includes(
                                   producto.codigo,
@@ -711,7 +799,9 @@ export default function ReceptionTickets({
                                             producto.codigo,
                                           )
                                         }
-                                        disableAgregarPesaje={!isSaved || readOnly}
+                                        disableAgregarPesaje={
+                                          !isSaved || readOnly
+                                        }
                                         onUpdatePesaje={
                                           readOnly
                                             ? undefined
@@ -788,6 +878,64 @@ export default function ReceptionTickets({
           ))}
         </div>
       </div>
+
+      <Modal
+        isOpen={isCategoriesModalOpen}
+        onClose={() => setIsCategoriesModalOpen(false)}
+        title="Categorías disponibles"
+        size="xl"
+      >
+        {categoriesLoading ? (
+          <p className="text-sm text-gray-500">Cargando categorías...</p>
+        ) : categoriesError ? (
+          <p className="text-sm text-red-600">
+            No se pudieron cargar las categorías.
+          </p>
+        ) : categories.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No hay categorías disponibles.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {categories.map((category) => (
+              <div
+                key={category.id}
+                className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold uppercase text-red-600">
+                    {category.name}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">
+                      {category.products.length} productos
+                    </span>
+                    {!readOnly && (
+                      <Button
+                        size="sm"
+                        variant="success"
+                        onClick={() => handleAddCategoryBoleta(category.id)}
+                      >
+                        Agregar boleta
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {/* <div className="mt-3 flex flex-wrap gap-2">
+                  {category.products.map((product) => (
+                    <span
+                      key={product.id}
+                      className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-700"
+                    >
+                      {product.name}
+                    </span>
+                  ))}
+                </div> */}
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
 
       {/* Peso Total General */}
       <div className="text-left">

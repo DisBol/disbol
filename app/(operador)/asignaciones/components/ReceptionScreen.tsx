@@ -18,7 +18,8 @@ import { useGetTicketsByAssignmentHistory } from "../hooks/useGetTicketsByAssign
 import { UpdateTicketsWeighing } from "../service/updateticketsweighing";
 import { useUpdateAssignment } from "../hooks/useUpdateAssignment";
 import { useAddContainerMovements } from "../hooks/repartir/useAddContainerMovements";
-import { Boleta, BoletaDetail, PesajeData } from "../types/reception.types";
+import { Boleta, BoletaDetail } from "../types/reception.types";
+import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
 
 // Interfaces
 interface ProductReception {
@@ -159,11 +160,81 @@ export default function ReceptionScreen({
   const { fetchTicketsByAssignmentHistory } =
     useGetTicketsByAssignmentHistory();
 
+  const buildCategoryProductsForBoleta = (boleta: Boleta) => {
+    if (boleta.categoryProducts && boleta.categoryProducts.length > 0) {
+      return boleta.categoryProducts;
+    }
+
+    const loadedProductIds = Object.values(boleta.detalles)
+      .map((detalle) => detalle.productId)
+      .filter((productId): productId is string => Boolean(productId));
+
+    if (loadedProductIds.length === 0) return undefined;
+
+    const matchedCategory = categories.find((category) => {
+      const categoryProductIds = new Set(
+        category.products.map((product) => product.id.toString()),
+      );
+
+      return loadedProductIds.every((productId) =>
+        categoryProductIds.has(productId),
+      );
+    });
+
+    if (!matchedCategory) return undefined;
+
+    return matchedCategory.products.map((product) => ({
+      codigo: product.name,
+      cajas: 0,
+      unidades: 0,
+      kgBruto: 0,
+      kgNeto: 0,
+      productId: product.id.toString(),
+      active: true,
+    }));
+  };
+
+  const enrichBoletasWithCategoryProducts = (loadedBoletas: Boleta[]) =>
+    loadedBoletas.map((boleta) => ({
+      ...boleta,
+      categoryProducts: buildCategoryProductsForBoleta(boleta),
+    }));
+
   useEffect(() => {
     let isMounted = true;
     const loadTickets = async () => {
       // 1) Historial base por asignacion: asegura tickets registrados
       const boletasMap = new Map<string, Boleta>();
+      const boletaProductsMap = new Map<
+        string,
+        NonNullable<Boleta["categoryProducts"]>
+      >();
+
+      const addProductToTicket = (
+        ticketId: string,
+        product: { id: number; name: string },
+      ) => {
+        const currentProducts = boletaProductsMap.get(ticketId) || [];
+        if (
+          currentProducts.some(
+            (item) => item.productId === product.id.toString(),
+          )
+        ) {
+          return;
+        }
+
+        currentProducts.push({
+          codigo: product.name,
+          cajas: 0,
+          unidades: 0,
+          kgBruto: 0,
+          kgNeto: 0,
+          productId: product.id.toString(),
+          active: true,
+        });
+
+        boletaProductsMap.set(ticketId, currentProducts);
+      };
 
       const assignmentHistory = await fetchTicketsByAssignmentHistory(
         Number(assignment.id),
@@ -205,6 +276,11 @@ export default function ReceptionScreen({
         const productCode = row.Product_name;
 
         if (productCode && !boleta.codigosSeleccionados.includes(productCode)) {
+          addProductToTicket(ticketId, {
+            id: row.Product_id,
+            name: row.Product_name,
+          });
+
           boleta.codigosSeleccionados.push(productCode);
           boleta.detalles[productCode] = {
             cajas: Number(row.ProductAssignment_container) || 0,
@@ -224,7 +300,9 @@ export default function ReceptionScreen({
       // 2) Historial detallado: complementa pesajes cuando existan
       const data = await fetchTicketsHistory(Number(assignment.id));
       if (!data || !data.data || data.data.length === 0) {
-        const baseBoletas = Array.from(boletasMap.values());
+        const baseBoletas = enrichBoletasWithCategoryProducts(
+          Array.from(boletasMap.values()),
+        );
         if (!isMounted || baseBoletas.length === 0) return;
 
         setBoletas((prev) => {
@@ -276,11 +354,17 @@ export default function ReceptionScreen({
           String(row.Tickets_deferred_payment) === "true";
 
         if (!boleta.codigosSeleccionados.includes(row.Product_name)) {
+          addProductToTicket(ticketId, {
+            id: row.Product_id,
+            name: row.Product_name,
+          });
+
           boleta.codigosSeleccionados.push(row.Product_name);
           boleta.detalles[row.Product_name] = {
             cajas: Number(row.ProductAssignment_container) || 0,
             unidades: Number(row.ProductAssignment_units) || 0,
             productAssignmentId: row.ProductAssignment_id?.toString(),
+            productId: row.Product_id?.toString(),
             precio: isDeferred
               ? row.ProductAssignment_payment?.toString() || "0"
               : row.Tickets_product_payment?.toString() || "0",
@@ -304,7 +388,12 @@ export default function ReceptionScreen({
         }
       });
 
-      const allLoadedBoletas = Array.from(boletasMap.values());
+      const allLoadedBoletas = enrichBoletasWithCategoryProducts(
+        Array.from(boletasMap.values()).map((boleta) => ({
+          ...boleta,
+          categoryProducts: boletaProductsMap.get(boleta.ticketId || boleta.id),
+        })),
+      );
 
       if (isMounted && allLoadedBoletas.length > 0) {
         setBoletas((prev) => {
@@ -406,6 +495,20 @@ export default function ReceptionScreen({
 
   const [showResumenModal, setShowResumenModal] = useState(false);
 
+  const resolveProductId = (boleta: Boleta, codigo: string): string | null => {
+    const fromCategory = boleta.categoryProducts?.find(
+      (p) => p.codigo === codigo,
+    )?.productId;
+    if (fromCategory) return fromCategory.toString();
+
+    const fromAssignment = productos.find(
+      (p) => p.codigo === codigo,
+    )?.productId;
+    if (fromAssignment) return fromAssignment.toString();
+
+    return null;
+  };
+
   const handleAgregarBoleta = () => {
     const nuevaBoleta: Boleta = {
       id: Date.now().toString(),
@@ -423,6 +526,53 @@ export default function ReceptionScreen({
       tiposContenedor: {},
     };
     setBoletas([...boletas, nuevaBoleta]);
+  };
+
+  const { categories } = useProductsByCategory();
+
+  const handleAgregarBoletaFromCategory = (categoryId: number) => {
+    const category = categories.find((c) => c.id === categoryId);
+    const categoryProducts = category
+      ? category.products.map((p) => ({
+          codigo: p.name,
+          cajas: 0,
+          unidades: 0,
+          kgBruto: 0,
+          kgNeto: 0,
+          productId: String(p.id),
+          active: true,
+        }))
+      : [];
+    // Prepare codigosSeleccionados and detalles so the boleta behaves like a normal one
+    const codigosSeleccionados = categoryProducts.map((p) => p.codigo);
+    const detalles: Record<string, BoletaDetail> = {};
+    codigosSeleccionados.forEach((codigo) => {
+      detalles[codigo] = {
+        cajas: 0,
+        unidades: 0,
+        precio: undefined,
+        pesajes: [],
+      };
+    });
+
+    const nuevaBoleta: Boleta = {
+      id: Date.now().toString(),
+      codigo: "",
+      costoPorKg: "0.00",
+      costoTotal: "0.00",
+      precioDiferido: false,
+      ticket_payment: "0.00",
+      ticket_weight: "0.00",
+      Account_id: 0,
+      hasPendingChanges: false,
+      codigosSeleccionados,
+      menudencias: [],
+      detalles,
+      tiposContenedor: {},
+      categoryProducts,
+    };
+
+    setBoletas((prev) => [...prev, nuevaBoleta]);
   };
 
   const handleEliminarBoleta = (boletaId: string) => {
@@ -887,9 +1037,9 @@ export default function ReceptionScreen({
 
         for (const codigo of boleta.codigosSeleccionados) {
           const detalle = boleta.detalles[codigo];
-          const productoData = productos.find((p) => p.codigo === codigo);
+          const productId = resolveProductId(boleta, codigo);
 
-          if (productoData && productoData.productId) {
+          if (productId) {
             // Sin autocompletado: solo usar valores ingresados en la boleta
             const cajasValue = Number(detalle?.cajas) || 0;
             const unidadesValue = Number(detalle?.unidades) || 0;
@@ -902,8 +1052,12 @@ export default function ReceptionScreen({
               "4_usarValoresEditados": false,
               "5_detalle_cajas_RAW": detalle?.cajas,
               "6_detalle_unidades_RAW": detalle?.unidades,
-              "7_producto_cajas_ORIGINAL": productoData.cajas,
-              "8_producto_unidades_ORIGINAL": productoData.unidades,
+              "7_productId_resuelto": productId,
+              "8_origen_producto": boleta.categoryProducts?.some(
+                (p) => p.codigo === codigo,
+              )
+                ? "categoryProducts"
+                : "assignment.productos",
               "9_cajasValue_FINAL": cajasValue,
               "10_unidadesValue_FINAL": unidadesValue,
               "11_fuenteDatos": "VALORES DE BOLETA (sin autocompletado)",
@@ -944,7 +1098,7 @@ export default function ReceptionScreen({
               gross_weight: "0",
               payment: paymentValue,
               Tickets_id: newTicketId.toString(),
-              Product_id: productoData.productId.toString(),
+              Product_id: productId,
               active: "true",
             });
 
@@ -1080,9 +1234,9 @@ export default function ReceptionScreen({
       );
 
       const paymentValue = boleta.precioDiferido ? detalle.precio || "0" : "0";
-      const productoData = productos.find((p) => p.codigo === codigo);
+      const productId = resolveProductId(boleta, codigo);
 
-      if (!productoData?.productId) return;
+      if (!productId) return;
 
       const updateProductOk = await updateProductAssignment({
         id: detalle.productAssignmentId,
@@ -1094,7 +1248,7 @@ export default function ReceptionScreen({
         payment: paymentValue,
         active: "true",
         Tickets_id: boleta.ticketId,
-        Product_id: productoData.productId.toString(),
+        Product_id: productId,
       });
 
       if (!updateProductOk) {
@@ -1205,9 +1359,9 @@ export default function ReceptionScreen({
 
       for (const codigo of boleta.codigosSeleccionados) {
         const detalle = updatedDetalles[codigo];
-        const productoData = productos.find((p) => p.codigo === codigo);
+        const productId = resolveProductId(boleta, codigo);
 
-        if (!detalle || !productoData?.productId) continue;
+        if (!detalle || !productId) continue;
 
         const productAssignmentId = detalle.productAssignmentId;
         if (!productAssignmentId) {
@@ -1275,7 +1429,7 @@ export default function ReceptionScreen({
           payment: paymentValue,
           active: "true",
           Tickets_id: boleta.ticketId,
-          Product_id: productoData.productId.toString(),
+          Product_id: productId,
         });
 
         if (!updateProductOk) {
@@ -1361,6 +1515,7 @@ export default function ReceptionScreen({
         pesoTotalGeneral={pesoTotalGeneral}
         isRecibir={assignment.isRecibir}
         onAgregarBoleta={handleAgregarBoleta}
+        onAgregarBoletaFromCategory={handleAgregarBoletaFromCategory}
         onEliminarBoleta={handleEliminarBoleta}
         onUpdateBoleta={updateBoleta}
         onToggleCodigoEnBoleta={toggleCodigoEnBoleta}
