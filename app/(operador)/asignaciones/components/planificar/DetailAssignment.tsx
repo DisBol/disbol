@@ -38,6 +38,18 @@ export default function DetailAssignment({
     };
   };
 
+  const detallesVisibles = detalles.filter((d) => {
+    const cajas = parseComparativo(d.cajas);
+    const unidades = parseComparativo(d.unidades);
+
+    return !(
+      cajas.recibido === 0 &&
+      unidades.recibido === 0 &&
+      cajas.asignado === 0 &&
+      unidades.asignado === 0
+    );
+  });
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 shadow-sm">
       <div className="flex flex-col xl:flex-row items-start gap-4">
@@ -98,91 +110,92 @@ export default function DetailAssignment({
             <div
               className="grid gap-2 grid-cols-4 sm:grid-cols-8 lg:grid-cols-8 xl:grid-cols-[repeat(var(--detalle-cols),minmax(0,1fr))]"
               style={{
-                ["--detalle-cols" as string]: Math.max(detalles.length, 1),
+                ["--detalle-cols" as string]: Math.max(
+                  detallesVisibles.length,
+                  1,
+                ),
               }}
             >
-              {detalles.map((d, i) =>
-                (() => {
-                  const cajas = parseComparativo(d.cajas);
-                  const unidades = parseComparativo(d.unidades);
-                  const sobradoCajas = cajas.asignado - cajas.recibido;
-                  const sobradoUnidades = unidades.asignado - unidades.recibido;
+              {detallesVisibles.map((d, i) => {
+                const cajas = parseComparativo(d.cajas);
+                const unidades = parseComparativo(d.unidades);
+                const sobradoCajas = cajas.asignado - cajas.recibido;
+                const sobradoUnidades = unidades.asignado - unidades.recibido;
 
-                  return (
+                return (
+                  <div
+                    key={`${d.label}-${i}`}
+                    className="min-w-0 flex flex-col gap-1"
+                  >
+                    <CardCode
+                      label={d.label}
+                      cajas={cajas.recibido}
+                      unidades={unidades.recibido}
+                      cajasExcedidas={d.cajasExcedidas}
+                      unidadesExcedidas={d.unidadesExcedidas}
+                      readOnly={true}
+                      compareReadOnly={{
+                        leftLabel: "Asig.",
+                        rightLabel: "Recib.",
+                        rightCajas: cajas.asignado,
+                        rightUnidades: unidades.asignado,
+                      }}
+                    />
                     <div
-                      key={i}
-                      className={`min-w-0 flex flex-col gap-1 ${cajas.recibido === 0 && unidades.recibido === 0 && cajas.asignado === 0 && unidades.asignado === 0 ? "opacity-40" : ""}`}
+                      className={`rounded-lg px-2 py-1.5 text-center border ${
+                        sobradoUnidades < 0 || sobradoCajas < 0
+                          ? "bg-red-50 border-red-100"
+                          : sobradoUnidades === 0 && sobradoCajas === 0
+                            ? "bg-gray-50 border-gray-100"
+                            : "bg-emerald-50 border-emerald-100"
+                      }`}
                     >
-                      <CardCode
-                        label={d.label}
-                        cajas={cajas.recibido}
-                        unidades={unidades.recibido}
-                        cajasExcedidas={d.cajasExcedidas}
-                        unidadesExcedidas={d.unidadesExcedidas}
-                        readOnly={true}
-                        compareReadOnly={{
-                          leftLabel: "Asig.",
-                          rightLabel: "Recib.",
-                          rightCajas: cajas.asignado,
-                          rightUnidades: unidades.asignado,
-                        }}
-                      />
-                      <div
-                        className={`rounded-lg px-2 py-1.5 text-center border ${
-                          sobradoUnidades < 0 || sobradoCajas < 0
-                            ? "bg-red-50 border-red-100"
-                            : sobradoUnidades === 0 && sobradoCajas === 0
-                              ? "bg-gray-50 border-gray-100"
-                              : "bg-emerald-50 border-emerald-100"
-                        }`}
-                      >
-                        <p className="text-[7px] font-bold uppercase tracking-widest text-gray-400 mb-1">
-                          Sobrado
-                        </p>
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="flex flex-col items-center">
-                            <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">
-                              Caj.
-                            </span>
-                            <span
-                              className={`text-[13px] font-black leading-none tabular-nums ${
-                                sobradoCajas > 0
-                                  ? "text-emerald-500"
-                                  : sobradoCajas < 0
-                                    ? "text-red-500"
-                                    : "text-gray-300"
-                              }`}
-                            >
-                              {sobradoCajas > 0
-                                ? `+${sobradoCajas}`
-                                : sobradoCajas}
-                            </span>
-                          </div>
-                          <div className="w-px h-5 bg-gray-200" />
-                          <div className="flex flex-col items-center">
-                            <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">
-                              Unid.
-                            </span>
-                            <span
-                              className={`text-[13px] font-black leading-none tabular-nums ${
-                                sobradoUnidades > 0
-                                  ? "text-emerald-500"
-                                  : sobradoUnidades < 0
-                                    ? "text-red-500"
-                                    : "text-gray-300"
-                              }`}
-                            >
-                              {sobradoUnidades > 0
-                                ? `+${sobradoUnidades}`
-                                : sobradoUnidades}
-                            </span>
-                          </div>
+                      <p className="text-[7px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+                        Sobrado
+                      </p>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="flex flex-col items-center">
+                          <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">
+                            Caj.
+                          </span>
+                          <span
+                            className={`text-[13px] font-black leading-none tabular-nums ${
+                              sobradoCajas > 0
+                                ? "text-emerald-500"
+                                : sobradoCajas < 0
+                                  ? "text-red-500"
+                                  : "text-gray-300"
+                            }`}
+                          >
+                            {sobradoCajas > 0
+                              ? `+${sobradoCajas}`
+                              : sobradoCajas}
+                          </span>
+                        </div>
+                        <div className="w-px h-5 bg-gray-200" />
+                        <div className="flex flex-col items-center">
+                          <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">
+                            Unid.
+                          </span>
+                          <span
+                            className={`text-[13px] font-black leading-none tabular-nums ${
+                              sobradoUnidades > 0
+                                ? "text-emerald-500"
+                                : sobradoUnidades < 0
+                                  ? "text-red-500"
+                                  : "text-gray-300"
+                            }`}
+                          >
+                            {sobradoUnidades > 0
+                              ? `+${sobradoUnidades}`
+                              : sobradoUnidades}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  );
-                })(),
-              )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
