@@ -19,6 +19,7 @@ interface DatumExtended extends Datum {
   RequestState_out_container?: number;
   RequestState_in_container?: number;
   ProductRequest_active?: string;
+  RequestStage_id?: number;
 }
 
 export interface SolicitudChofer {
@@ -30,6 +31,7 @@ export interface SolicitudChofer {
   ClientGroup_name: string;
   RequestState_name: string;
   PaymentType_name: string;
+  RequestStage_id: number;
   RequestStage_payment: number;
   RequestStage_position: number;
   RequestState_out_container?: number;
@@ -99,6 +101,7 @@ export function useGetSolicitudesChofer() {
             ClientGroup_name: curr.ClientGroup_name,
             RequestState_name: curr.RequestState_name,
             PaymentType_name: curr.PaymentType_name,
+            RequestStage_id: curr.RequestStage_id ?? 1,
             RequestStage_payment: curr.RequestStage_payment ?? 0,
             RequestStage_position: curr.RequestStage_position,
             RequestState_out_container: curr.RequestState_out_container ?? 0,
