@@ -342,7 +342,7 @@ export default function ChoferPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">
-                            Cajas recogidas
+                            Cajas enviadas
                           </span>
                           <span className="text-sm font-semibold text-gray-900">
                             {solicitudes.reduce((sum, sol) => {
@@ -361,7 +361,7 @@ export default function ChoferPage() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">
-                            Cajas enviadas
+                            Cajas recogidas
                           </span>
                           <span className="text-sm font-semibold text-green-600">
                             {totalCajasEnviadas}
