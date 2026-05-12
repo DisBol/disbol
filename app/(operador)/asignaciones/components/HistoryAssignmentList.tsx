@@ -239,8 +239,12 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
             {/* Botones de Acción */}
             <div className="flex gap-2 mt-3 lg:mt-0">
               <Button
-                variant={assignment.isRepartir === "true" ? "outline" : "primary"}
-                color={assignment.isRepartir === "true" ? "secondary" : "danger"}
+                variant={
+                  assignment.isRepartir === "true" ? "outline" : "primary"
+                }
+                color={
+                  assignment.isRepartir === "true" ? "secondary" : "danger"
+                }
                 size="sm"
                 className="min-w-22.5"
                 onClick={() => showDistributeScreen(assignment)}
@@ -248,8 +252,12 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                 Repartir
               </Button>
               <Button
-                variant={assignment.isPlanificar === "true" ? "outline" : "warning"}
-                color={assignment.isPlanificar === "true" ? "secondary" : "warning"}
+                variant={
+                  assignment.isPlanificar === "true" ? "outline" : "warning"
+                }
+                color={
+                  assignment.isPlanificar === "true" ? "secondary" : "warning"
+                }
                 size="sm"
                 className="min-w-22.5"
                 onClick={() => {
@@ -264,8 +272,12 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                 Planificar
               </Button>
               <Button
-                variant={assignment.isRecibir === "true" ? "outline" : "success"}
-                color={assignment.isRecibir === "true" ? "secondary" : "success"}
+                variant={
+                  assignment.isRecibir === "true" ? "outline" : "success"
+                }
+                color={
+                  assignment.isRecibir === "true" ? "secondary" : "success"
+                }
                 size="sm"
                 className="min-w-22.5"
                 onClick={() => onRecibirClick(assignment)}
@@ -329,7 +341,7 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
               {assignment.productos
                 .filter((producto) => {
                   // Solo mostrar productos con posición 1 (primera etapa)
