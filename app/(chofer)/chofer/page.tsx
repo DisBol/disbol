@@ -78,6 +78,7 @@ function mapToSolicitudes(grouped: SolicitudChofer[]) {
     paymentTypeName: req.PaymentType_name,
     totalACobrar: req.RequestStage_payment,
     estado: "pendiente" as const,
+    requestStageId: req.RequestStage_id,
     requestStagePosition: req.RequestStage_position,
     requestStateOutContainer: req.RequestState_out_container ?? 0,
     requestStateInContainer: req.RequestState_in_container ?? 0,

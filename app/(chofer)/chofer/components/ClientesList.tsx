@@ -37,6 +37,7 @@ interface Solicitud {
   paymentTypeName?: string;
   totalACobrar: number;
   estado: "pendiente" | "entregado" | "pagado";
+  requestStageId: number;
   requestStagePosition: number;
   requestStateOutContainer: number;
   requestStateInContainer: number;
@@ -257,7 +258,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
 
       // Actualizar el RequestStage con el total consolidado de contenedores
       await updateRequestStage(
-        1, // RequestStage_id (siempre 1)
+        solicitud.requestStageId,
         solicitud.requestStagePosition,
         totalContainersReturned, // in_container: total consolidado
         solicitud.requestStateOutContainer,
