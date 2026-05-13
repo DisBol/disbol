@@ -12,9 +12,10 @@ import { PlanningProps, EditableGroupData } from "../../types/planning.types";
 import { useAssignmentsStore } from "../../stores/assignments-store";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
 import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
-import { Modal } from "@/components/ui/Modal";
+import ModalConfirmar from "./ModalConfirmar";
 import { AddAssignmentRequest } from "../../service/planificar/addassignmentrequest";
 import { useAddProductInventoryRequest } from "../../hooks/inventario/useAddproductinventoryRequest";
+import { useContainer } from "../../../configuraciones/hooks/contenedores/useContainer";
 
 export default function Planificar({
   assignment = null,
@@ -32,9 +33,9 @@ export default function Planificar({
   } = useGetRequestForPlanning(categoryProviderId);
 
   // Hooks para guardar datos
-  const { addStage, loading: loadingStage } = useAddRequestStage();
+  const { addStage } = useAddRequestStage();
   const { updateAssignmentFlags } = useAssignmentsStore();
-  const { addProduct, loading: loadingAdd } = useAddProductRequest();
+  const { addProduct } = useAddProductRequest();
   const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
   const { mutate: addProductInventory } = useAddProductInventoryRequest();
 
@@ -294,6 +295,45 @@ export default function Planificar({
 
   const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
 
+  // Hook para listar contenedores y estado de selección por producto
+  const { containers, isLoading: containersLoading } = useContainer();
+
+  const [selectedContainers, setSelectedContainers] = useState<
+    Record<string, number>
+  >({});
+
+  React.useEffect(() => {
+    if (!showConfirmFinalizar) return;
+
+    const defaults: Record<string, number> = {};
+    updatedDetalles.forEach((detalle) => {
+      const [recibidoCajasRaw, asignadoCajasRaw] = detalle.cajas.split("/");
+      const [recibidoUnidadesRaw, asignadoUnidadesRaw] =
+        detalle.unidades.split("/");
+
+      const recibidoCajas = Number(recibidoCajasRaw ?? 0) || 0;
+      const asignadoCajas = Number(asignadoCajasRaw ?? 0) || 0;
+      const recibidoUnidades = Number(recibidoUnidadesRaw ?? 0) || 0;
+      const asignadoUnidades = Number(asignadoUnidadesRaw ?? 0) || 0;
+
+      const sobradoCajas = Math.max(asignadoCajas - recibidoCajas, 0);
+      const sobradoUnidades = Math.max(asignadoUnidades - recibidoUnidades, 0);
+
+      if (sobradoCajas > 0 || sobradoUnidades > 0) {
+        defaults[detalle.label] =
+          containers.length > 0 ? Number(containers[0].value) : 2;
+      }
+    });
+
+    const keysEqual =
+      Object.keys(defaults).length === Object.keys(selectedContainers).length &&
+      Object.entries(defaults).every(([k, v]) => selectedContainers[k] === v);
+
+    if (!keysEqual) {
+      setSelectedContainers(defaults);
+    }
+  }, [showConfirmFinalizar, containers, updatedDetalles, selectedContainers]);
+
   const handleFinalizarPlanificacion = useCallback(() => {
     setShowConfirmFinalizar(true);
   }, []);
@@ -339,13 +379,17 @@ export default function Planificar({
             return Promise.resolve();
           }
 
+          const containerId =
+            selectedContainers[detalle.label] ??
+            (containers.length > 0 ? Number(containers[0].value) : 2);
+
           return addProductInventory({
             active: "true",
             container: sobradoCajas,
             units: sobradoUnidades,
             menudencia: productData.menudencia,
             Product_id: productData.productId,
-            Container_id: 2,
+            Container_id: containerId,
           });
         }),
       );
@@ -371,6 +415,8 @@ export default function Planificar({
     updateAssignment,
     updateAssignmentFlags,
     onClose,
+    selectedContainers,
+    containers,
   ]);
 
   // Función para planificación automática
@@ -468,33 +514,17 @@ export default function Planificar({
         </div>
       </div>
 
-      {/* Modal Confirmar Finalizar Planificación */}
-      <Modal
+      <ModalConfirmar
         isOpen={showConfirmFinalizar}
         onClose={() => setShowConfirmFinalizar(false)}
-        title="Finalizar Planificación"
-        size="sm"
-      >
-        <p className="text-sm text-gray-600 mb-6">
-          ¿Está seguro de finalizar la planificación? Una vez finalizada no
-          podrá realizar cambios.
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => setShowConfirmFinalizar(false)}
-            className="px-4 py-2 rounded-lg text-sm font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleConfirmFinalizar}
-            disabled={isFinalizando}
-            className="px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
-          >
-            {isFinalizando ? "Finalizando..." : "Confirmar"}
-          </button>
-        </div>
-      </Modal>
+        isFinalizando={isFinalizando}
+        updatedDetalles={updatedDetalles}
+        containers={containers}
+        containersLoading={containersLoading}
+        selectedContainers={selectedContainers}
+        setSelectedContainers={(v) => setSelectedContainers(v)}
+        onConfirm={handleConfirmFinalizar}
+      />
     </div>
   );
 }
