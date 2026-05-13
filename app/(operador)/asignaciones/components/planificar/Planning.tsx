@@ -14,7 +14,7 @@ import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestfor
 import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
 import { Modal } from "@/components/ui/Modal";
 import { AddAssignmentRequest } from "../../service/planificar/addassignmentrequest";
-import { useAddProductInventoryMovements } from "../../hooks/inventario/useAddProductInventoryMovements";
+import { useAddProductInventoryRequest } from "../../hooks/inventario/useAddproductinventoryRequest";
 
 export default function Planificar({
   assignment = null,
@@ -36,7 +36,7 @@ export default function Planificar({
   const { updateAssignmentFlags } = useAssignmentsStore();
   const { addProduct, loading: loadingAdd } = useAddProductRequest();
   const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
-  const { mutate: addMovement } = useAddProductInventoryMovements();
+  const { mutate: addProductInventory } = useAddProductInventoryRequest();
 
   // Hook para procesamiento de datos
   const { detalles, processedGroups, proveedor, clienteOrigen } =
@@ -114,6 +114,19 @@ export default function Planificar({
         );
 
         if (groupRequestData.length === 0) return;
+
+        const productDataMap = new Map<
+          string,
+          { productId: number; menudencia: string }
+        >();
+        groupRequestData.forEach((item) => {
+          if (!productDataMap.has(item.Product_name)) {
+            productDataMap.set(item.Product_name, {
+              productId: item.Product_id,
+              menudencia: item.ProductRequest_menudencia,
+            });
+          }
+        });
 
         // Track de cambios para actualizar el estado
         const updates: Array<{
@@ -289,28 +302,50 @@ export default function Planificar({
     if (!assignment) return;
     setShowConfirmFinalizar(false);
 
-    // Registrar movimiento de inventario por sobrado de cada producto
+    // Registrar alta de inventario por el sobrado real mostrado en detalle
     if (requestData?.data && updatedDetalles.length > 0) {
-      const productIdMap = new Map<string, number>();
+      const productDataMap = new Map<
+        string,
+        { productId: number; menudencia: string }
+      >();
       requestData.data.forEach((item) => {
-        productIdMap.set(item.Product_name, item.Product_id);
+        if (!productDataMap.has(item.Product_name)) {
+          productDataMap.set(item.Product_name, {
+            productId: item.Product_id,
+            menudencia: item.ProductRequest_menudencia,
+          });
+        }
       });
 
       await Promise.all(
         updatedDetalles.map((detalle) => {
-          const [assignedCajas, receivedCajas] = detalle.cajas.split("/").map(Number);
-          const [assignedUnidades, receivedUnidades] = detalle.unidades.split("/").map(Number);
-          const ProductInventory_id = productIdMap.get(detalle.label);
-          if (!ProductInventory_id) return Promise.resolve();
+          const [recibidoCajasRaw, asignadoCajasRaw] = detalle.cajas.split("/");
+          const [recibidoUnidadesRaw, asignadoUnidadesRaw] =
+            detalle.unidades.split("/");
 
-          return addMovement({
+          const recibidoCajas = Number(recibidoCajasRaw ?? 0) || 0;
+          const asignadoCajas = Number(asignadoCajasRaw ?? 0) || 0;
+          const recibidoUnidades = Number(recibidoUnidadesRaw ?? 0) || 0;
+          const asignadoUnidades = Number(asignadoUnidadesRaw ?? 0) || 0;
+
+          const sobradoCajas = Math.max(asignadoCajas - recibidoCajas, 0);
+          const sobradoUnidades = Math.max(
+            asignadoUnidades - recibidoUnidades,
+            0,
+          );
+          const productData = productDataMap.get(detalle.label);
+
+          if (!productData || (sobradoCajas === 0 && sobradoUnidades === 0)) {
+            return Promise.resolve();
+          }
+
+          return addProductInventory({
             active: "true",
-            Assignment_id: parseInt(assignment.id),
-            Request_id: null,
-            Container_id: null,
-            ProductInventory_id,
-            container: (receivedCajas || 0) - (assignedCajas || 0),
-            units: (receivedUnidades || 0) - (assignedUnidades || 0),
+            container: sobradoCajas,
+            units: sobradoUnidades,
+            menudencia: productData.menudencia,
+            Product_id: productData.productId,
+            Container_id: 2,
           });
         }),
       );
@@ -328,7 +363,15 @@ export default function Planificar({
       updateAssignmentFlags(assignment.id, { isPlanificar: "true" });
     }
     onClose?.();
-  }, [assignment, requestData, updatedDetalles, addMovement, updateAssignment, updateAssignmentFlags, onClose]);
+  }, [
+    assignment,
+    requestData,
+    updatedDetalles,
+    addProductInventory,
+    updateAssignment,
+    updateAssignmentFlags,
+    onClose,
+  ]);
 
   // Función para planificación automática
   const handleAutomaticPlanning = useCallback(() => {

@@ -5,7 +5,7 @@ import DetailInventario from "./DetailInventario";
 import InventarioTotalGroup from "./InventarioTotalGroup";
 import { useCategoryProvider } from "@/app/(operador)/configuraciones/hooks/proveedores/useCategoryprovider";
 import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedores/useContainer";
-import { useGetProductInventoryUnits } from "../../hooks/inventario/useGetProductInventoryunits";
+import { useGetProductInventory } from "../../hooks/inventario/useGetProductInventory";
 import { useGetRequestForPlanning } from "../../hooks/planificar/useGetRequestForPlanning";
 import { useGetProductInventoryContainer } from "../../hooks/inventario/useGetProductInventoryContainer";
 import { useAddProductInventoryMovements } from "../../hooks/inventario/useAddProductInventoryMovements";
@@ -51,11 +51,10 @@ export default function InventarioPlanning({
     );
   }, [proveedor, grupo, providers]);
 
-  const categoryId = grupo ? Number(grupo) : null;
   const categoryProviderId = selectedGroupMeta?.CategoryProvider_id ?? null;
 
   const { data: inventoryData, loading: loadingInventory } =
-    useGetProductInventoryUnits(categoryId);
+    useGetProductInventory();
   const {
     data: requestData,
     loading: loadingRequest,
@@ -189,9 +188,29 @@ export default function InventarioPlanning({
 
   // Build detalles: compare planned vs inventory
   const detalles = useMemo(() => {
-    const inventoryMap = new Map<string, number>();
+    const productNameById = new Map<number, string>();
+    requestData?.data?.forEach((item) => {
+      if (!productNameById.has(item.Product_id)) {
+        productNameById.set(item.Product_id, item.Product_name);
+      }
+    });
+
+    const inventoryMap = new Map<
+      string,
+      { containers: number; units: number }
+    >();
     inventoryData?.data.forEach((item) => {
-      inventoryMap.set(item.Product_name, item.Total_units);
+      if (contenedor && item.Container_id !== Number(contenedor)) return;
+      const productName = productNameById.get(item.Product_id);
+      if (!productName) return;
+
+      if (!inventoryMap.has(productName)) {
+        inventoryMap.set(productName, { containers: 0, units: 0 });
+      }
+
+      const current = inventoryMap.get(productName)!;
+      current.containers += item.container;
+      current.units += item.units;
     });
 
     const allProducts = new Set<string>([
@@ -204,17 +223,20 @@ export default function InventarioPlanning({
         cajas: 0,
         unidades: 0,
       };
-      const inventoryUnits = inventoryMap.get(productName) ?? 0;
+      const inventory = inventoryMap.get(productName) ?? {
+        containers: 0,
+        units: 0,
+      };
 
       return {
         label: productName,
-        cajas: `${planned.cajas}/0`,
-        unidades: `${planned.unidades}/${inventoryUnits}`,
-        cajasExcedidas: false,
-        unidadesExcedidas: planned.unidades > inventoryUnits,
+        cajas: `${planned.cajas}/${inventory.containers}`,
+        unidades: `${planned.unidades}/${inventory.units}`,
+        cajasExcedidas: planned.cajas > inventory.containers,
+        unidadesExcedidas: planned.unidades > inventory.units,
       };
     });
-  }, [plannedTotals, inventoryData]);
+  }, [plannedTotals, inventoryData, requestData, contenedor]);
 
   const updateClientCode = useCallback(
     (
@@ -285,14 +307,15 @@ export default function InventarioPlanning({
   const handleSaveGroup = useCallback(
     async (groupIndex: number) => {
       const group = editableGroups[groupIndex];
-      if (!group || !contenedor || !requestData?.data || !inventoryData?.data)
-        return;
+      if (!group || !contenedor || !requestData?.data) return;
 
       const Container_id = Number(contenedor);
 
       const inventoryMap = new Map<string, number>();
-      inventoryData.data.forEach((item) => {
-        inventoryMap.set(item.Product_name, item.Product_id);
+      requestData.data.forEach((item) => {
+        if (!inventoryMap.has(item.Product_name)) {
+          inventoryMap.set(item.Product_name, item.Product_id);
+        }
       });
 
       const requestMap = new Map<string, number>();
