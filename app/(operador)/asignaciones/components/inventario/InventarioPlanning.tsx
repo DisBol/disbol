@@ -9,6 +9,9 @@ import { useGetProductInventory } from "../../hooks/inventario/useGetProductInve
 import { useGetRequestForPlanning } from "../../hooks/planificar/useGetRequestForPlanning";
 import { useGetProductInventoryContainer } from "../../hooks/inventario/useGetProductInventoryContainer";
 import { useAddProductInventoryMovements } from "../../hooks/inventario/useAddProductInventoryMovements";
+import { useAddAssignmentRequest } from "../../hooks/useAddAssignmentRequest";
+import { useAddRequestStage } from "../../../solicitudes/hooks/useAddrequeststage";
+import { useAddProductRequest } from "../../../solicitudes/hooks/useAddproductrequest";
 import { EditableGroupData } from "../../types/planning.types";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
 
@@ -302,6 +305,9 @@ export default function InventarioPlanning({
   };
 
   const { mutate: addMovement } = useAddProductInventoryMovements();
+  const { addAssignment } = useAddAssignmentRequest();
+  const { addStage } = useAddRequestStage();
+  const { addProduct } = useAddProductRequest();
 
   const [savingGroups, setSavingGroups] = useState<number[]>([]);
   const handleSaveGroup = useCallback(
@@ -318,37 +324,79 @@ export default function InventarioPlanning({
         }
       });
 
-      const requestMap = new Map<string, number>();
-      requestData.data.forEach((item) => {
-        requestMap.set(
-          `${item.Client_name}__${item.Product_name}`,
-          item.Request_id,
-        );
-      });
-
       setSavingGroups((prev) => [...prev, groupIndex]);
       try {
-        const promises: Promise<unknown>[] = [];
-        group.clientes.forEach((cliente) => {
-          cliente.codes.forEach((code) => {
-            const Request_id = requestMap.get(`${cliente.name}__${code.label}`);
-            const ProductInventory_id = inventoryMap.get(code.label);
-            if (Request_id == null || ProductInventory_id == null) return;
+        // Para cada cliente del grupo: vincular asignación, crear stage (position 2) y agregar productos
+        for (
+          let clientIdx = 0;
+          clientIdx < group.clientes.length;
+          clientIdx++
+        ) {
+          const cliente = group.clientes[clientIdx];
+          const clientRequestData = requestData.data.filter(
+            (item) =>
+              item.Client_name === cliente.name &&
+              item.ClientGroup_name === group.name,
+          );
 
-            promises.push(
-              addMovement({
-                active: "true",
-                Assignment_id: null,
-                Request_id,
-                ProductInventory_id,
-                Container_id,
-                container: -code.cajas,
-                units: -code.unidades,
-              }),
+          if (clientRequestData.length === 0) continue;
+
+          const Request_id = clientRequestData[0].Request_id;
+
+          try {
+            await addAssignment(1, Request_id, "true"); // Assignment_id estatico por ahora = 1 cambiar cuando la api de getproductinventory traiga el id de asignación
+          } catch (err) {
+            console.error(
+              `Error linking assignment for Request ${Request_id}`,
+              err,
             );
-          });
-        });
-        await Promise.all(promises);
+            continue;
+          }
+
+          const stageResponse = await addStage(
+            2, // position
+            0,
+            0,
+            0,
+            0,
+            0,
+            Request_id,
+          );
+
+          if (!stageResponse) {
+            console.error(`Error creating stage for Request ${Request_id}`);
+            continue;
+          }
+
+          const RequestStage_id = stageResponse.data?.[0]?.requeststage_id;
+
+          for (let codeIdx = 0; codeIdx < cliente.codes.length; codeIdx++) {
+            const code = cliente.codes[codeIdx];
+            const productItem = clientRequestData.find(
+              (it) => it.Product_name === code.label,
+            );
+            if (!productItem) continue;
+
+            try {
+              await addProduct(
+                code.cajas,
+                code.unidades,
+                productItem.ProductRequest_menudencia === "true",
+                0,
+                0,
+                0,
+                true,
+                RequestStage_id,
+                productItem.Product_id,
+              );
+            } catch (err) {
+              console.error(
+                `Error adding product request for Request ${Request_id}, product ${productItem.Product_id}`,
+                err,
+              );
+            }
+          }
+        }
 
         // Marcar el grupo como guardado (comportamiento similar a Planning)
         setEditableGroups((prevGroups) => {
@@ -365,7 +413,16 @@ export default function InventarioPlanning({
         setSavingGroups((prev) => prev.filter((i) => i !== groupIndex));
       }
     },
-    [editableGroups, contenedor, requestData, inventoryData, addMovement],
+    [
+      editableGroups,
+      contenedor,
+      requestData,
+      inventoryData,
+      addAssignment,
+      addStage,
+      addProduct,
+      addMovement,
+    ],
   );
 
   const loading = loadingInventory || loadingRequest;
