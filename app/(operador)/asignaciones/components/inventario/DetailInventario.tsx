@@ -147,49 +147,62 @@ export default function DetailInventario({
                 </div>
               );
             })()}
-          <h3 className="text-[11px] font-bold text-gray-800 mb-2 xl:ml-2">
-            Inventario de Productos
-          </h3>
-          <div className="xl:ml-2 rounded-xl border border-gray-200 bg-gray-50 p-2">
-            {detalles.length === 0 ? (
-              <p className="text-[11px] text-gray-500 text-center py-4">
-                {!selectedGrupo
-                  ? "Seleccione un proveedor y categoría"
-                  : "Sin productos en inventario"}
-              </p>
-            ) : (
-              <div
-                className="grid gap-2 grid-cols-4 sm:grid-cols-8 lg:grid-cols-8 xl:grid-cols-[repeat(var(--detalle-cols),minmax(0,1fr))]"
-                style={{
-                  ["--detalle-cols" as string]: Math.max(detalles.length, 1),
-                }}
-              >
-                {detalles.map((d, i) => {
-                  const cajas = parseComparativo(d.cajas);
-                  const unidades = parseComparativo(d.unidades);
-                  return (
-                    <div key={i} className="min-w-0">
-                      <CardCode
-                        label={d.label}
-                        cajas={cajas.planificado}
-                        unidades={unidades.planificado}
-                        cajasExcedidas={d.cajasExcedidas}
-                        unidadesExcedidas={d.unidadesExcedidas}
-                        readOnly={true}
-                        compareReadOnly={{
-                          leftLabel: "Plan.",
-                          rightLabel: "Inv.",
-                          rightCajas: cajas.inventario,
-                          rightCajasHidden: true,
-                          rightUnidades: unidades.inventario,
-                        }}
-                      />
-                    </div>
-                  );
-                })}
+          {selectedContenedor ? (
+            <>
+              <h3 className="text-[11px] font-bold text-gray-800 mb-2 xl:ml-2">
+                Inventario de Productos
+              </h3>
+              <div className="xl:ml-2 rounded-xl border border-gray-200 bg-gray-50 p-2">
+                {detalles.length === 0 ? (
+                  <p className="text-[11px] text-gray-500 text-center py-4">
+                    {!selectedGrupo
+                      ? "Seleccione un proveedor y categoría"
+                      : "Sin productos en inventario"}
+                  </p>
+                ) : (
+                  <div
+                    className="grid gap-2 grid-cols-4 sm:grid-cols-8 lg:grid-cols-8 xl:grid-cols-[repeat(var(--detalle-cols),minmax(0,1fr))]"
+                    style={{
+                      ["--detalle-cols" as string]: Math.max(
+                        detalles.length,
+                        1,
+                      ),
+                    }}
+                  >
+                    {detalles.map((d, i) => {
+                      const cajas = parseComparativo(d.cajas);
+                      const unidades = parseComparativo(d.unidades);
+                      return (
+                        <div key={i} className="min-w-0">
+                          <CardCode
+                            label={d.label}
+                            cajas={cajas.planificado}
+                            unidades={unidades.planificado}
+                            cajasExcedidas={d.cajasExcedidas}
+                            unidadesExcedidas={d.unidadesExcedidas}
+                            readOnly={true}
+                            compareReadOnly={{
+                              leftLabel: "Plan.",
+                              rightLabel: "Inv.",
+                              rightCajas: cajas.inventario,
+                              rightCajasHidden: true,
+                              rightUnidades: unidades.inventario,
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <div className="xl:ml-2 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-[11px] text-gray-500 text-center">
+                Seleccione un contenedor para ver el inventario
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -484,6 +484,7 @@ export default function InventarioPlanning({
                   onToggleExpand={() => toggleGroup(groupIdx)}
                   onSave={() => handleSaveGroup(groupIdx)}
                   isSaving={savingGroups.includes(groupIdx)}
+                  selectedContenedor={contenedor}
                   onUpdateClientCode={(clientIndex, codeIndex, field, value) =>
                     updateClientCode(
                       groupIdx,
