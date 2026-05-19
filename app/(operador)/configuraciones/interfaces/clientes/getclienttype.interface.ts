@@ -1,4 +1,4 @@
-export interface GetClientResponse {
+export interface GetClientTypeResponse {
   data: Datum[];
   metadata: Metadata;
 }
@@ -6,16 +6,9 @@ export interface GetClientResponse {
 export interface Datum {
   id: number;
   name: string;
-  document: string;
-  lat: number;
-  long: number;
-  phone: string;
   active: string;
   created_at: Date;
   updated_at: Date;
-  ClientGroup_id: number;
-  ClientType_id?: number;
-  ClientType_name?: string;
 }
 
 export interface Metadata {

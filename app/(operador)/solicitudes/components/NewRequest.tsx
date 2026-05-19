@@ -261,7 +261,7 @@ export default function NewRequest() {
   const clientOptions = useMemo(() => {
     return clients.map((c) => ({
       value: c.id.toString(),
-      label: c.name,
+      label: c.clientTypeName ? `${c.name} — ${c.clientTypeName}` : c.name,
     }));
   }, [clients]);
 

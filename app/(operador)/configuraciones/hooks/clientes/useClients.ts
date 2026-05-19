@@ -12,6 +12,8 @@ export interface ClientView {
   phone: string;
   clientGroupId: number;
   active: string;
+  clientTypeId?: number | null;
+  clientTypeName?: string | null;
 }
 
 interface UseClientsReturn {
@@ -19,8 +21,8 @@ interface UseClientsReturn {
   clients: ClientView[];
   loading: boolean;
   error: Error | null;
-  refetch: (groupId?: number) => Promise<void>;
-  fetchByGroup: (groupId?: number) => Promise<void>;
+  refetch: (groupId?: number, typeId?: number) => Promise<void>;
+  fetchByGroup: (groupId?: number, typeId?: number) => Promise<void>;
 }
 
 export function useClients(initialGroupId?: number): UseClientsReturn {
@@ -30,13 +32,17 @@ export function useClients(initialGroupId?: number): UseClientsReturn {
   const [currentGroupId, setCurrentGroupId] = useState<number | undefined>(
     initialGroupId,
   );
+  const [currentTypeId, setCurrentTypeId] = useState<number | undefined>(
+    undefined,
+  );
 
-  const fetchData = useCallback(async (groupId?: number) => {
+  const fetchData = useCallback(async (groupId?: number, typeId?: number) => {
     try {
       setLoading(true);
-      const result: GetClientResponse = await GetClients(groupId);
+      const result: GetClientResponse = await GetClients(groupId, typeId);
       setData(result.data);
       setCurrentGroupId(groupId);
+      setCurrentTypeId(typeId);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Unknown error"));
@@ -47,22 +53,22 @@ export function useClients(initialGroupId?: number): UseClientsReturn {
   }, []);
 
   const refetch = useCallback(
-    async (groupId?: number) => {
-      await fetchData(groupId ?? currentGroupId);
+    async (groupId?: number, typeId?: number) => {
+      await fetchData(groupId ?? currentGroupId, typeId ?? currentTypeId);
     },
-    [fetchData, currentGroupId],
+    [fetchData, currentGroupId, currentTypeId],
   );
 
   const fetchByGroup = useCallback(
-    async (groupId?: number) => {
-      await fetchData(groupId);
+    async (groupId?: number, typeId?: number) => {
+      await fetchData(groupId, typeId ?? currentTypeId);
     },
-    [fetchData],
+    [fetchData, currentTypeId],
   );
 
   useEffect(() => {
-    fetchData(currentGroupId);
-  }, [currentGroupId, fetchData]);
+    fetchData(currentGroupId, currentTypeId);
+  }, [currentGroupId, currentTypeId, fetchData]);
 
   // Listar clientes con su grupo correspondiente
   const clients: ClientView[] = useMemo(() => {
@@ -74,6 +80,8 @@ export function useClients(initialGroupId?: number): UseClientsReturn {
       phone: client.phone,
       clientGroupId: client.ClientGroup_id,
       active: client.active,
+      clientTypeId: client.ClientType_id ?? null,
+      clientTypeName: client.ClientType_name ?? null,
     }));
   }, [data]);
 

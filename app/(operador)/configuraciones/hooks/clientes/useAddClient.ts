@@ -11,6 +11,7 @@ interface UseAddClientReturn {
     long: number,
     phone: string,
     clientGroupId: string,
+    clientTypeId?: string,
   ) => Promise<AddClientResponse>;
   loading: boolean;
   error: Error | null;
@@ -27,6 +28,7 @@ export function useAddClient(): UseAddClientReturn {
     long: number,
     phone: string,
     clientGroupId: string,
+    clientTypeId?: string,
   ): Promise<AddClientResponse> => {
     try {
       setLoading(true);
@@ -39,6 +41,7 @@ export function useAddClient(): UseAddClientReturn {
         long,
         phone,
         clientGroupId,
+        clientTypeId,
       );
 
       const responseData = response as unknown as {
