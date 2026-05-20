@@ -10,6 +10,7 @@ export async function UpdateClient(
   phone: string,
   active: string,
   ClientGroup_id: string,
+  ClientType_id?: string,
 ): Promise<UpdateClientResponse> {
   return apiCall("updateclient", {
     id,
@@ -20,5 +21,6 @@ export async function UpdateClient(
     phone,
     active,
     ClientGroup_id,
+    ...(ClientType_id ? { ClientType_id } : {}),
   });
 }

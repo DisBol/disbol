@@ -15,6 +15,7 @@ import { SelectField } from "../../../../../components/ui/SelectInput";
 import { useState } from "react";
 import { useClients } from "../../hooks/clientes/useClients";
 import { useClientGroups } from "../../hooks/clientes/useClientsGroups";
+import { useClientTypes } from "../../hooks/clientes/useClientTypes";
 import { useUpdateClient } from "../../hooks/clientes/useUpdateClient";
 import { Datum as ClientData } from "../../interfaces/clientes/getclient.interface";
 import ClientForm from "./ClientForm";
@@ -25,9 +26,11 @@ interface ClientTableProps {
 
 export default function ClientTable({ onClientUpdated }: ClientTableProps) {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("0");
+  const [selectedTypeId, setSelectedTypeId] = useState<string>("0");
   const [isFiltering, setIsFiltering] = useState(false);
   const { clients, rawData, loading, error, fetchByGroup } = useClients();
   const { clientGroups } = useClientGroups();
+  const { clientTypes } = useClientTypes();
   const { updateClient, loading: updateLoading } = useUpdateClient();
   const [editingClient, setEditingClient] = useState<ClientData | undefined>(
     undefined,
@@ -84,10 +87,26 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
 
     try {
       const numericGroupId = groupId === "0" ? undefined : parseInt(groupId);
-      console.log("Enviando a API:", numericGroupId);
-      await fetchByGroup(numericGroupId);
+      const numericTypeId = selectedTypeId === "0" ? undefined : parseInt(selectedTypeId);
+      console.log("Enviando a API:", numericGroupId, numericTypeId);
+      await fetchByGroup(numericGroupId, numericTypeId);
     } catch (error) {
       console.error("Error al filtrar:", error);
+    } finally {
+      setIsFiltering(false);
+    }
+  };
+
+  const handleTypeFilterChange = async (typeId: string) => {
+    setSelectedTypeId(typeId);
+    setIsFiltering(true);
+
+    try {
+      const numericGroupId = selectedGroupId === "0" ? undefined : parseInt(selectedGroupId);
+      const numericTypeId = typeId === "0" ? undefined : parseInt(typeId);
+      await fetchByGroup(numericGroupId, numericTypeId);
+    } catch (error) {
+      console.error("Error al filtrar por tipo:", error);
     } finally {
       setIsFiltering(false);
     }
@@ -141,6 +160,11 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
     ...clientGroups,
   ];
 
+  const typeFilterOptions = [
+    { value: "0", label: "Todos los tipos" },
+    ...(clientTypes || []),
+  ];
+
   return (
     <div className="w-full">
       {/* Filtro por Grupo */}
@@ -154,16 +178,32 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
             placeholder="Selecciona un grupo"
           />
         </div>
+
+        <div className="w-full sm:w-64">
+          <SelectField
+            label="Filtrar por tipo"
+            value={selectedTypeId}
+            onChange={(e) => handleTypeFilterChange(e.target.value)}
+            options={typeFilterOptions}
+            placeholder="Selecciona un tipo"
+          />
+        </div>
+
         <div className="text-sm text-gray-500">
           {clients.length} cliente{clients.length !== 1 ? "s" : ""}
-          {selectedGroupId !== "0" && (
+          {(selectedGroupId !== "0" || selectedTypeId !== "0") && (
             <span>
               {" "}
               en{" "}
-              {
-                groupFilterOptions.find((g) => g.value === selectedGroupId)
-                  ?.label
-              }
+              {selectedGroupId !== "0"
+                ? groupFilterOptions.find((g) => g.value === selectedGroupId)
+                    ?.label
+                : ""}
+              {selectedGroupId !== "0" && selectedTypeId !== "0" && " — "}
+              {selectedTypeId !== "0"
+                ? typeFilterOptions.find((t) => t.value === selectedTypeId)
+                    ?.label
+                : ""}
             </span>
           )}
         </div>
@@ -177,6 +217,7 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
               <TableRow>
                 <TableHead className="text-xs sm:text-sm">Nombre</TableHead>
                 <TableHead className="text-xs sm:text-sm">Grupo</TableHead>
+                <TableHead className="text-xs sm:text-sm">Tipo</TableHead>
                 <TableHead className="text-xs sm:text-sm">Teléfono</TableHead>
                 <TableHead className="text-xs sm:text-sm">Estado</TableHead>
                 <TableHead className="text-xs sm:text-sm">Acciones</TableHead>
@@ -190,6 +231,9 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
                   </TableCell>
                   <TableCell className="text-gray-600 text-xs sm:text-sm">
                     {getGroupName(client.clientGroupId)}
+                  </TableCell>
+                  <TableCell className="text-gray-600 text-xs sm:text-sm">
+                    {client.clientTypeName ?? "-"}
                   </TableCell>
                   <TableCell className="text-gray-600 text-xs sm:text-sm">
                     {client.phone}
@@ -264,6 +308,11 @@ export default function ClientTable({ onClientUpdated }: ClientTableProps) {
               <p className="text-sm text-gray-700">
                 {getGroupName(client.clientGroupId)}
               </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-500 font-medium mb-1">Tipo</p>
+              <p className="text-sm text-gray-700">{client.clientTypeName ?? "-"}</p>
             </div>
 
             <div>

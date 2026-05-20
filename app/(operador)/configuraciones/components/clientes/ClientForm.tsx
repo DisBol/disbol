@@ -5,6 +5,7 @@ import { SelectInput, SelectOption } from "@/components/ui/SelectInput";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useClientGroups } from "../../hooks/clientes/useClientsGroups";
+import { useClientTypes } from "../../hooks/clientes/useClientTypes";
 import { useAddClient } from "../../hooks/clientes/useAddClient";
 import { useUpdateClient } from "../../hooks/clientes/useUpdateClient";
 import { ClientFormData } from "../../interfaces/clientes/addclient.interface";
@@ -44,6 +45,7 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
         document: client.document || "",
         phone: client.phone || "",
         clientGroupId: client.ClientGroup_id?.toString() || "",
+        clientTypeId: client.ClientType_id?.toString() || "",
         lat: client.lat || -16.5709943,
         lng: client.long || -68.1922443,
       };
@@ -53,6 +55,7 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
       document: "",
       phone: "",
       clientGroupId: "",
+      clientTypeId: "",
       lat: -16.5709943,
       lng: -68.1922443,
     };
@@ -103,6 +106,10 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
       newErrors.clientGroupId = "Debe seleccionar un grupo";
     }
 
+    if (!formData.clientTypeId) {
+      newErrors.clientTypeId = "Debe seleccionar un tipo de cliente";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -123,6 +130,7 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
           formData.phone,
           client.active || "true", // Mantener el estado actual de activo
           formData.clientGroupId,
+          formData.clientTypeId,
         );
       } else {
         // Crear nuevo cliente
@@ -133,6 +141,7 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
           formData.lng,
           formData.phone,
           formData.clientGroupId,
+          formData.clientTypeId,
         );
       }
 
@@ -184,6 +193,13 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
     label: group.label,
   }));
 
+  const { clientTypes, isLoading: typesLoading } = useClientTypes();
+
+  const typeOptions: SelectOption[] = clientTypes.map((t) => ({
+    value: t.value,
+    label: t.label,
+  }));
+
   return (
     <Modal
       isOpen={isOpen}
@@ -216,6 +232,22 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
             />
             {errors.clientGroupId && (
               <p className="text-sm text-red-600">{errors.clientGroupId}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer pl-0.5">
+              Tipo de Cliente *
+            </label>
+            <SelectInput
+              options={typeOptions}
+              value={formData.clientTypeId}
+              onChange={(e) => handleSelectChange("clientTypeId")(e.target.value)}
+              placeholder="Seleccionar Tipo..."
+              variant={errors.clientTypeId ? "error" : "default"}
+              disabled={typesLoading}
+            />
+            {errors.clientTypeId && (
+              <p className="text-sm text-red-600">{errors.clientTypeId}</p>
             )}
           </div>
         </div>
