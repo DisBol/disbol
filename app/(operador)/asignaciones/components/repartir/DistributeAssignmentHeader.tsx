@@ -317,7 +317,9 @@ export default function DistributeAssignmentHeader({
 
         pdf.html(pdfContent, {
           callback: function (doc) {
-            window.open(doc.output("bloburi"), "_blank");
+            const pdfBlob = doc.output("blob");
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            window.open(pdfUrl, "_blank");
             document.body.removeChild(pdfContent);
           },
           x: 10,
@@ -337,69 +339,83 @@ export default function DistributeAssignmentHeader({
 
       pdfContent.innerHTML = `
         <div style="margin-bottom: 40px;">
-          <h1 style="font-size: 36px; font-weight: bold; color: #1e5a96; margin: 0 0 30px 0; text-align: center;">
-            Ruta de Distribución
-          </h1>
-          
-          <div style="background-color: #f3f4f6; padding: 25px; border-radius: 10px; margin-bottom: 30px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; font-size: 16px;">
-              <div>
-                <p style="margin: 0; color: #666; font-weight: bold;">GRUPO:</p>
-                <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: bold; color: #1e293b;">${groupName}</p>
+          <div style="margin-bottom: 40px; color: #111827; background-color: #ffffff;">
+            <h1 style="font-size: 30px; font-weight: 800; color: #e11d48; margin: 0 0 10px 0; text-align: center; letter-spacing: 0.02em;">
+              Ruta de Distribución
+            </h1>
+            <p style="margin: 0; text-align: center; color: #6b7280; font-size: 12px;">Detalle completo de entrega, pesajes y costo de distribución</p>
+
+            <div style="margin-top: 18px; background-color: #ffffff; border: 1px solid #fecdd3; border-radius: 14px; padding: 18px 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+              <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Grupo</div>
+                <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${groupName}</div>
               </div>
-              <div>
-                <p style="margin: 0; color: #666; font-weight: bold;">VEHÍCULO:</p>
-                <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: bold; color: #1e293b;">${vehiculoNombre}</p>
+              <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Vehículo</div>
+                <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${vehiculoNombre}</div>
               </div>
-              <div>
-                <p style="margin: 0; color: #666; font-weight: bold;">CHOFER:</p>
-                <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: bold; color: #1e293b;">${choferNombre}</p>
+              <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Chofer</div>
+                <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${choferNombre}</div>
               </div>
             </div>
-          </div>
 
-          <div style="margin-bottom: 30px;">
-            <h2 style="font-size: 22px; font-weight: bold; color: #1e293b; margin-bottom: 20px;">Información de Clientes</h2>
-            <table style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
-              <thead>
-                <tr style="background-color: #e11d48; color: white;">
-                  <th style="padding: 15px; text-align: left; font-size: 16px; font-weight: bold;">Cliente</th>
-                  <th style="padding: 15px; text-align: center; font-size: 16px; font-weight: bold;">Monto a Cobrar (Bs)</th>
-                  <th style="padding: 15px; text-align: center; font-size: 16px; font-weight: bold;">Deuda Cajas</th>
-                  <th style="padding: 15px; text-align: center; font-size: 16px; font-weight: bold;">Deuda Dinero</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${
-                  clientes.length > 0
-                    ? clientes
-                        .map(
-                          (c) =>
-                            `<tr style="border-bottom: 1px solid #d1d5db;">
-                              <td style="padding: 15px; text-align: left; font-size: 14px;">${c.nombre}</td>
-                              <td style="padding: 15px; text-align: center; font-size: 14px;">${c.montoACobrar.toFixed(2)}</td>
-                              <td style="padding: 15px; text-align: center; font-size: 14px;">${c.deudaCajas}</td>
-                              <td style="padding: 15px; text-align: center; font-size: 14px;">${c.deudaDinero.toFixed(2)}</td>
-                            </tr>`,
-                        )
-                        .join("")
-                    : `<tr><td colspan="4" style="padding: 15px; text-align: center; font-size: 14px; color: #999;">Sin clientes asignados</td></tr>`
-                }
-              </tbody>
-            </table>
-          </div>
+            <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+              <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700;">Total cajas</div>
+                <div style="font-size: 24px; font-weight: 800; color: #e11d48; margin-top: 4px;">${clientes.reduce((sum, c) => sum + clientes.indexOf(c), 0) > 0 ? clientes.length : 0}</div>
+              </div>
+              <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700;">Total clientes</div>
+                <div style="font-size: 24px; font-weight: 800; color: #e11d48; margin-top: 4px;">${clientes.length}</div>
+              </div>
+            </div>
 
-        
+            <div style="margin-top: 26px;">
+              <h2 style="font-size: 20px; font-weight: 800; color: #111827; margin: 0 0 14px 0;">Información de Clientes</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <thead>
+                  <tr style="background: #e11d48; color: #fff;">
+                    <th style="padding: 10px 12px; text-align: left;">Cliente</th>
+                    <th style="padding: 10px 12px; text-align: right;">Monto a Cobrar (Bs)</th>
+                    <th style="padding: 10px 12px; text-align: right;">Deuda Cajas</th>
+                    <th style="padding: 10px 12px; text-align: right;">Deuda Dinero (Bs)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${
+                    clientes.length > 0
+                      ? clientes
+                          .map(
+                            (c, idx) =>
+                              `<tr style="border-bottom: 1px solid #e5e7eb; ${
+                                idx % 2 === 0
+                                  ? "background-color: #f9fafb;"
+                                  : ""
+                              }">
+                                <td style="padding: 10px 12px; text-align: left; font-weight: 500; color: #111827;">${c.nombre}</td>
+                                <td style="padding: 10px 12px; text-align: right; color: #e11d48; font-weight: 700;">Bs ${c.montoACobrar.toFixed(2)}</td>
+                                <td style="padding: 10px 12px; text-align: right; color: #6b7280;">${c.deudaCajas}</td>
+                                <td style="padding: 10px 12px; text-align: right; color: #6b7280;">Bs ${c.deudaDinero.toFixed(2)}</td>
+                              </tr>`,
+                          )
+                          .join("")
+                      : `<tr><td colspan="4" style="padding: 18px; text-align: center; color: #9ca3af;">Sin clientes asignados</td></tr>`
+                  }
+                </tbody>
+              </table>
+            </div>
 
-          <div style="margin-top: 40px; padding-top: 20px; border-top: 3px solid #e11d48; text-align: center; color: #666; font-size: 12px;">
-            <p style="margin: 0;">Documento generado el ${new Date().toLocaleDateString(
-              "es-ES",
-              {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              },
-            )}</p>
+            <div style="margin-top: 24px; padding-top: 14px; border-top: 2px solid #fecdd3; text-align: center; color: #6b7280; font-size: 11px;">
+              <p style="margin: 0;">Documento generado el ${new Date().toLocaleDateString(
+                "es-ES",
+                {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                },
+              )}</p>
+            </div>
           </div>
         </div>
       `;
@@ -415,7 +431,9 @@ export default function DistributeAssignmentHeader({
 
       pdf.html(pdfContent, {
         callback: function (doc) {
-          window.open(doc.output("bloburi"), "_blank");
+          const pdfBlob = doc.output("blob");
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, "_blank");
           document.body.removeChild(pdfContent);
         },
         x: 10,
