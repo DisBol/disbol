@@ -27,6 +27,7 @@ export interface ClientFormData {
   document: string;
   phone: string;
   clientGroupId: string;
+  clientTypeId?: string;
   lat: number;
   lng: number;
 }

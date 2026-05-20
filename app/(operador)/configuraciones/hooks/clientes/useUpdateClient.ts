@@ -12,6 +12,7 @@ interface UseUpdateClientReturn {
     phone: string,
     active: string,
     clientGroupId: string,
+    clientTypeId?: string,
   ) => Promise<UpdateClientResponse>;
   loading: boolean;
   error: Error | null;
@@ -30,6 +31,7 @@ export function useUpdateClient(): UseUpdateClientReturn {
     phone: string,
     active: string,
     clientGroupId: string,
+    clientTypeId?: string,
   ): Promise<UpdateClientResponse> => {
     try {
       setLoading(true);
@@ -44,6 +46,7 @@ export function useUpdateClient(): UseUpdateClientReturn {
         phone,
         active,
         clientGroupId,
+        clientTypeId,
       );
 
       return response;
