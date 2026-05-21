@@ -35,6 +35,7 @@ interface InventarioTotalGroupProps {
   onToggleExpand: () => void;
   onSave?: () => void;
   isSaving?: boolean;
+  selectedContenedor?: string;
   onUpdateClientCode?: (
     clientIndex: number,
     codeIndex: number,
@@ -54,6 +55,7 @@ export default function InventarioTotalGroup({
   onToggleExpand,
   onSave,
   isSaving,
+  selectedContenedor,
   onUpdateClientCode,
 }: InventarioTotalGroupProps) {
   const getMultiplier = (productCode: string) => {
@@ -193,9 +195,9 @@ export default function InventarioTotalGroup({
                 e.stopPropagation();
                 onSave();
               }}
-              disabled={isSaving}
+              disabled={isSaving || !selectedContenedor}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors border ${
-                isSaving
+                isSaving || !selectedContenedor
                   ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-[#e11d48] hover:bg-rose-700 border-[#e11d48] text-white shadow-sm"
               }`}

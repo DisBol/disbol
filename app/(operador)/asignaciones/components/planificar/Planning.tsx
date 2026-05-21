@@ -12,9 +12,10 @@ import { PlanningProps, EditableGroupData } from "../../types/planning.types";
 import { useAssignmentsStore } from "../../stores/assignments-store";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
 import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
-import { Modal } from "@/components/ui/Modal";
+import ModalConfirmar from "./ModalConfirmar";
 import { AddAssignmentRequest } from "../../service/planificar/addassignmentrequest";
-import { useAddProductInventoryMovements } from "../../hooks/inventario/useAddProductInventoryMovements";
+import { useAddProductInventoryRequest } from "../../hooks/inventario/useAddproductinventoryRequest";
+import { useContainer } from "../../../configuraciones/hooks/contenedores/useContainer";
 
 export default function Planificar({
   assignment = null,
@@ -32,11 +33,11 @@ export default function Planificar({
   } = useGetRequestForPlanning(categoryProviderId);
 
   // Hooks para guardar datos
-  const { addStage, loading: loadingStage } = useAddRequestStage();
+  const { addStage } = useAddRequestStage();
   const { updateAssignmentFlags } = useAssignmentsStore();
-  const { addProduct, loading: loadingAdd } = useAddProductRequest();
+  const { addProduct } = useAddProductRequest();
   const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
-  const { mutate: addMovement } = useAddProductInventoryMovements();
+  const { mutate: addProductInventory } = useAddProductInventoryRequest();
 
   // Hook para procesamiento de datos
   const { detalles, processedGroups, proveedor, clienteOrigen } =
@@ -114,6 +115,19 @@ export default function Planificar({
         );
 
         if (groupRequestData.length === 0) return;
+
+        const productDataMap = new Map<
+          string,
+          { productId: number; menudencia: string }
+        >();
+        groupRequestData.forEach((item) => {
+          if (!productDataMap.has(item.Product_name)) {
+            productDataMap.set(item.Product_name, {
+              productId: item.Product_id,
+              menudencia: item.ProductRequest_menudencia,
+            });
+          }
+        });
 
         // Track de cambios para actualizar el estado
         const updates: Array<{
@@ -281,6 +295,45 @@ export default function Planificar({
 
   const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
 
+  // Hook para listar contenedores y estado de selección por producto
+  const { containers, isLoading: containersLoading } = useContainer();
+
+  const [selectedContainers, setSelectedContainers] = useState<
+    Record<string, number>
+  >({});
+
+  React.useEffect(() => {
+    if (!showConfirmFinalizar) return;
+
+    const defaults: Record<string, number> = {};
+    updatedDetalles.forEach((detalle) => {
+      const [recibidoCajasRaw, asignadoCajasRaw] = detalle.cajas.split("/");
+      const [recibidoUnidadesRaw, asignadoUnidadesRaw] =
+        detalle.unidades.split("/");
+
+      const recibidoCajas = Number(recibidoCajasRaw ?? 0) || 0;
+      const asignadoCajas = Number(asignadoCajasRaw ?? 0) || 0;
+      const recibidoUnidades = Number(recibidoUnidadesRaw ?? 0) || 0;
+      const asignadoUnidades = Number(asignadoUnidadesRaw ?? 0) || 0;
+
+      const sobradoCajas = Math.max(asignadoCajas - recibidoCajas, 0);
+      const sobradoUnidades = Math.max(asignadoUnidades - recibidoUnidades, 0);
+
+      if (sobradoCajas > 0 || sobradoUnidades > 0) {
+        defaults[detalle.label] =
+          containers.length > 0 ? Number(containers[0].value) : 2;
+      }
+    });
+
+    const keysEqual =
+      Object.keys(defaults).length === Object.keys(selectedContainers).length &&
+      Object.entries(defaults).every(([k, v]) => selectedContainers[k] === v);
+
+    if (!keysEqual) {
+      setSelectedContainers(defaults);
+    }
+  }, [showConfirmFinalizar, containers, updatedDetalles, selectedContainers]);
+
   const handleFinalizarPlanificacion = useCallback(() => {
     setShowConfirmFinalizar(true);
   }, []);
@@ -289,28 +342,54 @@ export default function Planificar({
     if (!assignment) return;
     setShowConfirmFinalizar(false);
 
-    // Registrar movimiento de inventario por sobrado de cada producto
+    // Registrar alta de inventario por el sobrado real mostrado en detalle
     if (requestData?.data && updatedDetalles.length > 0) {
-      const productIdMap = new Map<string, number>();
+      const productDataMap = new Map<
+        string,
+        { productId: number; menudencia: string }
+      >();
       requestData.data.forEach((item) => {
-        productIdMap.set(item.Product_name, item.Product_id);
+        if (!productDataMap.has(item.Product_name)) {
+          productDataMap.set(item.Product_name, {
+            productId: item.Product_id,
+            menudencia: item.ProductRequest_menudencia,
+          });
+        }
       });
 
       await Promise.all(
         updatedDetalles.map((detalle) => {
-          const [assignedCajas, receivedCajas] = detalle.cajas.split("/").map(Number);
-          const [assignedUnidades, receivedUnidades] = detalle.unidades.split("/").map(Number);
-          const ProductInventory_id = productIdMap.get(detalle.label);
-          if (!ProductInventory_id) return Promise.resolve();
+          const [recibidoCajasRaw, asignadoCajasRaw] = detalle.cajas.split("/");
+          const [recibidoUnidadesRaw, asignadoUnidadesRaw] =
+            detalle.unidades.split("/");
 
-          return addMovement({
+          const recibidoCajas = Number(recibidoCajasRaw ?? 0) || 0;
+          const asignadoCajas = Number(asignadoCajasRaw ?? 0) || 0;
+          const recibidoUnidades = Number(recibidoUnidadesRaw ?? 0) || 0;
+          const asignadoUnidades = Number(asignadoUnidadesRaw ?? 0) || 0;
+
+          const sobradoCajas = Math.max(asignadoCajas - recibidoCajas, 0);
+          const sobradoUnidades = Math.max(
+            asignadoUnidades - recibidoUnidades,
+            0,
+          );
+          const productData = productDataMap.get(detalle.label);
+
+          if (!productData || (sobradoCajas === 0 && sobradoUnidades === 0)) {
+            return Promise.resolve();
+          }
+
+          const containerId =
+            selectedContainers[detalle.label] ??
+            (containers.length > 0 ? Number(containers[0].value) : 2);
+
+          return addProductInventory({
             active: "true",
-            Assignment_id: parseInt(assignment.id),
-            Request_id: null,
-            Container_id: null,
-            ProductInventory_id,
-            container: (receivedCajas || 0) - (assignedCajas || 0),
-            units: (receivedUnidades || 0) - (assignedUnidades || 0),
+            container: sobradoCajas,
+            units: sobradoUnidades,
+            menudencia: productData.menudencia,
+            Product_id: productData.productId,
+            Container_id: containerId,
           });
         }),
       );
@@ -328,7 +407,17 @@ export default function Planificar({
       updateAssignmentFlags(assignment.id, { isPlanificar: "true" });
     }
     onClose?.();
-  }, [assignment, requestData, updatedDetalles, addMovement, updateAssignment, updateAssignmentFlags, onClose]);
+  }, [
+    assignment,
+    requestData,
+    updatedDetalles,
+    addProductInventory,
+    updateAssignment,
+    updateAssignmentFlags,
+    onClose,
+    selectedContainers,
+    containers,
+  ]);
 
   // Función para planificación automática
   const handleAutomaticPlanning = useCallback(() => {
@@ -425,33 +514,17 @@ export default function Planificar({
         </div>
       </div>
 
-      {/* Modal Confirmar Finalizar Planificación */}
-      <Modal
+      <ModalConfirmar
         isOpen={showConfirmFinalizar}
         onClose={() => setShowConfirmFinalizar(false)}
-        title="Finalizar Planificación"
-        size="sm"
-      >
-        <p className="text-sm text-gray-600 mb-6">
-          ¿Está seguro de finalizar la planificación? Una vez finalizada no
-          podrá realizar cambios.
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => setShowConfirmFinalizar(false)}
-            className="px-4 py-2 rounded-lg text-sm font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleConfirmFinalizar}
-            disabled={isFinalizando}
-            className="px-4 py-2 rounded-lg text-sm font-bold shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
-          >
-            {isFinalizando ? "Finalizando..." : "Confirmar"}
-          </button>
-        </div>
-      </Modal>
+        isFinalizando={isFinalizando}
+        updatedDetalles={updatedDetalles}
+        containers={containers}
+        containersLoading={containersLoading}
+        selectedContainers={selectedContainers}
+        setSelectedContainers={(v) => setSelectedContainers(v)}
+        onConfirm={handleConfirmFinalizar}
+      />
     </div>
   );
 }
