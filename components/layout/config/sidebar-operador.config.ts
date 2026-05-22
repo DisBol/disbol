@@ -53,6 +53,16 @@ export const sidebarOperadorMenu: SidebarMenu = {
       label: "App cliente",
       href: "/cliente",
       icon: BoxIcon,
+    },
+    {
+      label: "Contabilidad",
+      href: "/contabilidad",
+      icon: BoxIcon,
+    },
+    {
+      label: "Planillas",
+      href: "/planillas",
+      icon: BoxIcon,
     }
   ],
   footer: [
