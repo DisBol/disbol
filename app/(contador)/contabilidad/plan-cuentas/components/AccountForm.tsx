@@ -28,6 +28,7 @@ interface AccountFormProps {
   onChange: (nextValue: AccountFormState) => void;
   onSave: () => void;
   onClear: () => void;
+  saving?: boolean;
 }
 
 export function AccountForm({
@@ -38,7 +39,26 @@ export function AccountForm({
   onChange,
   onSave,
   onClear,
+  saving = false,
 }: AccountFormProps) {
+  const selectedTypeValue =
+    typeOptions.find(
+      (option) => option.value === value.type || option.label === value.type,
+    )?.value ?? "";
+
+  const selectedLevelValue =
+    levelOptions.find(
+      (option) => option.value === value.level || option.label === value.level,
+    )?.value ?? "";
+
+  const selectedCurrencyValue =
+    currencyOptions.find(
+      (option) =>
+        option.value === value.currency || option.label === value.currency,
+    )?.value ??
+    currencyOptions[0]?.value ??
+    "BOB";
+
   return (
     <Card className="overflow-hidden border-slate-200 shadow-sm">
       <CardContent className="p-0">
@@ -69,8 +89,9 @@ export function AccountForm({
 
           <MultiSelect
             options={typeOptions}
-            selectedValues={[value.type]}
+            selectedValues={selectedTypeValue ? [selectedTypeValue] : []}
             onSelect={(option) => onChange({ ...value, type: option.value })}
+            placeholder="Seleccionar elemento contable"
             size="sm"
             radius="md"
             closeOnSelect
@@ -79,8 +100,9 @@ export function AccountForm({
 
           <MultiSelect
             options={levelOptions}
-            selectedValues={[value.level]}
+            selectedValues={selectedLevelValue ? [selectedLevelValue] : []}
             onSelect={(option) => onChange({ ...value, level: option.value })}
+            placeholder="Seleccionar centro de costo"
             size="sm"
             radius="md"
             closeOnSelect
@@ -89,10 +111,13 @@ export function AccountForm({
 
           <MultiSelect
             options={currencyOptions}
-            selectedValues={[value.currency]}
+            selectedValues={
+              selectedCurrencyValue ? [selectedCurrencyValue] : []
+            }
             onSelect={(option) =>
               onChange({ ...value, currency: option.value })
             }
+            placeholder="Seleccionar moneda"
             size="sm"
             radius="md"
             closeOnSelect
@@ -105,6 +130,7 @@ export function AccountForm({
               leftIcon={<SaveIcon size={16} />}
               size="sm"
               onClick={onSave}
+              loading={saving}
               className="rounded-md"
             >
               Guardar
