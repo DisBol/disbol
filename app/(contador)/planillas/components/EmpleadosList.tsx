@@ -4,9 +4,17 @@ import { Empleado } from "../interfaces";
 
 interface EmpleadosListProps {
   empleados: Empleado[];
+  onEditarClick?: (empleado: any) => void;
+  onAFavorClick?: (empleado: any) => void;
+  onDescuentosClick?: (empleado: any) => void;
 }
 
-export default function EmpleadosList({ empleados }: EmpleadosListProps) {
+export default function EmpleadosList({
+  empleados,
+  onEditarClick,
+  onAFavorClick,
+  onDescuentosClick,
+}: EmpleadosListProps) {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <table className="w-full">
@@ -48,13 +56,22 @@ export default function EmpleadosList({ empleados }: EmpleadosListProps) {
                 {empleado.estado}
               </td>
               <td className="px-6 py-4 text-sm space-x-2 flex">
-                <button className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-3 py-1 rounded text-xs font-medium transition">
+                <button
+                  onClick={() => onEditarClick && onEditarClick(empleado)}
+                  className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-3 py-1 rounded text-xs font-medium transition"
+                >
                   Editar
                 </button>
-                <button className="bg-green-500 text-white hover:bg-green-600 px-3 py-1 rounded text-xs font-medium transition">
+                <button
+                  onClick={() => onAFavorClick && onAFavorClick(empleado)}
+                  className="bg-green-500 text-white hover:bg-green-600 px-3 py-1 rounded text-xs font-medium transition"
+                >
                   A favor
                 </button>
-                <button className="bg-red-500 text-white hover:bg-red-600 px-3 py-1 rounded text-xs font-medium transition">
+                <button
+                  onClick={() => onDescuentosClick && onDescuentosClick(empleado)}
+                  className="bg-red-500 text-white hover:bg-red-600 px-3 py-1 rounded text-xs font-medium transition"
+                >
                   Descuentos
                 </button>
               </td>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
@@ -9,53 +9,154 @@ import {
   NuevoAsientoTab,
   type JournalLine,
 } from "./components/NuevoAsientoTab";
+import { AddAsiento } from "./services/addasiento";
+import { GetAccount } from "@/app/(operador)/asignaciones/service/getaccount";
+import { GetAsiento } from "./services/getasiento";
 
-const initialLines: JournalLine[] = [
-  {
-    id: "1",
-    date: "2026-05-22",
-    account: "1.1",
-    glosa: "Registro inicial de caja",
-    debit: 1000,
-    credit: 0,
-  },
-  {
-    id: "2",
-    date: "2026-05-22",
-    account: "4.1",
-    glosa: "Reconocimiento de venta",
-    debit: 0,
-    credit: 1000,
-  },
-];
-
-const draftEntries: DraftEntry[] = [
-  {
-    id: "1",
-    fecha: "22/05/2026",
-    descripcion: "Pago de servicios",
-    total: "Bs 480,00",
-    estado: "Borrador",
-  },
-  {
-    id: "2",
-    fecha: "21/05/2026",
-    descripcion: "Compra de insumos",
-    total: "Bs 1.250,00",
-    estado: "Borrador",
-  },
-  {
-    id: "3",
-    fecha: "20/05/2026",
-    descripcion: "Asiento de ajuste",
-    total: "Bs 320,00",
-    estado: "Borrador",
-  },
-];
+const initialLines: JournalLine[] = [];
 
 export default function Page() {
-  const [journalLines] = useState<JournalLine[]>(initialLines);
+  const [journalLines, setJournalLines] = useState<JournalLine[]>(initialLines);
+  const [entryDate, setEntryDate] = useState("2026-05-31");
+  const [autoEditLineId, setAutoEditLineId] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState("nuevo");
+  const [draftEntries, setDraftEntries] = useState<DraftEntry[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [draftsError, setDraftsError] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [defaultAccountId, setDefaultAccountId] = useState<number | null>(null);
+
+  const getPrimaryAccountId = () => {
+    return defaultAccountId;
+  };
+
+  const addJournalLine = () => {
+    const nextId = `${Date.now()}-${journalLines.length + 1}`;
+
+    setJournalLines((currentLines) => [
+      ...currentLines,
+      {
+        id: nextId,
+        date: entryDate,
+        account: "",
+        glosa: "",
+        debit: 0,
+        credit: 0,
+      },
+    ]);
+
+    setAutoEditLineId(nextId);
+  };
+
+  const updateJournalLine = (
+    id: string,
+    field: keyof Omit<JournalLine, "id">,
+    value: string | number,
+  ) => {
+    setJournalLines((currentLines) =>
+      currentLines.map((line) =>
+        line.id === id
+          ? {
+              ...line,
+              [field]: value,
+            }
+          : line,
+      ),
+    );
+  };
+
+  const removeJournalLine = (id: string) => {
+    setJournalLines((currentLines) =>
+      currentLines.filter((line) => line.id !== id),
+    );
+  };
+
+  const saveDraft = async () => {
+    try {
+      setSavingDraft(true);
+
+      const accountId = getPrimaryAccountId();
+
+      if (!accountId) {
+        throw new Error("No hay una cuenta válida para guardar el asiento");
+      }
+
+      await AddAsiento({
+        description:
+          journalLines.find((line) => line.glosa.trim())?.glosa ||
+          "Por compra a sofia",
+        amount_credit: totals.credit,
+        amount_debit: totals.debit,
+        Account_id: accountId,
+        AccountingPeriod_id: 1,
+      });
+
+      await loadDrafts();
+      setSelectedTab("borrador");
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const loadDrafts = useCallback(async () => {
+    try {
+      setDraftsLoading(true);
+      setDraftsError(null);
+
+      const response = await GetAsiento();
+
+      setDraftEntries(
+        response.data.map((item) => ({
+          id: String(item.id),
+          description: item.description,
+          active: item.active,
+          amount_credit: item.amount_credit,
+          amount_debit: item.amount_debit,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          Account_id: item.Account_id,
+          AccountingPeriod_id: item.AccountingPeriod_id,
+        })),
+      );
+    } catch (error) {
+      setDraftsError(
+        error instanceof Error ? error.message : "Error al cargar asientos",
+      );
+    } finally {
+      setDraftsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDrafts();
+  }, [loadDrafts]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAccounts = async () => {
+      try {
+        const response = await GetAccount("true");
+
+        if (!active) return;
+
+        const firstActiveAccount = response.data.find(
+          (account) => account.active === "true",
+        );
+
+        setDefaultAccountId(firstActiveAccount?.id ?? null);
+      } catch {
+        if (!active) return;
+        setDefaultAccountId(null);
+      }
+    };
+
+    void loadAccounts();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const totals = useMemo(() => {
     const debit = journalLines.reduce((sum, line) => sum + line.debit, 0);
@@ -125,7 +226,7 @@ export default function Page() {
                 <TabsTrigger value="borrador" variant="underlined" size="md">
                   <span className="flex items-center gap-2">
                     <span className="text-lg leading-none">◔</span>
-                    Asientos en Borrador (7)
+                    Asientos en Borrador ({draftEntries.length})
                   </span>
                 </TabsTrigger>
               </TabsList>
@@ -133,14 +234,26 @@ export default function Page() {
               <TabsContent value="nuevo" animation="none" className="mt-0">
                 <NuevoAsientoTab
                   journalLines={journalLines}
+                  entryDate={entryDate}
+                  autoEditLineId={autoEditLineId}
                   debitTotal={totals.debit}
                   creditTotal={totals.credit}
                   balanced={totals.balanced}
+                  onEntryDateChange={setEntryDate}
+                  onAddLine={addJournalLine}
+                  onUpdateLine={updateJournalLine}
+                  onRemoveLine={removeJournalLine}
+                  onSaveDraft={saveDraft}
+                  savingDraft={savingDraft}
                 />
               </TabsContent>
 
               <TabsContent value="borrador" animation="none" className="mt-0">
-                <BorradoresTab entries={draftEntries} />
+                <BorradoresTab
+                  entries={draftEntries}
+                  loading={draftsLoading}
+                  error={draftsError}
+                />
               </TabsContent>
             </Tabs>
           </CardContent>
