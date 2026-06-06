@@ -4,142 +4,16 @@ import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Select as MultiSelect } from "@/components/ui/SelecMultipe";
 import { AccountForm, type AccountFormState } from "./components/AccountForm";
+import { useAddAccount } from "./hooks/useAddAccount";
+import { useGetAccount } from "./hooks/useGetAccount";
+import { useGetElements } from "./hooks/useGetElements";
+import { useGetCenterCost } from "./hooks/useGetCenterCost";
+import { useUpdateAccount } from "./hooks/useUpdateAccount";
 import {
   AccountTree,
   type AccountGroup,
   type AccountItem,
 } from "./components/AccountTree";
-
-const accountGroups: AccountGroup[] = [
-  {
-    title: "Activo",
-    items: [
-      {
-        id: "1",
-        code: "1.1",
-        name: "Caja",
-        type: "Activo",
-        center: "General",
-        currency: "BOB",
-        level: "General",
-        status: "Activo",
-      },
-      {
-        id: "2",
-        code: "1.2",
-        name: "Bancos",
-        type: "Activo",
-        center: "Tesorería",
-        currency: "BOB",
-        level: "General",
-        status: "Activo",
-      },
-    ],
-  },
-  {
-    title: "Ingreso",
-    items: [
-      {
-        id: "3",
-        code: "4.1",
-        name: "Ventas",
-        type: "Ingreso",
-        center: "General",
-        currency: "BOB",
-        level: "General",
-        status: "Activo",
-      },
-      {
-        id: "4",
-        code: "4.2",
-        name: "Servicios",
-        type: "Ingreso",
-        center: "Comercial",
-        currency: "BOB",
-        level: "General",
-        status: "Activo",
-      },
-    ],
-  },
-  {
-    title: "Gasto",
-    items: [
-      {
-        id: "5",
-        code: "5.1",
-        name: "Costos de Ventas",
-        type: "Gasto",
-        center: "Producción",
-        currency: "BOB",
-        level: "General",
-        status: "Activo",
-      },
-      {
-        id: "6",
-        code: "6.1",
-        name: "Sueldos y Salarios",
-        type: "Gasto",
-        center: "General",
-        currency: "BOB",
-        level: "General",
-        status: "Activo",
-      },
-    ],
-  },
-  {
-    title: "Pasivo",
-    items: [
-      {
-        id: "7",
-        code: "2.1",
-        name: "Proveedores",
-        type: "Pasivo",
-        center: "General",
-        currency: "BOB",
-        level: "General",
-        status: "Activo",
-      },
-    ],
-  },
-  {
-    title: "Patrimonio",
-    items: [
-      {
-        id: "8",
-        code: "3.1",
-        name: "Capital Social",
-        type: "Patrimonio",
-        center: "General",
-        currency: "BOB",
-        level: "General",
-        status: "Activo",
-      },
-    ],
-  },
-];
-
-const typeOptions = [
-  { value: "todos", label: "Todos los tipos" },
-  { value: "Activo", label: "Activo" },
-  { value: "Pasivo", label: "Pasivo" },
-  { value: "Patrimonio", label: "Patrimonio" },
-  { value: "Ingreso", label: "Ingreso" },
-  { value: "Gasto", label: "Gasto" },
-];
-
-const centerOptions = [
-  { value: "todos", label: "Todos los centros" },
-  { value: "General", label: "General" },
-  { value: "Tesorería", label: "Tesorería" },
-  { value: "Comercial", label: "Comercial" },
-  { value: "Producción", label: "Producción" },
-];
-
-const levelOptions = [
-  { value: "General", label: "General" },
-  { value: "Detalle", label: "Detalle" },
-  { value: "Analítica", label: "Analítica" },
-];
 
 const currencyOptions = [
   { value: "BOB", label: "BOB" },
@@ -147,32 +21,117 @@ const currencyOptions = [
   { value: "EUR", label: "EUR" },
 ];
 
-const formDefaults: AccountFormState = {
-  code: "",
-  name: "",
-  type: "Activo",
-  level: "General",
-  currency: "BOB",
-};
-
 const accountToForm = (account: AccountItem): AccountFormState => ({
   code: account.code,
   name: account.name,
-  type: account.type,
-  level: account.level,
+  type: String(account.elementsId),
+  level: String(account.centerCostId),
   currency: account.currency,
 });
 
 export default function PlanCuentasPage() {
+  const { data: accounts, refetch: refetchAccounts } = useGetAccount();
+  const { data: elements } = useGetElements();
+  const { data: centerCosts } = useGetCenterCost();
+  const { addAccount, loading: addingAccount } = useAddAccount();
+  const { updateAccount, loading: updatingAccount } = useUpdateAccount();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("todos");
   const [centerFilter, setCenterFilter] = useState("todos");
-  const [selectedId, setSelectedId] = useState(accountGroups[0].items[0].id);
-  const [form, setForm] = useState(accountToForm(accountGroups[0].items[0]));
+  const [selectedId, setSelectedId] = useState("");
+  const [form, setForm] = useState<AccountFormState>({
+    code: "",
+    name: "",
+    type: "",
+    level: "",
+    currency: "",
+  });
+
+  const accountTypeOptions = useMemo(
+    () =>
+      elements.map((element) => ({
+        value: String(element.id),
+        label: element.name,
+      })),
+    [elements],
+  );
+
+  const levelOptions = useMemo(
+    () =>
+      centerCosts.map((centerCost) => ({
+        value: String(centerCost.id),
+        label: centerCost.name,
+      })),
+    [centerCosts],
+  );
+
+  const elementNameById = useMemo(
+    () => new Map(elements.map((element) => [element.id, element.name])),
+    [elements],
+  );
+
+  const centerNameById = useMemo(
+    () =>
+      new Map(
+        centerCosts.map((centerCost) => [centerCost.id, centerCost.name]),
+      ),
+    [centerCosts],
+  );
+
+  const typeFilterOptions = useMemo(
+    () => [
+      { value: "todos", label: "Todos los elementos" },
+      ...accountTypeOptions,
+    ],
+    [accountTypeOptions],
+  );
+
+  const centerOptions = useMemo(
+    () => [{ value: "todos", label: "Todos los centros" }, ...levelOptions],
+    [levelOptions],
+  );
+
+  const savingAccount = addingAccount || updatingAccount;
+
+  const accountGroups = useMemo(() => {
+    return accounts.reduce((groups, account) => {
+      const title =
+        elementNameById.get(account.Elements_id) ??
+        `Elemento ${account.Elements_id}`;
+      const centerName =
+        centerNameById.get(account.CenterCost_id) ??
+        `Centro ${account.CenterCost_id}`;
+      const item: AccountItem = {
+        id: String(account.id),
+        code: account.code,
+        name: account.name,
+        center: centerName,
+        currency: "BOB",
+        status: account.active,
+        elementsId: account.Elements_id,
+        centerCostId: account.CenterCost_id,
+      };
+
+      const existingGroup = groups.find((group) => group.title === title);
+      if (existingGroup) {
+        existingGroup.items.push(item);
+      } else {
+        groups.push({ title, items: [item] });
+      }
+
+      return groups;
+    }, [] as AccountGroup[]);
+  }, [accounts, centerNameById, elementNameById]);
 
   const filteredGroups = useMemo(
     () =>
       accountGroups
+        .filter((group) => {
+          if (typeFilter === "todos") return true;
+
+          const selectedTypeName = elementNameById.get(Number(typeFilter));
+          return group.title === selectedTypeName;
+        })
         .map((group) => ({
           ...group,
           items: group.items.filter((item) => {
@@ -180,16 +139,14 @@ export default function PlanCuentasPage() {
               `${item.code} ${item.name}`
                 .toLowerCase()
                 .includes(search.toLowerCase()) || search.trim() === "";
-            const matchesType =
-              typeFilter === "todos" || item.type === typeFilter;
             const matchesCenter =
               centerFilter === "todos" || item.center === centerFilter;
 
-            return matchesSearch && matchesType && matchesCenter;
+            return matchesSearch && matchesCenter;
           }),
         }))
         .filter((group) => group.items.length > 0),
-    [centerFilter, search, typeFilter],
+    [accountGroups, centerFilter, elementNameById, search, typeFilter],
   );
 
   const handleSelectAccount = (account: AccountItem) => {
@@ -199,7 +156,75 @@ export default function PlanCuentasPage() {
 
   const handleClear = () => {
     setSelectedId("");
-    setForm(formDefaults);
+    setForm({
+      code: "",
+      name: "",
+      type: "",
+      level: "",
+      currency: "",
+    });
+  };
+
+  const handleSaveAccount = async () => {
+    const resolvedElement = accountTypeOptions.find(
+      (option) => option.value === form.type || option.label === form.type,
+    );
+
+    const resolvedCenterCost = levelOptions.find(
+      (option) => option.value === form.level || option.label === form.level,
+    );
+
+    if (!resolvedElement || !resolvedCenterCost) {
+      return;
+    }
+
+    const payload = {
+      name: form.name,
+      active: "true",
+      code: form.code,
+      CenterCost_id: Number(resolvedCenterCost.value),
+      Elements_id: Number(resolvedElement.value),
+    };
+
+    if (selectedId) {
+      await updateAccount({
+        id: Number(selectedId),
+        ...payload,
+      });
+      alert("Cuenta editada correctamente");
+    } else {
+      await addAccount(payload);
+      alert("Cuenta guardada correctamente");
+    }
+
+    await refetchAccounts();
+    handleClear();
+  };
+
+  const handleDeactivateAccount = async (account: AccountItem) => {
+    const resolvedElement = accountTypeOptions.find(
+      (option) => option.value === String(account.elementsId),
+    );
+
+    const resolvedCenterCost = levelOptions.find(
+      (option) => option.value === String(account.centerCostId),
+    );
+
+    if (!resolvedElement || !resolvedCenterCost) {
+      return;
+    }
+
+    await updateAccount({
+      id: Number(account.id),
+      name: account.name,
+      active: "false",
+      code: account.code,
+      CenterCost_id: Number(resolvedCenterCost.value),
+      Elements_id: Number(resolvedElement.value),
+    });
+
+    await refetchAccounts();
+    alert("Cuenta desactivada correctamente");
   };
 
   return (
@@ -233,7 +258,7 @@ export default function PlanCuentasPage() {
           </div>
 
           <MultiSelect
-            options={typeOptions}
+            options={typeFilterOptions}
             selectedValues={[typeFilter]}
             onSelect={(option) => setTypeFilter(option.value)}
             placeholder="Todos los tipos"
@@ -260,16 +285,18 @@ export default function PlanCuentasPage() {
             groups={filteredGroups}
             selectedId={selectedId}
             onSelectAccount={handleSelectAccount}
+            onDeactivateAccount={handleDeactivateAccount}
           />
 
           <AccountForm
             value={form}
-            typeOptions={typeOptions.slice(1)}
+            typeOptions={accountTypeOptions}
             levelOptions={levelOptions}
             currencyOptions={currencyOptions}
             onChange={setForm}
-            onSave={() => undefined}
+            onSave={handleSaveAccount}
             onClear={handleClear}
+            saving={savingAccount}
           />
         </div>
       </div>

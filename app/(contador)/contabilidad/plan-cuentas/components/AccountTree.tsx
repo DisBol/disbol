@@ -8,11 +8,11 @@ export type AccountItem = {
   id: string;
   code: string;
   name: string;
-  type: string;
   center: string;
   currency: string;
-  level: string;
   status: string;
+  elementsId: number;
+  centerCostId: number;
 };
 
 export type AccountGroup = {
@@ -24,12 +24,14 @@ interface AccountTreeProps {
   groups: AccountGroup[];
   selectedId: string;
   onSelectAccount: (account: AccountItem) => void;
+  onDeactivateAccount: (account: AccountItem) => void;
 }
 
 export function AccountTree({
   groups,
   selectedId,
   onSelectAccount,
+  onDeactivateAccount,
 }: AccountTreeProps) {
   return (
     <Card className="overflow-hidden border-slate-200 shadow-sm">
@@ -74,8 +76,7 @@ export function AccountTree({
                           </span>
                         </div>
                         <div className="mt-0.5 text-xs text-slate-500">
-                          {account.currency} · {account.level} ·{" "}
-                          {account.center}
+                          {account.currency} · {account.center}
                         </div>
                       </button>
 
@@ -94,6 +95,7 @@ export function AccountTree({
                           type="button"
                           variant="danger"
                           size="sm"
+                          onClick={() => onDeactivateAccount(account)}
                           className="rounded-md"
                         >
                           Desactivar
