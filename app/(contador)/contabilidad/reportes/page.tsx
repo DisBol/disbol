@@ -1,60 +1,51 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { SelectInput } from "@/components/ui/SelectInput";
+import { useMemo, useState } from "react";
+import { Select, type SelectOption } from "@/components/ui/SelecMultipe";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { BalanceGeneralTab, ComparativosTab } from "./components";
-import { BalanceGeneral } from "./interfaces";
-
-// Datos estáticos de Balance General
-const balanceEstatico: BalanceGeneral = {
-  periodo: "2025-12",
-  activos: {
-    corriente: [
-      { nombre: "caja", valor: 25000.0 },
-      { nombre: "bancos", valor: 150000.0 },
-      { nombre: "cuentas por cobrar", valor: 45000.0 },
-      { nombre: "inventario", valor: 80000.0 },
-    ],
-    subtotalCorriente: 300000.0,
-    noCorriente: [
-      { nombre: "propiedades", valor: 200000.0 },
-      { nombre: "equipos", valor: 120000.0 },
-      { nombre: "depreciacion acumulada", valor: -30000.0, color: "danger" },
-    ],
-    subtotalNoCorriente: 290000.0,
-    total: 590000.0,
-  },
-  pasivos: {
-    corriente: [
-      { nombre: "proveedores", valor: 35000.0 },
-      { nombre: "prestamos bancarios", valor: 50000.0 },
-      { nombre: "impuestos por pagar", valor: 12000.0 },
-    ],
-    subtotalCorriente: 97000.0,
-    noCorriente: [{ nombre: "prestamos largo plazo", valor: 80000.0 }],
-    subtotalNoCorriente: 80000.0,
-    total: 177000.0,
-  },
-  patrimonio: [
-    { nombre: "capital social", valor: 150000.0 },
-    { nombre: "reservas", valor: 25000.0 },
-    { nombre: "resultado acumulado", valor: -500.0, color: "danger" },
-  ],
-  totalPatrimonio: 174500.0,
-  verificacion: 351500.0,
-};
-
-const periodos = [
-  { value: "2025-12", label: "Diciembre 2025" },
-  { value: "2025-11", label: "Noviembre 2025" },
-  { value: "2025-10", label: "Octubre 2025" },
-  { value: "2025-09", label: "Septiembre 2025" },
-];
+import { useGetAccountingPeriod } from "../cierre-periodo/hooks/useGetAccountingPeriod";
+import { useGetElements } from "../plan-cuentas/hooks/useGetElements";
+import { useGetAccount } from "../plan-cuentas/hooks/useGetAccount";
+import { useGetAsiento } from "../nuevo-asiento/hooks/getAsiento";
 
 export default function ReportesPage() {
-  const [periodoSeleccionado, setPeriodoSeleccionado] = useState("2025-12");
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
   const [tabActivo, setTabActivo] = useState("balance-general");
+  const { data: accountingPeriods, loading, error } = useGetAccountingPeriod();
+  const {
+    data: elements,
+    loading: loadingElements,
+    error: elementsError,
+  } = useGetElements();
+  const {
+    data: accounts,
+    loading: loadingAccounts,
+    error: accountsError,
+  } = useGetAccount();
+  const {
+    data: asientos,
+    loading: loadingAsientos,
+    error: asientosError,
+  } = useGetAsiento();
+
+  const periodos = useMemo<SelectOption[]>(
+    () =>
+      accountingPeriods.map((periodo) => ({
+        value: String(periodo.id),
+        label: periodo.name,
+      })),
+    [accountingPeriods],
+  );
+
+  const periodoVisible = periodoSeleccionado || periodos[0]?.value || "";
+  const periodoActivo =
+    periodos.find((periodo) => periodo.value === periodoVisible) ?? null;
+  const periodoActivoLabel = periodoActivo?.label || "Sin período";
+  const periodoActivoId = periodoActivo ? Number(periodoActivo.value) : null;
+  const balanceError = error || elementsError || accountsError || asientosError;
+  const balanceLoading =
+    loading || loadingElements || loadingAccounts || loadingAsientos;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -73,12 +64,27 @@ export default function ReportesPage() {
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Seleccionar Período:
           </label>
-          <SelectInput
-            value={periodoSeleccionado}
-            onChange={(e) => setPeriodoSeleccionado(e.target.value)}
+          <Select
             options={periodos}
-            inputSize="md"
+            selectedValues={periodoVisible ? [periodoVisible] : []}
+            onSelect={(option) => setPeriodoSeleccionado(option.value)}
+            placeholder={
+              balanceLoading ? "Cargando períodos..." : "Seleccionar período"
+            }
+            disabled={balanceLoading || periodos.length === 0}
+            emptyMessage="No hay períodos contables disponibles"
+            size="md"
+            radius="md"
           />
+          {balanceError && (
+            <p className="mt-2 text-sm text-red-600">{balanceError}</p>
+          )}
+          {!balanceError && periodoActivoLabel !== "Sin período" && (
+            <p className="mt-2 text-sm text-gray-600">
+              Mostrando datos para:{" "}
+              <span className="font-semibold">{periodoActivoLabel}</span>
+            </p>
+          )}
         </div>
 
         {/* Tabs */}
@@ -89,7 +95,13 @@ export default function ReportesPage() {
           </TabsList>
 
           <TabsContent value="balance-general" className="mt-6">
-            <BalanceGeneralTab balance={balanceEstatico} />
+            <BalanceGeneralTab
+              periodo={periodoActivoLabel}
+              periodoId={periodoActivoId}
+              elements={elements}
+              accounts={accounts}
+              asientos={asientos}
+            />
           </TabsContent>
 
           <TabsContent value="comparativos" className="mt-6">
