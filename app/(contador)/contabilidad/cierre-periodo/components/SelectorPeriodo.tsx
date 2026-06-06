@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
-import { SelectInput } from "@/components/ui/SelectInput";
+import { Select, type SelectOption } from "@/components/ui/SelecMultipe";
 import { Card, CardContent } from "@/components/ui/Card";
+import { useGetAccountingPeriod } from "../hooks/useGetAccountingPeriod";
 
 interface SelectorPeriodoProps {
   onValidar?: (periodo: string) => Promise<void>;
@@ -13,23 +14,20 @@ export default function SelectorPeriodo({ onValidar }: SelectorPeriodoProps) {
   const [periodo, setPeriodo] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const {
+    data: accountingPeriods,
+    loading: loadingPeriods,
+    error: periodsError,
+  } = useGetAccountingPeriod();
 
-  // Generar periodos disponibles (últimos 24 meses)
-  const generatePeriodos = useCallback(() => {
-    const periodos = [];
-    const today = new Date();
-
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      periodos.push({ value: `${year}-${month}`, label: `${year}-${month}` });
-    }
-
-    return periodos;
-  }, []);
-
-  const periodos = generatePeriodos();
+  const periodos = useMemo(
+    (): SelectOption[] =>
+      accountingPeriods.map((periodoItem) => ({
+        value: String(periodoItem.id),
+        label: periodoItem.name,
+      })),
+    [accountingPeriods],
+  );
 
   useEffect(() => {
     if (!periodo && periodos.length > 0) {
@@ -61,17 +59,30 @@ export default function SelectorPeriodo({ onValidar }: SelectorPeriodoProps) {
     }
   }, [periodo, onValidar]);
 
+  useEffect(() => {
+    if (periodsError) {
+      setError(periodsError);
+    }
+  }, [periodsError]);
+
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <div className="flex items-end gap-4">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <div className="flex-1">
-            <SelectInput
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value)}
+            <Select
+              label="PERÍODO"
               options={periodos}
-              placeholder="Seleccionar período"
-              disabled={loading}
+              selectedValues={periodo ? [periodo] : []}
+              onSelect={(option) => setPeriodo(option.value)}
+              placeholder={
+                loadingPeriods ? "Cargando períodos..." : "Seleccionar período"
+              }
+              disabled={loading || loadingPeriods || periodos.length === 0}
+              emptyMessage="No hay períodos disponibles"
+              closeOnSelect
+              size="md"
+              radius="md"
             />
           </div>
 
@@ -88,6 +99,12 @@ export default function SelectorPeriodo({ onValidar }: SelectorPeriodoProps) {
         {error && (
           <div className="text-danger text-sm mt-3 p-3 bg-red-50 rounded-md">
             {error}
+          </div>
+        )}
+
+        {!error && !loadingPeriods && periodos.length === 0 && (
+          <div className="text-sm mt-3 p-3 bg-yellow-50 rounded-md text-yellow-700">
+            No hay períodos contables activos disponibles.
           </div>
         )}
       </CardContent>

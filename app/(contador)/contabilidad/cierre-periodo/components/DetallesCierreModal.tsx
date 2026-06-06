@@ -122,32 +122,36 @@ export default function DetallesCierreModal({
           <h3 className="text-lg font-bold text-red-600 mb-4">
             Asientos Procesados
           </h3>
-          <TableWrapper>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Glosa</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {cierre.asientosDetalle.map((asiento) => (
-                  <TableRow key={asiento.id}>
-                    <TableCell className="font-medium">{asiento.id}</TableCell>
-                    <TableCell>{asiento.fecha}</TableCell>
-                    <TableCell>{asiento.tipo}</TableCell>
-                    <TableCell>{asiento.glosa}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(asiento.total)}
-                    </TableCell>
+          <div className="max-h-72 overflow-y-auto rounded-md border border-gray-200">
+            <TableWrapper>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Glosa</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableWrapper>
+                </TableHeader>
+                <TableBody>
+                  {cierre.asientosDetalle.map((asiento) => (
+                    <TableRow key={asiento.id}>
+                      <TableCell className="font-medium">
+                        {asiento.id}
+                      </TableCell>
+                      <TableCell>{asiento.fecha}</TableCell>
+                      <TableCell>{asiento.tipo}</TableCell>
+                      <TableCell>{asiento.glosa}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(asiento.total)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableWrapper>
+          </div>
         </div>
       </div>
     </Modal>

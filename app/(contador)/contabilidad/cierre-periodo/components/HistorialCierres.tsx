@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   TableWrapper,
@@ -13,94 +13,66 @@ import {
 } from "@/components/ui/Table";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { CierrePeriodo } from "../interfaces";
+import { useGetAccountingPeriod } from "../hooks/useGetAccountingPeriod";
+import { useGetAsiento } from "../../nuevo-asiento/hooks/getAsiento";
 
 interface HistorialCierresProps {
-  onRefresh?: () => void;
   onSelectCierre?: (cierre: CierrePeriodo) => void;
 }
 
 export default function HistorialCierres({
-  onRefresh,
   onSelectCierre,
 }: HistorialCierresProps) {
-  // Datos estáticos
-  const cierresEstaticos: CierrePeriodo[] = [
-    {
-      id: "1",
-      periodo: "2025-11",
-      fechaCierre: new Date("2025-12-01T04:00:00"),
-      cerradoPor: "contador",
-      asientos: 2,
-      resultado: 8300.0,
-      estado: "cerrado",
-      totalIngresos: 12500.0,
-      totalGastos: 4200.0,
-      asientosDetalle: [
-        {
-          id: "1000",
-          fecha: "2025-11-15",
-          tipo: "Factura",
-          glosa: "Venta noviembre",
-          total: 8000.0,
-        },
-        {
-          id: "1001",
-          fecha: "2025-11-20",
-          tipo: "Recibo",
-          glosa: "Cobro venta",
-          total: 4500.0,
-        },
-      ],
-    },
-    {
-      id: "2",
-      periodo: "2025-12",
-      fechaCierre: new Date("2026-01-02T06:30:00"),
-      cerradoPor: "auditor",
-      asientos: 4,
-      resultado: 10800.0,
-      estado: "cerrado",
-      totalIngresos: 15000.0,
-      totalGastos: 4200.0,
-      asientosDetalle: [
-        {
-          id: "2000",
-          fecha: "2025-12-05",
-          tipo: "Factura",
-          glosa: "Venta diciembre",
-          total: 9500.0,
-        },
-        {
-          id: "2001",
-          fecha: "2025-12-10",
-          tipo: "Recibo",
-          glosa: "Cobro venta",
-          total: 5500.0,
-        },
-        {
-          id: "2002",
-          fecha: "2025-12-15",
-          tipo: "Nota Débito",
-          glosa: "Ajuste inventario",
-          total: 1200.0,
-        },
-        {
-          id: "2003",
-          fecha: "2025-12-20",
-          tipo: "Egreso",
-          glosa: "Gastos operacionales",
-          total: 3000.0,
-        },
-      ],
-    },
-  ];
+  const {
+    data: accountingPeriods,
+    loading: loadingPeriods,
+    error: periodsError,
+  } = useGetAccountingPeriod();
+  const {
+    data: asientos,
+    loading: loadingAsientos,
+    error: asientosError,
+  } = useGetAsiento();
 
-  const [cierres, setCierres] = useState<CierrePeriodo[]>(cierresEstaticos);
-  const [loading, setLoading] = useState(false);
+  const cierres = useMemo<CierrePeriodo[]>(() => {
+    return accountingPeriods.map((periodo) => {
+      const asientosPeriodo = asientos.filter(
+        (asiento) => asiento.AccountingPeriod_id === periodo.id,
+      );
 
-  useEffect(() => {
-    setCierres(cierresEstaticos);
-  }, []);
+      const totalIngresos = asientosPeriodo.reduce(
+        (accumulator, asiento) => accumulator + asiento.amount_credit,
+        0,
+      );
+
+      const totalGastos = asientosPeriodo.reduce(
+        (accumulator, asiento) => accumulator + asiento.amount_debit,
+        0,
+      );
+
+      return {
+        id: String(periodo.id),
+        periodo: periodo.name,
+        fechaCierre: new Date(periodo.updated_at),
+        cerradoPor: "contador",
+        asientos: asientosPeriodo.length,
+        resultado: totalIngresos - totalGastos,
+        estado: "cerrado",
+        totalIngresos,
+        totalGastos,
+        asientosDetalle: asientosPeriodo.map((asiento) => ({
+          id: String(asiento.id),
+          fecha: new Date(asiento.created_at).toISOString().split("T")[0],
+          tipo: asiento.description,
+          glosa: asiento.description,
+          total: asiento.amount_credit - asiento.amount_debit,
+        })),
+      };
+    });
+  }, [accountingPeriods, asientos]);
+
+  const loading = loadingPeriods || loadingAsientos;
+  const error = periodsError || asientosError;
 
   const formatDate = (date: string | Date) => {
     return new Intl.DateTimeFormat("es-ES", {
@@ -186,7 +158,9 @@ export default function HistorialCierres({
           </TableWrapper>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            No hay cierres registrados
+            {error
+              ? "No se pudo cargar el historial"
+              : "No hay cierres registrados"}
           </div>
         )}
       </CardContent>
