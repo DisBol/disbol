@@ -4,18 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { DocumentIcon } from "@/components/icons/DocumentIcon";
 import { ClockCircleIcon } from "@/components/icons/ClockCircleIcon";
 import { CalendarIcon } from "@/components/icons/CalendarIcon";
-
-export type DraftEntry = {
-  id: string;
-  description: string;
-  active: string;
-  amount_credit: number;
-  amount_debit: number;
-  created_at: string;
-  updated_at: string;
-  Account_id: number;
-  AccountingPeriod_id: number;
-};
+import type { DraftEntry } from "../interfaces/nuevo-asiento.interface";
 
 interface BorradoresTabProps {
   entries: DraftEntry[];
