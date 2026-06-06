@@ -12,6 +12,7 @@ import {
 import { AddAsiento } from "./services/addasiento";
 import { GetAccount } from "@/app/(operador)/asignaciones/service/getaccount";
 import { GetAsiento } from "./services/getasiento";
+import type { SelectOption } from "@/components/ui/SelecMultipe";
 
 const initialLines: JournalLine[] = [];
 
@@ -25,9 +26,13 @@ export default function Page() {
   const [draftsError, setDraftsError] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [defaultAccountId, setDefaultAccountId] = useState<number | null>(null);
+  const [accountOptions, setAccountOptions] = useState<SelectOption[]>([]);
 
   const getPrimaryAccountId = () => {
-    return defaultAccountId;
+    return (
+      journalLines.find((line) => line.accountId !== null)?.accountId ??
+      defaultAccountId
+    );
   };
 
   const addJournalLine = () => {
@@ -38,7 +43,7 @@ export default function Page() {
       {
         id: nextId,
         date: entryDate,
-        account: "",
+          accountId: defaultAccountId,
         glosa: "",
         debit: 0,
         credit: 0,
@@ -140,6 +145,13 @@ export default function Page() {
 
         if (!active) return;
 
+        const options = response.data.map((account) => ({
+          value: String(account.id),
+          label: `${account.code} - ${account.name}`,
+        }));
+
+        setAccountOptions(options);
+
         const firstActiveAccount = response.data.find(
           (account) => account.active === "true",
         );
@@ -236,6 +248,7 @@ export default function Page() {
                   journalLines={journalLines}
                   entryDate={entryDate}
                   autoEditLineId={autoEditLineId}
+                  accountOptions={accountOptions}
                   debitTotal={totals.debit}
                   creditTotal={totals.credit}
                   balanced={totals.balanced}
