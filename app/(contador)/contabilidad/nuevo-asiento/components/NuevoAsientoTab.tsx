@@ -5,15 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { DateField } from "@/components/ui/DateField";
 import { Input } from "@/components/ui/Input";
 import { Select, type SelectOption } from "@/components/ui/SelecMultipe";
-
-export type JournalLine = {
-  id: string;
-  date: string;
-  accountId: number | null;
-  glosa: string;
-  debit: number;
-  credit: number;
-};
+import type { JournalLine } from "../interfaces/nuevo-asiento.interface";
 
 interface NuevoAsientoTabProps {
   journalLines: JournalLine[];
@@ -102,8 +94,8 @@ export function NuevoAsientoTab({
   };
 
   const getAccountLabel = (accountId: number | null) =>
-    accountOptions.find((option) => option.value === String(accountId))?.label ??
-    "—";
+    accountOptions.find((option) => option.value === String(accountId))
+      ?.label ?? "—";
 
   return (
     <div className="space-y-5 px-4 py-5 sm:px-5 lg:px-6 lg:py-6">
