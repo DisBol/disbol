@@ -12,6 +12,7 @@ export interface Datum {
   code: string;
   CenterCost_id: number;
   Elements_id: number;
+  money_type: string;
 }
 
 export interface Metadata {

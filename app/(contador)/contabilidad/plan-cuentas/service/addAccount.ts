@@ -7,6 +7,7 @@ export interface AddAccountPayload extends Record<string, unknown> {
   code: string;
   CenterCost_id: number;
   Elements_id: number;
+  money_type: string;
 }
 
 export async function AddAccount(

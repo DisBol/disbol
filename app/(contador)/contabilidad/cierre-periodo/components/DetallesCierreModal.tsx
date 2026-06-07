@@ -35,10 +35,14 @@ export default function DetallesCierreModal({
     }).format(new Date(date));
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number, currency?: string) => {
+    if (!currency) {
+      return "-";
+    }
+
     return new Intl.NumberFormat("es-ES", {
       style: "currency",
-      currency: "USD",
+      currency,
       minimumFractionDigits: 2,
     }).format(value);
   };
@@ -51,10 +55,9 @@ export default function DetallesCierreModal({
       size="xl"
     >
       <div className="space-y-6">
-        {/* Información General */}
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <h3 className="text-lg font-bold text-red-600 mb-4">
+            <h3 className="mb-4 text-lg font-bold text-red-600">
               Información General
             </h3>
             <div className="space-y-3">
@@ -85,9 +88,8 @@ export default function DetallesCierreModal({
             </div>
           </div>
 
-          {/* Balance del Período */}
           <div>
-            <h3 className="text-lg font-bold text-red-600 mb-4">
+            <h3 className="mb-4 text-lg font-bold text-red-600">
               Balance del Período
             </h3>
             <div className="space-y-3">
@@ -96,7 +98,7 @@ export default function DetallesCierreModal({
                   Total Ingresos:{" "}
                 </span>
                 <span className="text-gray-900">
-                  {formatCurrency(cierre.totalIngresos)}
+                  {formatCurrency(cierre.totalIngresos, cierre.currency)}
                 </span>
               </div>
               <div>
@@ -104,22 +106,21 @@ export default function DetallesCierreModal({
                   Total Gastos:{" "}
                 </span>
                 <span className="text-gray-900">
-                  {formatCurrency(cierre.totalGastos)}
+                  {formatCurrency(cierre.totalGastos, cierre.currency)}
                 </span>
               </div>
-              <div className="pt-3 border-t border-gray-200">
+              <div className="border-t border-gray-200 pt-3">
                 <span className="font-semibold text-gray-700">Resultado: </span>
                 <span className="font-bold text-success">
-                  {formatCurrency(cierre.resultado)}
+                  {formatCurrency(cierre.resultado, cierre.currency)}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Asientos Procesados */}
         <div>
-          <h3 className="text-lg font-bold text-red-600 mb-4">
+          <h3 className="mb-4 text-lg font-bold text-red-600">
             Asientos Procesados
           </h3>
           <div className="max-h-72 overflow-y-auto rounded-md border border-gray-200">
@@ -144,7 +145,7 @@ export default function DetallesCierreModal({
                       <TableCell>{asiento.tipo}</TableCell>
                       <TableCell>{asiento.glosa}</TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(asiento.total)}
+                        {formatCurrency(asiento.total, asiento.currency)}
                       </TableCell>
                     </TableRow>
                   ))}

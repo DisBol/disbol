@@ -26,7 +26,7 @@ const accountToForm = (account: AccountItem): AccountFormState => ({
   name: account.name,
   type: String(account.elementsId),
   level: String(account.centerCostId),
-  currency: account.currency,
+  currency: account.currency || "",
 });
 
 export default function PlanCuentasPage() {
@@ -106,7 +106,7 @@ export default function PlanCuentasPage() {
         code: account.code,
         name: account.name,
         center: centerName,
-        currency: "BOB",
+        currency: account.money_type || "",
         status: account.active,
         elementsId: account.Elements_id,
         centerCostId: account.CenterCost_id,
@@ -174,7 +174,12 @@ export default function PlanCuentasPage() {
       (option) => option.value === form.level || option.label === form.level,
     );
 
-    if (!resolvedElement || !resolvedCenterCost) {
+    const resolvedCurrency = currencyOptions.find(
+      (option) =>
+        option.value === form.currency || option.label === form.currency,
+    );
+
+    if (!resolvedElement || !resolvedCenterCost || !resolvedCurrency) {
       return;
     }
 
@@ -184,6 +189,7 @@ export default function PlanCuentasPage() {
       code: form.code,
       CenterCost_id: Number(resolvedCenterCost.value),
       Elements_id: Number(resolvedElement.value),
+      money_type: resolvedCurrency.value,
     };
 
     if (selectedId) {
@@ -221,6 +227,7 @@ export default function PlanCuentasPage() {
       code: account.code,
       CenterCost_id: Number(resolvedCenterCost.value),
       Elements_id: Number(resolvedElement.value),
+      money_type: account.currency || "",
     });
 
     await refetchAccounts();

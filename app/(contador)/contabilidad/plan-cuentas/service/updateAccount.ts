@@ -8,6 +8,7 @@ export interface UpdateAccountPayload extends Record<string, unknown> {
   code: string;
   CenterCost_id: number;
   Elements_id: number;
+  money_type: string;
 }
 
 export async function UpdateAccount(

@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { CierrePeriodo } from "../interfaces";
 import { useGetAccountingPeriod } from "../hooks/useGetAccountingPeriod";
 import { useGetAsiento } from "../../nuevo-asiento/hooks/getAsiento";
+import { useGetAccount } from "../../plan-cuentas/hooks/useGetAccount";
 
 interface HistorialCierresProps {
   onSelectCierre?: (cierre: CierrePeriodo) => void;
@@ -33,12 +34,31 @@ export default function HistorialCierres({
     loading: loadingAsientos,
     error: asientosError,
   } = useGetAsiento();
+  const {
+    data: accounts,
+    loading: loadingAccounts,
+    error: accountsError,
+  } = useGetAccount();
+
+  const currencyByAccountId = useMemo(() => {
+    return new Map(
+      accounts.map((account) => [account.id, account.money_type || ""]),
+    );
+  }, [accounts]);
 
   const cierres = useMemo<CierrePeriodo[]>(() => {
     return accountingPeriods.map((periodo) => {
       const asientosPeriodo = asientos.filter(
         (asiento) => asiento.AccountingPeriod_id === periodo.id,
       );
+      const currencies = Array.from(
+        new Set(
+          asientosPeriodo
+            .map((asiento) => currencyByAccountId.get(asiento.Account_id))
+            .filter((currency): currency is string => Boolean(currency)),
+        ),
+      );
+      const currency = currencies.length === 1 ? currencies[0] : undefined;
 
       const totalIngresos = asientosPeriodo.reduce(
         (accumulator, asiento) => accumulator + asiento.amount_credit,
@@ -60,19 +80,21 @@ export default function HistorialCierres({
         estado: "cerrado",
         totalIngresos,
         totalGastos,
+        currency,
         asientosDetalle: asientosPeriodo.map((asiento) => ({
           id: String(asiento.id),
           fecha: new Date(asiento.created_at).toISOString().split("T")[0],
           tipo: asiento.description,
           glosa: asiento.description,
+          currency: currencyByAccountId.get(asiento.Account_id) || "",
           total: asiento.amount_credit - asiento.amount_debit,
         })),
       };
     });
-  }, [accountingPeriods, asientos]);
+  }, [accountingPeriods, asientos, currencyByAccountId]);
 
-  const loading = loadingPeriods || loadingAsientos;
-  const error = periodsError || asientosError;
+  const loading = loadingPeriods || loadingAsientos || loadingAccounts;
+  const error = periodsError || asientosError || accountsError;
 
   const formatDate = (date: string | Date) => {
     return new Intl.DateTimeFormat("es-ES", {
@@ -85,10 +107,14 @@ export default function HistorialCierres({
     }).format(new Date(date));
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number, currency?: string) => {
+    if (!currency) {
+      return "-";
+    }
+
     return new Intl.NumberFormat("es-ES", {
       style: "currency",
-      currency: "USD",
+      currency,
       minimumFractionDigits: 2,
     }).format(value);
   };
@@ -136,7 +162,7 @@ export default function HistorialCierres({
                       {cierre.asientos}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-success">
-                      {formatCurrency(cierre.resultado)}
+                      {formatCurrency(cierre.resultado, cierre.currency)}
                     </TableCell>
                     <TableCell className="text-center">
                       <Button
