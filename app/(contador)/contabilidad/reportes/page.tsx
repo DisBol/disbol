@@ -6,9 +6,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { BalanceGeneralTab, ComparativosTab } from "./components";
 import { useGetAccountingPeriod } from "../cierre-periodo/hooks/useGetAccountingPeriod";
 import { useGetAccountingPeriodActive } from "./hooks/useGetAccountingPeriodActive";
+import { useGetAsientobyPeriod } from "./hooks/useGetAsientobyPeriod";
 import { useGetElements } from "../plan-cuentas/hooks/useGetElements";
 import { useGetAccount } from "../plan-cuentas/hooks/useGetAccount";
-import { useGetAsiento } from "../nuevo-asiento/hooks/getAsiento";
 
 export default function ReportesPage() {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
@@ -25,11 +25,6 @@ export default function ReportesPage() {
     loading: loadingAccounts,
     error: accountsError,
   } = useGetAccount();
-  const {
-    data: asientos,
-    loading: loadingAsientos,
-    error: asientosError,
-  } = useGetAsiento();
 
   const periodos = useMemo<SelectOption[]>(
     () =>
@@ -50,6 +45,13 @@ export default function ReportesPage() {
     periodos.find((periodo) => periodo.value === periodoVisibleFinal) ?? null;
   const periodoActivoLabel = periodoActivo?.label || "Sin período";
   const periodoActivoId = periodoActivo ? Number(periodoActivo.value) : null;
+
+  const {
+    data: asientosByPeriod,
+    loading: loadingAsientos,
+    error: asientosError,
+  } = useGetAsientobyPeriod(periodoActivoId);
+
   const balanceError = error || elementsError || accountsError || asientosError;
   const balanceLoading =
     loading || loadingElements || loadingAccounts || loadingAsientos;
@@ -58,9 +60,9 @@ export default function ReportesPage() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-6 flex items-center gap-4">
           <div className="flex-1">
-            <h1 className="text-4xl font-bold text-red-600">
+            <h1 className="text-2xl font-bold text-red-600">
               Reportes Financieros
             </h1>
           </div>
@@ -86,12 +88,6 @@ export default function ReportesPage() {
           {balanceError && (
             <p className="mt-2 text-sm text-red-600">{balanceError}</p>
           )}
-          {!balanceError && periodoActivoLabel !== "Sin período" && (
-            <p className="mt-2 text-sm text-gray-600">
-              Mostrando datos para:{" "}
-              <span className="font-semibold">{periodoActivoLabel}</span>
-            </p>
-          )}
         </div>
 
         {/* Tabs */}
@@ -101,17 +97,16 @@ export default function ReportesPage() {
             <TabsTrigger value="comparativos">Comparativos</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="balance-general" className="mt-6">
+          <TabsContent value="balance-general" className="mt-2">
             <BalanceGeneralTab
               periodo={periodoActivoLabel}
-              periodoId={periodoActivoId}
               elements={elements}
               accounts={accounts}
-              asientos={asientos}
+              asientos={asientosByPeriod}
             />
           </TabsContent>
 
-          <TabsContent value="comparativos" className="mt-6">
+          <TabsContent value="comparativos" className="mt-4">
             <ComparativosTab periodo1="2025-11" periodo2="2025-12" />
           </TabsContent>
         </Tabs>
