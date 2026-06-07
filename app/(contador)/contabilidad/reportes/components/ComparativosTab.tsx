@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
@@ -11,10 +12,11 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/Table";
+import { type Datum as AccountingPeriodDatum } from "../../cierre-periodo/interfaces/getaccountingperiod.interface";
+import { GetAsientoByPeriod } from "../service/getAsientoByPeriod";
 
 interface ComparativosTabProps {
-  periodo1: string;
-  periodo2: string;
+  accountingPeriods: AccountingPeriodDatum[];
 }
 
 interface ComparativoMensual {
@@ -22,57 +24,87 @@ interface ComparativoMensual {
   ingresos: number;
   gastos: number;
   resultado: number;
-  margenPorcentaje: number;
 }
 
 export default function ComparativosTab({
-  periodo1,
-  periodo2,
+  accountingPeriods,
 }: ComparativosTabProps) {
-  // Datos estáticos de comparativos mensuales
-  const comparativosMensuales: ComparativoMensual[] = [
-    {
-      mes: "Oct-25",
-      ingresos: 165000.0,
-      gastos: 142000.0,
-      resultado: 23000.0,
-      margenPorcentaje: 13.9,
-    },
-    {
-      mes: "Nov-25",
-      ingresos: 178000.0,
-      gastos: 148000.0,
-      resultado: 30000.0,
-      margenPorcentaje: 16.9,
-    },
-    {
-      mes: "Dic-25",
-      ingresos: 210000.0,
-      gastos: 158000.0,
-      resultado: 52000.0,
-      margenPorcentaje: 24.8,
-    },
-    {
-      mes: "Ene-26",
-      ingresos: 195000.0,
-      gastos: 152000.0,
-      resultado: 43000.0,
-      margenPorcentaje: 22.1,
-    },
-  ];
+  const [comparativosMensuales, setComparativosMensuales] = useState<
+    ComparativoMensual[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const formatCurrency = (value: number) => {
+  const latestPeriods = useMemo(() => {
+    return [...accountingPeriods]
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )
+      .slice(0, 6)
+      .reverse();
+  }, [accountingPeriods]);
+
+  useEffect(() => {
+    const fetchComparativos = async () => {
+      if (latestPeriods.length === 0) {
+        setComparativosMensuales([]);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const periodResults = await Promise.all(
+          latestPeriods.map(async (periodo) => {
+            const response = await GetAsientoByPeriod(periodo.id);
+            const ingresos = response.data.reduce(
+              (sum, asiento) => sum + asiento.amount_credit,
+              0,
+            );
+            const gastos = response.data.reduce(
+              (sum, asiento) => sum + asiento.amount_debit,
+              0,
+            );
+
+            return {
+              mes: periodo.name,
+              ingresos,
+              gastos,
+              resultado: ingresos - gastos,
+            };
+          }),
+        );
+
+        setComparativosMensuales(periodResults);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Error al cargar comparativos por período",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComparativos();
+  }, [latestPeriods]);
+
+  const formatAmount = (value: number) => {
     return new Intl.NumberFormat("es-ES", {
-      style: "currency",
-      currency: "USD",
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(value);
   };
 
   // Obtener máximo resultado para escalar el gráfico
-  const maxResultado = Math.max(
-    ...comparativosMensuales.map((d) => d.resultado),
-  );
+  const maxResultado =
+    Math.max(...comparativosMensuales.map((d) => Math.abs(d.resultado)), 0) ||
+    1;
 
   const handleExportPDF = () => {
     console.log("Exportando comparativos PDF...");
@@ -83,7 +115,7 @@ export default function ComparativosTab({
     <div className="space-y-8">
       {/* Comparativos Mensuales - Tabla */}
       <div>
-        <h2 className="text-2xl font-bold text-red-600 mb-4">
+        <h2 className="text-xl font-bold text-primary mb-2">
           Comparativos Mensuales
         </h2>
 
@@ -97,24 +129,53 @@ export default function ComparativosTab({
                     <TableHead className="text-right">Ingresos</TableHead>
                     <TableHead className="text-right">Gastos</TableHead>
                     <TableHead className="text-right">Resultado</TableHead>
-                    <TableHead className="text-right">Margen (%)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {loading && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-gray-500"
+                      >
+                        Cargando comparativos...
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {!loading && error && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-danger"
+                      >
+                        {error}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {!loading && !error && comparativosMensuales.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-gray-500"
+                      >
+                        No hay períodos disponibles para comparar.
+                      </TableCell>
+                    </TableRow>
+                  )}
+
                   {comparativosMensuales.map((fila, idx) => (
                     <TableRow key={idx}>
                       <TableCell className="font-medium">{fila.mes}</TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(fila.ingresos)}
+                        {formatAmount(fila.ingresos)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(fila.gastos)}
+                        {formatAmount(fila.gastos)}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-success">
-                        {formatCurrency(fila.resultado)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {fila.margenPorcentaje.toFixed(1)}%
+                        {formatAmount(fila.resultado)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -127,7 +188,7 @@ export default function ComparativosTab({
 
       {/* Tendencia de Resultados - Gráfico */}
       <div>
-        <h2 className="text-2xl font-bold text-red-600 mb-4">
+        <h2 className="text-xl font-bold text-primary mb-2">
           Tendencia de Resultados
         </h2>
 
@@ -135,13 +196,18 @@ export default function ComparativosTab({
           <CardContent className="pt-8 pb-8">
             <div className="flex items-end justify-center gap-8 h-80">
               {comparativosMensuales.map((data, idx) => {
-                const heightPercent = (data.resultado / maxResultado) * 100;
+                const heightPercent =
+                  (Math.abs(data.resultado) / maxResultado) * 100;
                 return (
                   <div key={idx} className="flex flex-col items-center gap-2">
                     {/* Barra */}
                     <div className="flex items-end justify-center h-64">
                       <div
-                        className="w-16 bg-success rounded-t-lg transition-all duration-300 hover:bg-success/80"
+                        className={`w-16 rounded-t-lg transition-all duration-300 ${
+                          data.resultado < 0
+                            ? "bg-danger hover:bg-danger/80"
+                            : "bg-success hover:bg-success/80"
+                        }`}
                         style={{
                           height: `${heightPercent}%`,
                         }}
@@ -155,7 +221,7 @@ export default function ComparativosTab({
 
                     {/* Valor del resultado */}
                     <div className="text-center text-xs text-gray-600">
-                      {formatCurrency(data.resultado)}
+                      {formatAmount(data.resultado)}
                     </div>
                   </div>
                 );

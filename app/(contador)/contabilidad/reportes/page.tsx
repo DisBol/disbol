@@ -107,7 +107,7 @@ export default function ReportesPage() {
           </TabsContent>
 
           <TabsContent value="comparativos" className="mt-4">
-            <ComparativosTab periodo1="2025-11" periodo2="2025-12" />
+            <ComparativosTab accountingPeriods={accountingPeriods} />
           </TabsContent>
         </Tabs>
       </div>

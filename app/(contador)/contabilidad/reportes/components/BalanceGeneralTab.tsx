@@ -111,7 +111,7 @@ export default function BalanceGeneralTab({
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto p-5 tracking-tight">
+    <div className="space-y-4 max-w-7xl mx-auto p-2 tracking-tight">
       {/* Título y Período */}
       <div className=" pb-2">
         <h2 className="text-xl font-bold text-primary flex items-baseline">
