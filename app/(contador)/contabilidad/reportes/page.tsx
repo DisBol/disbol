@@ -5,6 +5,7 @@ import { Select, type SelectOption } from "@/components/ui/SelecMultipe";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { BalanceGeneralTab, ComparativosTab } from "./components";
 import { useGetAccountingPeriod } from "../cierre-periodo/hooks/useGetAccountingPeriod";
+import { useGetAccountingPeriodActive } from "./hooks/useGetAccountingPeriodActive";
 import { useGetElements } from "../plan-cuentas/hooks/useGetElements";
 import { useGetAccount } from "../plan-cuentas/hooks/useGetAccount";
 import { useGetAsiento } from "../nuevo-asiento/hooks/getAsiento";
@@ -13,6 +14,7 @@ export default function ReportesPage() {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
   const [tabActivo, setTabActivo] = useState("balance-general");
   const { data: accountingPeriods, loading, error } = useGetAccountingPeriod();
+  const { data: activeAccountingPeriods } = useGetAccountingPeriodActive();
   const {
     data: elements,
     loading: loadingElements,
@@ -38,9 +40,14 @@ export default function ReportesPage() {
     [accountingPeriods],
   );
 
-  const periodoVisible = periodoSeleccionado || periodos[0]?.value || "";
+  const periodoActivoDefault = activeAccountingPeriods.find(
+    (periodo) => periodo.active === "true",
+  )?.id;
+  const periodoVisibleFinal =
+    periodoSeleccionado ||
+    String(periodoActivoDefault || periodos[0]?.value || "");
   const periodoActivo =
-    periodos.find((periodo) => periodo.value === periodoVisible) ?? null;
+    periodos.find((periodo) => periodo.value === periodoVisibleFinal) ?? null;
   const periodoActivoLabel = periodoActivo?.label || "Sin período";
   const periodoActivoId = periodoActivo ? Number(periodoActivo.value) : null;
   const balanceError = error || elementsError || accountsError || asientosError;
@@ -66,7 +73,7 @@ export default function ReportesPage() {
           </label>
           <Select
             options={periodos}
-            selectedValues={periodoVisible ? [periodoVisible] : []}
+            selectedValues={periodoVisibleFinal ? [periodoVisibleFinal] : []}
             onSelect={(option) => setPeriodoSeleccionado(option.value)}
             placeholder={
               balanceLoading ? "Cargando períodos..." : "Seleccionar período"

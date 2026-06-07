@@ -1,4 +1,4 @@
-export interface GetAccountingPeriodResponse {
+export interface GetAccountingPeriodActiveResponse {
   data: Datum[];
   metadata: Metadata;
 }

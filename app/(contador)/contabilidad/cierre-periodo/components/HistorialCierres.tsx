@@ -74,7 +74,7 @@ export default function HistorialCierres({
         id: String(periodo.id),
         periodo: periodo.name,
         fechaCierre: new Date(periodo.updated_at),
-        cerradoPor: "contador",
+        cerradoPor: periodo.User_name,
         asientos: asientosPeriodo.length,
         resultado: totalIngresos - totalGastos,
         estado: "cerrado",
