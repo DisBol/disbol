@@ -50,7 +50,7 @@ export function useAddEmployee() {
                         console.log("useAddEmployee: calling AddSalary with amount =", amount, "and employeeId =", employeeId);
                         const salaryResponse = await AddSalary(amount, Number(employeeId));
                         console.log("useAddEmployee: AddSalary response =", salaryResponse);
-                        salaryId = salaryResponse?.data?.id || salaryResponse?.id;
+                        salaryId = salaryResponse?.data?.id || (salaryResponse as any)?.id;
                     } catch (salaryError) {
                         console.error('Error al guardar el salario:', salaryError);
                     }
