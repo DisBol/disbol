@@ -7,6 +7,8 @@ export interface AddAsientoPayload {
     amount_debit: number;
     Account_id: number;
     AccountingPeriod_id?: number;
+    state?: string;
+    employee?: number;
 }
 
 export async function AddAsiento(
@@ -16,5 +18,6 @@ export async function AddAsiento(
         ...payload,
         active: payload.active ?? "true",
         AccountingPeriod_id: payload.AccountingPeriod_id ?? 1,
+        state: payload.state ?? "aprovado",
     });
 }

@@ -7,5 +7,6 @@ export interface AddEmployeeResponse {
         document: string;
         active: string;
         Position_id: number;
+        amount?: number;
     };
 }

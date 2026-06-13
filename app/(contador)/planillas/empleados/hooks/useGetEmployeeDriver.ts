@@ -75,7 +75,7 @@ export function useGetEmployeeDriver() {
         setState((prev) => ({
             ...prev,
             empleados: prev.empleados.map((emp) =>
-                emp.id === empleadoActualizado.id ? empleadoActualizado : emp
+                Number(emp.id) === Number(empleadoActualizado.id) ? empleadoActualizado : emp
             ),
         }));
     }, []);

@@ -1,24 +1,46 @@
-export interface EmpleadoPlanilla {
-    id: string;
-    nombre: string;
-    bruto: number;
-    descuentos: number;
-    aFavor: number;
-    neto: number;
+export interface AsientoPlanilla {
+    id: number;
+    description: string;
+    active: string;
+    amount_credit: number;
+    amount_debit: number;
+    created_at: string;
+    updated_at: string;
+    Account_id: number;
+    AccountingPeriod_id: number;
+    state: string | null;
+    employee: number | null;
+    employeeName?: string;
+    employeeAmount?: number | null;
 }
 
-export interface Planilla {
+export interface ResumenAsientoPlanilla {
     id: string;
-    periodo: string;
-    empleados: EmpleadoPlanilla[];
-    totalBruto: number;
-    totalDescuentos: number;
-    totalAFavor: number;
-    totalNeto: number;
-    estado: 'draft' | 'calculada' | 'procesada';
+    employeeId: number;
+    employeeName: string;
+    employeeAmount: number | null;
+    accountingPeriodId: number;
+    description: string;
+    active: string;
+    amount_credit: number;
+    amount_debit: number;
+    created_at: string;
+    updated_at: string;
+    Account_id: number;
+    state: string | null;
+    employee: number | null;
+    movimientos: number;
+    detalle: Array<{
+        id: number;
+        created_at: string;
+        type: string;
+        description: string;
+        amount: number;
+        state: string | null;
+        accountId: number;
+    }>;
 }
 
-export interface PlanillaResponse {
-    planilla: Planilla;
-    mensaje: string;
+export interface AsientoPlanillaResponse {
+    data: AsientoPlanilla[];
 }

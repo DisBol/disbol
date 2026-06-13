@@ -30,6 +30,9 @@ export default function EmpleadosList({
               Cargo
             </th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Salario
+            </th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
               Estado
             </th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
@@ -51,6 +54,9 @@ export default function EmpleadosList({
               </td>
               <td className="px-6 py-4 text-sm text-gray-900">
                 {empleado.cargo}
+              </td>
+              <td className="px-6 py-4 text-sm text-gray-900">
+                {empleado.salario != null ? `Bs. ${empleado.salario.toLocaleString("es-ES")}` : "-"}
               </td>
               <td className="px-6 py-4 text-sm text-gray-900">
                 {empleado.estado}

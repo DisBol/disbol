@@ -13,6 +13,8 @@ export interface Datum {
   updated_at: Date;
   Account_id: number;
   AccountingPeriod_id: number;
+  state: string | null;
+  employee: number | null;
 }
 
 export interface Metadata {

@@ -31,7 +31,8 @@ export default function EmpleadosPage() {
     id: emp.id.toString(),
     nombre: emp.name,
     dni: emp.document,
-    cargo: "Empleado",
+    cargo: emp.Position_name || "Empleado",
+    salario: emp.Salary_amount,
     estado: emp.active === "true" ? "Activo" : "Inactivo",
   }));
 
@@ -66,7 +67,7 @@ export default function EmpleadosPage() {
   const handleGuardarEmpleado = (empleadoActualizado: Employee) => {
     // Si el empleado ya existe, actualizar; si no, agregar
     const empleadoExistente = empleadosAPI.find(
-      (e) => e.id === empleadoActualizado.id,
+      (e) => Number(e.id) === Number(empleadoActualizado.id),
     );
 
     if (empleadoExistente) {
@@ -116,8 +117,8 @@ export default function EmpleadosPage() {
         {ajusteAbierto && empleadoAjuste && tipoAjuste && (
           <AjusteForm
             empleadoNombre={empleadoAjuste.nombre}
+            empleadoId={Number(empleadoAjuste.id)}
             tipoAjuste={tipoAjuste}
-            onGuardar={handleGuardarAjuste}
             onCancelar={() => {
               setAjusteAbierto(false);
               setEmpleadoAjuste(null);

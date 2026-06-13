@@ -6,6 +6,12 @@ export interface Employee {
   created_at: string;
   updated_at: string;
   Position_id: number;
+  Salary_amount?: number;
+  Position_name?: string;
+  Salary_id?: number;
+  salary_id?: number;
+  SalaryId?: number;
+  salaryId?: number;
 }
 
 export interface GetEmployeeDriverResponse {

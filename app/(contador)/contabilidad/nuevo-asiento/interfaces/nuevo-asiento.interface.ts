@@ -5,6 +5,7 @@ export interface JournalLine {
     glosa: string;
     debit: number;
     credit: number;
+    isNew?: boolean;
 }
 
 export interface DraftEntry {
@@ -17,4 +18,6 @@ export interface DraftEntry {
     updated_at: string;
     Account_id: number;
     AccountingPeriod_id: number;
+    state: string | null;
+    employee: number | null;
 }

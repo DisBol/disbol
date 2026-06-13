@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { InputField } from "@/components/ui/InputField";
+import { Select, type SelectOption } from "@/components/ui/SelecMultipe";
+import { useGetAccountingPeriod } from "@/app/(contador)/contabilidad/cierre-periodo/hooks/useGetAccountingPeriod";
 
 interface SelectorPeriodoPlanillaProps {
   onCalcular?: (periodo: string) => Promise<void>;
@@ -17,14 +18,32 @@ export default function SelectorPeriodoPlanilla({
   const [periodo, setPeriodo] = useState("");
   const [error, setError] = useState("");
 
+  const {
+    data: accountingPeriods,
+    loading: loadingPeriods,
+    error: periodsError,
+  } = useGetAccountingPeriod();
+
+  const options = useMemo<SelectOption[]>(
+    () =>
+      accountingPeriods.map((item) => ({
+        value: String(item.id),
+        label: item.name,
+      })),
+    [accountingPeriods],
+  );
+
   useEffect(() => {
-    // Establecer fecha actual por defecto
-    const hoy = new Date();
-    const año = hoy.getFullYear();
-    const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-    const dia = String(hoy.getDate()).padStart(2, "0");
-    setPeriodo(`${año}-${mes}-${dia}`);
-  }, []);
+    if (!periodo && options.length > 0) {
+      setPeriodo(options[0].value);
+    }
+  }, [options, periodo]);
+
+  useEffect(() => {
+    if (periodsError) {
+      setError(periodsError);
+    }
+  }, [periodsError]);
 
   const handleCalcular = async () => {
     if (!periodo) {
@@ -47,18 +66,27 @@ export default function SelectorPeriodoPlanilla({
       <CardContent className="pt-6">
         <div className="flex items-end gap-4">
           <div className="flex-1 max-w-xs">
-            <InputField
-              label="Período"
-              type="month"
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value)}
-              disabled={loading}
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Período
+            </label>
+            <Select
+              options={options}
+              selectedValues={periodo ? [periodo] : []}
+              onSelect={(option) => setPeriodo(option.value)}
+              placeholder={
+                loadingPeriods ? "Cargando períodos..." : "Selecciona período"
+              }
+              disabled={loading || loadingPeriods || options.length === 0}
+              emptyMessage="No hay períodos disponibles"
+              closeOnSelect
+              size="md"
+              radius="md"
             />
           </div>
 
           <Button
             onClick={handleCalcular}
-            disabled={loading || !periodo}
+            disabled={loading || loadingPeriods || !periodo}
             variant="danger"
             loading={loading}
           >

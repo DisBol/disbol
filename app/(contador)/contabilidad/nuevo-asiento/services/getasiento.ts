@@ -10,6 +10,8 @@ export interface GetAsientoItem {
     updated_at: string;
     Account_id: number;
     AccountingPeriod_id: number;
+    state: string | null;
+    employee: number | null;
 }
 
 interface GetAsientoResponse {

@@ -1,48 +1,65 @@
 "use client";
 
-import { DashboardPlanillasData } from "./interfaces";
+import { useState, useEffect } from "react";
 import { MetricasCard, AccionesRapidas } from "./components";
+import { GetEmployeeDriver } from "./empleados/services/getemployeedriver";
 
 export default function PlanillasPage() {
-  // Datos de ejemplo basados en la imagen
-  const dashboardData: DashboardPlanillasData = {
-    metricas: {
-      totalEmpleados: 128,
-      costoMensualPlanilla: 420000,
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalEmpleados, setTotalEmpleados] = useState(0);
+  const [costoMensual, setCostoMensual] = useState(0);
+
+  const acciones = [
+    {
+      id: "1",
+      titulo: "Gestión de Empleados",
+      color: "bg-red-500",
+      ruta: "/planillas/empleados",
     },
-    costosPorCC: [
-      { centrocosto_id: "1", centrocosto_nombre: "Operaciones", costo: 250000 },
-      {
-        centrocosto_id: "2",
-        centrocosto_nombre: "Administración",
-        costo: 100000,
-      },
-      { centrocosto_id: "3", centrocosto_nombre: "Ventas", costo: 70000 },
-    ],
-    alertas: [
-      {
-        id: "1",
-        tipo: "contrato_vencido",
-        descripcion: "contratos vencidos",
-        cantidad: 3,
-        prioridad: "alta",
-      },
-    ],
-    acciones: [
-      {
-        id: "1",
-        titulo: "Gestión de Empleados",
-        color: "bg-red-500",
-        ruta: "/planillas/empleados",
-      },
-      {
-        id: "2",
-        titulo: "Cálculo de Planillas",
-        color: "bg-teal-500",
-        ruta: "/planillas/calculo",
-      },
-    ],
-  };
+    {
+      id: "2",
+      titulo: "Cálculo de Planillas",
+      color: "bg-teal-500",
+      ruta: "/planillas/calculo",
+    },
+  ];
+
+  useEffect(() => {
+    let active = true;
+
+    const loadMetrics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await GetEmployeeDriver("true");
+
+        if (!active) return;
+
+        const empleados = response.data || [];
+        setTotalEmpleados(empleados.length);
+
+        const totalCosto = empleados.reduce(
+          (sum, emp) => sum + (emp.Salary_amount || 0),
+          0,
+        );
+        setCostoMensual(totalCosto);
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Error al cargar métricas");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadMetrics();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -55,15 +72,25 @@ export default function PlanillasPage() {
 
       {/* Content */}
       <div className="p-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+            {error}
+          </div>
+        )}
+
         {/* Métricas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Total empleados */}
           <MetricasCard
             titulo="Total empleados"
             contenido={
-              <p className="text-3xl font-bold text-gray-900">
-                {dashboardData.metricas.totalEmpleados}
-              </p>
+              loading ? (
+                <p className="text-gray-500 text-sm">Cargando...</p>
+              ) : (
+                <p className="text-3xl font-bold text-gray-900">
+                  {totalEmpleados}
+                </p>
+              )
             }
           />
 
@@ -71,42 +98,19 @@ export default function PlanillasPage() {
           <MetricasCard
             titulo="Costo mensual planilla"
             contenido={
-              <p className="text-3xl font-bold text-gray-900">
-                Bs{" "}
-                {dashboardData.metricas.costoMensualPlanilla.toLocaleString()}
-              </p>
-            }
-          />
-
-          {/* Costo por CC */}
-          <MetricasCard
-            titulo="Costo por CC"
-            contenido={
-              <a
-                href="/planillas/costo-cc"
-                className="inline-block text-blue-600 hover:text-blue-700 font-semibold text-lg"
-              >
-                Ver detalle
-              </a>
-            }
-          />
-
-          {/* Alertas */}
-          <MetricasCard
-            titulo="Alertas"
-            contenido={
-              <p className="text-gray-700">
-                {dashboardData.alertas[0]?.cantidad}{" "}
-                <span className="text-gray-500">
-                  {dashboardData.alertas[0]?.descripcion}
-                </span>
-              </p>
+              loading ? (
+                <p className="text-gray-500 text-sm">Cargando...</p>
+              ) : (
+                <p className="text-3xl font-bold text-gray-900">
+                  Bs {costoMensual.toLocaleString("es-ES")}
+                </p>
+              )
             }
           />
         </div>
 
         {/* Acciones rápidas */}
-        <AccionesRapidas acciones={dashboardData.acciones} />
+        <AccionesRapidas acciones={acciones} />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { BorradoresTab } from "./components/BorradoresTab";
 import { NuevoAsientoTab } from "./components/NuevoAsientoTab";
@@ -27,7 +27,17 @@ export default function Page() {
     setEntryDate,
     setSelectedTab,
     updateJournalLine,
+    selectedPeriodId,
+    setSelectedPeriodId,
+    accountingPeriods,
+    loadingPeriods,
   } = useNuevoAsiento();
+
+  const filteredDraftsCount = useMemo(() => {
+    return draftEntries.filter(
+      (entry) => String(entry.AccountingPeriod_id) === selectedPeriodId,
+    ).length;
+  }, [draftEntries, selectedPeriodId]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -59,66 +69,60 @@ export default function Page() {
               </p>
             </div>
           </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            className="rounded-xl bg-violet-500 text-white hover:bg-violet-600"
-          >
-            Reporte Diario
-          </Button>
         </div>
 
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="p-0">
-            <Tabs
-              value={selectedTab}
-              onValueChange={setSelectedTab}
-              className="px-4 pt-4 lg:px-6"
-            >
-              <TabsList variant="underlined" fullWidth className="gap-6">
-                <TabsTrigger value="nuevo" variant="underlined" size="md">
-                  <span className="flex items-center gap-2">
-                    <span className="text-lg leading-none">+</span>
-                    Nuevo Asiento
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger value="borrador" variant="underlined" size="md">
-                  <span className="flex items-center gap-2">
-                    <span className="text-lg leading-none">◔</span>
-                    Asientos en Borrador ({draftEntries.length})
-                  </span>
-                </TabsTrigger>
-              </TabsList>
+        <Tabs
+          value={selectedTab}
+          onValueChange={setSelectedTab}
+          className="w-full"
+        >
+          <TabsList variant="underlined" fullWidth className="gap-6">
+            <TabsTrigger value="nuevo" variant="underlined" size="md">
+              <span className="flex items-center gap-2">
+                <span className="text-lg leading-none">+</span>
+                Nuevo Asiento
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="borrador" variant="underlined" size="md">
+              <span className="flex items-center gap-2">
+                <span className="text-lg leading-none">◔</span>
+                Asientos en Borrador ({filteredDraftsCount})
+              </span>
+            </TabsTrigger>
+          </TabsList>
 
-              <TabsContent value="nuevo" animation="none" className="mt-0">
-                <NuevoAsientoTab
-                  journalLines={journalLines}
-                  entryDate={entryDate}
-                  autoEditLineId={autoEditLineId}
-                  accountOptions={accountOptions}
-                  debitTotal={debitTotal}
-                  creditTotal={creditTotal}
-                  balanced={balanced}
-                  onEntryDateChange={setEntryDate}
-                  onAddLine={addJournalLine}
-                  onUpdateLine={updateJournalLine}
-                  onRemoveLine={removeJournalLine}
-                  onSaveDraft={saveDraft}
-                  savingDraft={savingDraft}
-                />
-              </TabsContent>
+          <TabsContent value="nuevo" animation="none" className="mt-0">
+            <NuevoAsientoTab
+              journalLines={journalLines}
+              selectedPeriodId={selectedPeriodId}
+              onPeriodChange={setSelectedPeriodId}
+              accountingPeriods={accountingPeriods}
+              loadingPeriods={loadingPeriods}
+              autoEditLineId={autoEditLineId}
+              accountOptions={accountOptions}
+              debitTotal={debitTotal}
+              creditTotal={creditTotal}
+              balanced={balanced}
+              onAddLine={addJournalLine}
+              onUpdateLine={updateJournalLine}
+              onRemoveLine={removeJournalLine}
+              onSaveDraft={saveDraft}
+              savingDraft={savingDraft}
+            />
+          </TabsContent>
 
-              <TabsContent value="borrador" animation="none" className="mt-0">
-                <BorradoresTab
-                  entries={draftEntries}
-                  loading={draftsLoading}
-                  error={draftsError}
-                />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+          <TabsContent value="borrador" animation="none" className="mt-0">
+            <BorradoresTab
+              entries={draftEntries}
+              loading={draftsLoading}
+              error={draftsError}
+              selectedPeriodId={selectedPeriodId}
+              onPeriodChange={setSelectedPeriodId}
+              accountingPeriods={accountingPeriods}
+              loadingPeriods={loadingPeriods}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

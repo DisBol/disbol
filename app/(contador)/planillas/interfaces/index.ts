@@ -34,6 +34,7 @@ export interface Empleado {
     nombre: string;
     dni: string;
     cargo: string;
+    salario?: number;
     estado: "Activo" | "Inactivo" | "Licencia";
 }
 

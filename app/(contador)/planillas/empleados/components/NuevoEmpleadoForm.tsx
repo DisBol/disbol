@@ -4,14 +4,22 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { InputField } from "@/components/ui/InputField";
-import { SelectInput } from "@/components/ui/SelectInput";
+import {
+  SelectField,
+  SelectInput,
+  type SelectOption,
+} from "@/components/ui/SelectInput";
 import { useAddEmployee } from "../hooks/useAddEmployee";
 import { useUpdateEmployee } from "../hooks/useUpdateEmployee";
 import { Employee } from "../interface";
+import {
+  GetPosition,
+  type PositionItem,
+} from "@/app/(contador)/planillas/empleados/services/getposition";
 
 interface NuevoEmpleadoFormProps {
   empleado?: Employee | null;
-  onGuardar?: (empleado: any) => void;
+  onGuardar?: (empleado: Employee) => void;
   onCancelar?: () => void;
 }
 
@@ -23,11 +31,12 @@ export default function NuevoEmpleadoForm({
   const [id, setId] = useState<number | null>(null);
   const [nombre, setNombre] = useState("");
   const [dni, setDni] = useState("");
-  const [cargo, setCargo] = useState("");
   const [estado, setEstado] = useState("true");
   const [positionId, setPositionId] = useState(3);
   const [salario, setSalario] = useState("0");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [positionOptions, setPositionOptions] = useState<SelectOption[]>([]);
+  const [positionLoading, setPositionLoading] = useState(false);
 
   const {
     addEmployee,
@@ -46,13 +55,52 @@ export default function NuevoEmpleadoForm({
 
   useEffect(() => {
     if (empleado) {
+      console.log("NuevoEmpleadoForm: editing employee:", empleado);
       setId(empleado.id);
       setNombre(empleado.name);
       setDni(empleado.document);
       setEstado(empleado.active);
       setPositionId(empleado.Position_id || 3);
-      setCargo("Empleado");
+      setSalario(String(empleado.Salary_amount ?? 0));
     }
+  }, [empleado]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPositions = async () => {
+      try {
+        setPositionLoading(true);
+        const response = await GetPosition("true");
+
+        if (!active) return;
+
+        const options = response.data.map((position: PositionItem) => ({
+          value: String(position.id),
+          label: position.name,
+        }));
+
+        setPositionOptions(options);
+
+        if (!empleado && options.length > 0) {
+          setPositionId(Number(options[0].value));
+        }
+      } catch {
+        if (!active) return;
+
+        setPositionOptions([]);
+      } finally {
+        if (active) {
+          setPositionLoading(false);
+        }
+      }
+    };
+
+    void loadPositions();
+
+    return () => {
+      active = false;
+    };
   }, [empleado]);
 
   const handleGuardar = async () => {
@@ -66,26 +114,72 @@ export default function NuevoEmpleadoForm({
       return;
     }
 
-    if (isEditMode && id) {
-      // Modo edición
-      const resultado = await updateEmployee(
-        id,
-        nombre,
-        dni,
-        estado,
-        positionId,
-      );
+    if (isEditMode && id && empleado) {
+      const nameChanged = nombre.trim() !== empleado.name;
+      const documentChanged = dni.trim() !== empleado.document;
+      const activeChanged = estado !== empleado.active;
+      const positionChanged = positionId !== (empleado.Position_id || 3);
+      const salaryChanged = Number(salario) !== (empleado.Salary_amount ?? 0);
 
-      if (resultado?.success) {
+      const employeeInfoChanged = nameChanged || documentChanged || activeChanged || positionChanged;
+      const salaryInfoChanged = salaryChanged;
+
+      const salaryId = empleado.Salary_id || empleado.salary_id || empleado.SalaryId || empleado.salaryId;
+      let resultado;
+
+      if (employeeInfoChanged && salaryInfoChanged) {
+        resultado = await updateEmployee(
+          id,
+          nombre,
+          dni,
+          estado,
+          positionId,
+          Number(salario) || 0,
+          salaryId,
+        );
+      } else if (employeeInfoChanged) {
+        resultado = await updateEmployee(
+          id,
+          nombre,
+          dni,
+          estado,
+          positionId,
+        );
+      } else if (salaryInfoChanged) {
+        resultado = await updateEmployee(
+          id,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          Number(salario) || 0,
+          salaryId,
+        );
+      } else {
+        handleCancel();
+        return;
+      }
+
+      const hasSuccess = resultado?.success || resultado?.data || resultado?.id;
+      const responseData = Array.isArray(resultado?.data) ? resultado?.data[0] : (resultado?.data || resultado);
+      const employeeId = Number(responseData?.Employee_id || responseData?.id || id);
+
+      if (hasSuccess && employeeId) {
         // Retornar el objeto Employee actualizado
+        const cargoLabel = positionOptions.find(
+          (opt) => Number(opt.value) === positionId,
+        )?.label;
         const empleadoActualizado: Employee = {
-          id: resultado.data?.id || id,
-          name: resultado.data?.name || nombre,
-          document: resultado.data?.document || dni,
-          active: resultado.data?.active || estado,
-          Position_id: resultado.data?.Position_id || positionId,
-          created_at: resultado.data?.created_at || new Date().toISOString(),
-          updated_at: resultado.data?.updated_at || new Date().toISOString(),
+          id: employeeId,
+          name: responseData?.name || nombre,
+          document: responseData?.document || dni,
+          active: responseData?.active || estado,
+          Position_id: responseData?.Position_id || positionId,
+          created_at: responseData?.created_at || empleado.created_at || new Date().toISOString(),
+          updated_at: responseData?.updated_at || new Date().toISOString(),
+          Salary_amount: Number(salario) || undefined,
+          Position_name: cargoLabel || empleado.Position_name,
+          Salary_id: responseData?.Salary_id || responseData?.salary_id || responseData?.SalaryId || responseData?.salaryId || salaryId,
         };
 
         if (onGuardar) {
@@ -95,18 +189,34 @@ export default function NuevoEmpleadoForm({
       }
     } else {
       // Modo crear
-      const resultado = await addEmployee(nombre, dni, "true", positionId);
+      const resultado = await addEmployee(
+        nombre,
+        dni,
+        "true",
+        positionId,
+        Number(salario) || 0,
+      );
 
-      if (resultado?.success && resultado?.data) {
+      const hasSuccess = resultado?.success || resultado?.data || resultado?.id;
+      const responseData = Array.isArray(resultado?.data) ? resultado?.data[0] : (resultado?.data || resultado);
+      const employeeId = Number(responseData?.Employee_id || responseData?.id);
+
+      if (hasSuccess && employeeId) {
         // Retornar el objeto Employee
+        const cargoLabel = positionOptions.find(
+          (opt) => Number(opt.value) === positionId,
+        )?.label;
         const nuevoEmpleado: Employee = {
-          id: resultado.data.id,
-          name: resultado.data.name,
-          document: resultado.data.document,
-          active: resultado.data.active,
-          Position_id: resultado.data.Position_id,
-          created_at: resultado.data.created_at || new Date().toISOString(),
-          updated_at: resultado.data.updated_at || new Date().toISOString(),
+          id: employeeId,
+          name: responseData?.name || nombre,
+          document: responseData?.document || dni,
+          active: responseData?.active || "true",
+          Position_id: responseData?.Position_id || positionId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          Salary_amount: responseData?.amount || Number(salario) || undefined,
+          Position_name: cargoLabel,
+          Salary_id: responseData?.Salary_id || responseData?.salary_id || responseData?.SalaryId || responseData?.salaryId,
         };
 
         if (onGuardar) {
@@ -122,7 +232,6 @@ export default function NuevoEmpleadoForm({
     setId(null);
     setNombre("");
     setDni("");
-    setCargo("");
     setEstado("true");
     setPositionId(3);
     setSalario("0");
@@ -168,20 +277,22 @@ export default function NuevoEmpleadoForm({
             required
           />
 
-          <InputField
-            label="Cargo"
-            placeholder="Cargo"
-            value={cargo}
-            onChange={(e) => {
-              setCargo(e.target.value);
-              if (errors.cargo) {
-                setErrors({ ...errors, cargo: "" });
+          <div className="flex flex-col gap-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer pl-0.5">
+              Cargo
+            </label>
+            <SelectInput
+              value={String(positionId)}
+              onChange={(e) => setPositionId(Number(e.target.value))}
+              options={positionOptions}
+              placeholder={
+                positionLoading ? "Cargando cargos..." : "Selecciona un cargo"
               }
-            }}
-            error={errors.cargo}
-          />
+              disabled={positionLoading || positionOptions.length === 0}
+            />
+          </div>
 
-          <SelectInput
+          <SelectField
             label="Estado"
             value={estado}
             onChange={(e) => setEstado((e.target as HTMLSelectElement).value)}
