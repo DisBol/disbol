@@ -41,8 +41,8 @@ export function useAddEmployee() {
 
                 const employeeId = (Array.isArray(response?.data) ? response?.data[0]?.Employee_id : undefined) ||
                                    response?.data?.id ||
-                                   response?.id ||
-                                   response?.data?.Employee_id;
+                                   (response as any)?.id ||
+                                   (response?.data as any)?.Employee_id;
 
                 if (employeeId) {
                     let salaryId: number | undefined = undefined;

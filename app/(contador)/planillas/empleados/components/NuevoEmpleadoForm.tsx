@@ -160,8 +160,8 @@ export default function NuevoEmpleadoForm({
         return;
       }
 
-      const hasSuccess = resultado?.success || resultado?.data || resultado?.id;
-      const responseData = Array.isArray(resultado?.data) ? resultado?.data[0] : (resultado?.data || resultado);
+      const hasSuccess = resultado?.success || resultado?.data || (resultado as any)?.id;
+      const responseData = Array.isArray(resultado?.data) ? resultado?.data[0] : (resultado?.data || (resultado as any));
       const employeeId = Number(responseData?.Employee_id || responseData?.id || id);
 
       if (hasSuccess && employeeId) {
@@ -197,8 +197,8 @@ export default function NuevoEmpleadoForm({
         Number(salario) || 0,
       );
 
-      const hasSuccess = resultado?.success || resultado?.data || resultado?.id;
-      const responseData = Array.isArray(resultado?.data) ? resultado?.data[0] : (resultado?.data || resultado);
+      const hasSuccess = resultado?.success || resultado?.data || (resultado as any)?.id;
+      const responseData = Array.isArray(resultado?.data) ? resultado?.data[0] : (resultado?.data || (resultado as any));
       const employeeId = Number(responseData?.Employee_id || responseData?.id);
 
       if (hasSuccess && employeeId) {
