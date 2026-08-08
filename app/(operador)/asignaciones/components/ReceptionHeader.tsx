@@ -4,24 +4,20 @@ import React from "react";
 import { Button } from "@/components/ui/Button";
 import { CarOutlineIcon } from "@/components/icons/CarOutlineIcon";
 import { Card } from "@/components/ui/Card";
-import CardCode from "@/components/ui/CardCode";
 import { Assignment } from "../stores/assignments-store";
 
-interface ProductReception {
-  codigo: string;
+interface Totals {
   cajas: number;
-  unidades: number;
-  kgBruto: number;
-  kgNeto: number;
-  kgRecibidos: number;
-  recibidosCajas: number;
-  recibidosUnidades: number;
-  active: boolean; // Agregar estado activo
+  pesoNeto: number;
 }
 
 interface ReceptionHeaderProps {
   assignment: Assignment;
-  productos: ProductReception[];
+  totalesGlobales: {
+    totalSolicitud: Totals;
+    totalEmpresa: Totals;
+    totalRecibido: Totals;
+  };
   costoTotalGeneral: string;
   onBack: () => void;
   onRegistrarRecepcion: () => void;
@@ -31,7 +27,7 @@ interface ReceptionHeaderProps {
 
 export default function ReceptionHeader({
   assignment,
-  productos,
+  totalesGlobales,
   costoTotalGeneral,
   onBack,
   onRegistrarRecepcion,
@@ -39,9 +35,9 @@ export default function ReceptionHeader({
   isFinalizando,
 }: ReceptionHeaderProps) {
   return (
-    <Card className="p-4 md:p-6">
+    <Card className="p-4 md:p-6 mb-6">
       {/* Header con información general */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 pb-6 border-b border-gray-100">
         <div>
           <span className="text-xs font-bold text-gray-500 uppercase block">
             PROVEEDOR:
@@ -50,15 +46,6 @@ export default function ReceptionHeader({
             {assignment.proveedor}
           </span>
         </div>
-
-        {/* <div>
-            <span className="text-xs font-bold text-gray-500 uppercase block">
-              CLIENTE:
-            </span>
-            <span className="text-md font-bold text-gray-900">
-              Pollería El Rey
-            </span>
-          </div> */}
 
         <div>
           <span className="text-xs font-bold text-gray-500 uppercase block">
@@ -103,45 +90,94 @@ export default function ReceptionHeader({
         </div>
       </div>
 
-      {/* Detalles de la Asignación */}
-      <div className="mb-8">
-        <h2 className="text-md font-bold text-gray-900 mb-4">
-          Detalles de la Asignación
+      {/* Detalles de la Asignación (Totales) */}
+      <div>
+        <h2 className="text-md font-bold text-gray-900 mb-5">
+          Resumen de Totales
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          {productos.map((producto) => (
-            <div
-              key={producto.codigo}
-              className={`${!producto.active ? "opacity-60" : ""}`}
-            >
-              <div
-                className={!producto.active ? "bg-gray-200 rounded-lg p-1" : ""}
-              >
-                <CardCode
-                  label={`Código ${producto.codigo}`}
-                  cajas={producto.cajas}
-                  unidades={producto.unidades}
-                  readOnly={true}
-                  compareReadOnly={{
-                    leftLabel: "Asig.",
-                    rightLabel: "Rec.",
-                    rightCajas: producto.recibidosCajas,
-                    rightUnidades: producto.recibidosUnidades,
-                  }}
-                  differences={{
-                    cajas: producto.recibidosCajas - producto.cajas,
-                    unidades: producto.recibidosUnidades - producto.unidades,
-                  }}
-                  weightInfo={{
-                    // bruto: `${producto.kgBruto.toFixed(2)}`,
-                    // neto: `${producto.kgNeto.toFixed(2)}`,
-                    recibidos: `${producto.kgRecibidos.toFixed(2)}`,
-                  }}
-                />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* TOTAL SOLICITUD */}
+          <div className="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col items-center">
+            <h3 className="text-[13px] font-black text-gray-800 tracking-[0.1em] mb-6">
+              TOTAL SOLICITUD
+            </h3>
+            <div className="w-full flex flex-col divide-y divide-gray-100 border-t border-b border-gray-200">
+              <div className="flex justify-between py-3">
+                <span className="text-sm font-semibold text-gray-500 uppercase">
+                  TOTAL CAJAS
+                </span>
+                <span className="text-sm font-black text-gray-900">
+                  {totalesGlobales.totalSolicitud.cajas}
+                </span>
+              </div>
+              <div className="flex justify-between py-3">
+                <span className="text-sm font-semibold text-gray-500 uppercase">
+                  Peso neto
+                </span>
+                <span className="text-sm font-black text-gray-900">
+                  {totalesGlobales.totalSolicitud.pesoNeto
+                    .toFixed(1)
+                    .replace(".", ",")}
+                </span>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* TOTAL EMPRESA */}
+          <div className="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col items-center">
+            <h3 className="text-[13px] font-black text-gray-800 tracking-[0.1em] mb-6">
+              TOTAL EMPRESA
+            </h3>
+            <div className="w-full flex flex-col divide-y divide-gray-100 border-t border-b border-gray-200">
+              <div className="flex justify-between py-3">
+                <span className="text-sm font-semibold text-gray-500 uppercase">
+                  TOTAL CAJAS
+                </span>
+                <span className="text-sm font-black text-gray-900">
+                  {totalesGlobales.totalEmpresa.cajas}
+                </span>
+              </div>
+              <div className="flex justify-between py-3">
+                <span className="text-sm font-semibold text-gray-500 uppercase">
+                  Peso neto
+                </span>
+                <span className="text-sm font-black text-gray-900">
+                  {totalesGlobales.totalEmpresa.pesoNeto
+                    .toFixed(1)
+                    .replace(".", ",")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* TOTAL RECIBIDO */}
+          <div className="border border-blue-200 rounded-2xl p-6 bg-blue-50/30 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+            <h3 className="text-[13px] font-black text-blue-900 tracking-[0.1em] mb-6">
+              TOTAL RECIBIDO
+            </h3>
+            <div className="w-full flex flex-col divide-y divide-blue-100 border-t border-b border-blue-200">
+              <div className="flex justify-between py-3">
+                <span className="text-sm font-semibold text-blue-700 uppercase">
+                  TOTAL CAJAS
+                </span>
+                <span className="text-sm font-black text-blue-950">
+                  {totalesGlobales.totalRecibido.cajas}
+                </span>
+              </div>
+              <div className="flex justify-between py-3">
+                <span className="text-sm font-semibold text-blue-700 uppercase">
+                  Peso neto
+                </span>
+                <span className="text-sm font-black text-blue-950">
+                  {totalesGlobales.totalRecibido.pesoNeto
+                    .toFixed(1)
+                    .replace(".", ",")}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Card>

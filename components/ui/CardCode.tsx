@@ -100,7 +100,10 @@ export interface CardCodeProps
     rightCajas: string | number;
     rightUnidades: string | number;
     rightCajasHidden?: boolean;
+    rightUnidadesHidden?: boolean;
   };
+  // Force top inputs to be read only
+  topReadOnly?: boolean;
 }
 
 const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
@@ -137,6 +140,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       disableAgregarPesaje = false,
       disableAutoComplete = false,
       compareReadOnly,
+      topReadOnly,
       ...props
     },
     ref,
@@ -359,7 +363,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               CAJAS
             </label>
-            {readOnly ? (
+            {readOnly || topReadOnly ? (
               compareReadOnly ? (
                 compareReadOnly.rightCajasHidden ? (
                   <div>
@@ -429,7 +433,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               UNID.
             </label>
-            {readOnly ? (
+            {readOnly || topReadOnly ? (
               compareReadOnly ? (
                 <div className="grid grid-cols-2 gap-1">
                   <div>
@@ -652,34 +656,10 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                         ? "EDITAR"
                         : "GUARDAR";
 
-                  const limiteCajas = Number(cajas) || 0;
-                  const limiteUnidades = Number(unidades) || 0;
-                  const acumuladoHastaAqui = pesajes.slice(0, idx + 1).reduce(
-                    (acc, p) => ({
-                      cajas: acc.cajas + (Number(p.cajas) || 0),
-                      unidades: acc.unidades + (Number(p.unidades) || 0),
-                    }),
-                    { cajas: 0, unidades: 0 },
-                  );
-
-                  const excesoCajas = Math.max(
-                    0,
-                    acumuladoHastaAqui.cajas - limiteCajas,
-                  );
-                  const excesoUnidades = Math.max(
-                    0,
-                    acumuladoHastaAqui.unidades - limiteUnidades,
-                  );
-                  const pesajeExcedido = excesoCajas > 0 || excesoUnidades > 0;
-
                   return (
                     <div
                       key={pesaje.id}
-                      className={`border rounded p-1.5 relative bg-white shadow-sm pointer-events-auto ${
-                        pesajeExcedido
-                          ? "border-red-300 bg-red-50/30"
-                          : "border-gray-200"
-                      }`}
+                      className={`border rounded p-1.5 relative bg-white shadow-sm pointer-events-auto border-gray-200`}
                     >
                       <div className="mb-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-1 min-w-0">
@@ -736,13 +716,6 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                           )}
                         </div>
                       </div>
-
-                      {pesajeExcedido && (
-                        <div className="mb-1 text-[10px] font-bold text-red-600">
-                          Excedente: +{excesoCajas} cajas, +{excesoUnidades}{" "}
-                          unid.
-                        </div>
-                      )}
 
                       <div className="space-y-1">
                         <div className="flex gap-1 items-end">
@@ -877,6 +850,42 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Agregar Pesaje Button (Bottom) */}
+            {onAgregarPesaje && pesajes && pesajes.length > 0 && (
+              <div className="mt-2 w-full px-1">
+                <button
+                  type="button"
+                  disabled={disableAgregarPesaje}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onAgregarPesaje();
+                  }}
+                  className={`w-full text-[9px] font-bold rounded py-1 px-2 transition-colors pointer-events-auto flex items-center justify-center gap-1 uppercase ${
+                    disableAgregarPesaje
+                      ? "text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed opacity-50"
+                      : "text-red-600 bg-white border border-red-200 hover:bg-red-50 hover:border-red-300"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5v14" />
+                  </svg>
+                  AGREGAR PESAJE
+                </button>
               </div>
             )}
 
