@@ -69,7 +69,6 @@ interface ReceptionTicketsProps {
     pesajeId: string,
   ) => void | Promise<void>;
   onGuardarBoleta: (boletaId: string) => void;
-  onCompletarFlujoBoleta: (boletaId: string) => void | Promise<void>;
   entregasList: EntregaEmpresa[];
   setEntregasList: React.Dispatch<React.SetStateAction<EntregaEmpresa[]>>;
 }
@@ -92,7 +91,6 @@ export default function ReceptionTickets({
   onRemovePesaje,
   onGuardarPesaje,
   onGuardarBoleta,
-  onCompletarFlujoBoleta,
   entregasList,
   setEntregasList,
 }: ReceptionTicketsProps) {
@@ -105,9 +103,7 @@ export default function ReceptionTickets({
   } = useProductsByCategory();
   const readOnly = isRecibir === "true";
   const [savingBoletas, setSavingBoletas] = useState<Set<string>>(new Set());
-  const [completingBoletas, setCompletingBoletas] = useState<Set<string>>(
-    new Set(),
-  );
+
   const [savingPesajes, setSavingPesajes] = useState<Set<string>>(new Set());
   const [expandedSavedBoletas, setExpandedSavedBoletas] = useState<Set<string>>(
     new Set(),
@@ -175,26 +171,6 @@ export default function ReceptionTickets({
       }
       return next;
     });
-  };
-
-  const handleCompletarFlujoBoleta = async (boletaId: string) => {
-    if (completingBoletas.has(boletaId)) return;
-
-    setCompletingBoletas((prev) => {
-      const next = new Set(prev);
-      next.add(boletaId);
-      return next;
-    });
-
-    try {
-      await Promise.resolve(onCompletarFlujoBoleta(boletaId));
-    } finally {
-      setCompletingBoletas((prev) => {
-        const next = new Set(prev);
-        next.delete(boletaId);
-        return next;
-      });
-    }
   };
 
   const handleGuardarPesaje = async (
@@ -472,15 +448,7 @@ export default function ReceptionTickets({
                             </div>
                           </div>
                         </div>
-                        {isSaved && (
-                          <p className="text-xs text-gray-600">
-                            Guardada - Codigo: {boleta.codigo || "Sin codigo"} -
-                            Costo Boleta: {boleta.ticket_payment || "N/A"} -
-                            Peso Boleta: {boleta.ticket_weight || "N/A"} -
-                            Cuenta: {boleta.Account_code || "N/A"} -{" "}
-                            {boleta.Account_name || "N/A"}
-                          </p>
-                        )}
+
                         {isSaved &&
                           boleta.flujoCompletado &&
                           boleta.hasPendingChanges && (
@@ -490,68 +458,43 @@ export default function ReceptionTickets({
                           )}
                       </div>
 
-                      {isSaved ? (
-                        <div className="flex gap-2">
-                          {!readOnly && (
-                            <Button
-                              variant={
-                                boleta.flujoCompletado &&
-                                boleta.hasPendingChanges
-                                  ? "outline"
-                                  : "success"
-                              }
-                              color={
-                                boleta.flujoCompletado &&
-                                boleta.hasPendingChanges
-                                  ? "warning"
-                                  : "success"
-                              }
-                              size="sm"
-                              loading={completingBoletas.has(boleta.id)}
-                              disabled={
-                                completingBoletas.has(boleta.id) ||
-                                Boolean(
-                                  boleta.flujoCompletado &&
-                                  !boleta.hasPendingChanges,
-                                )
-                              }
-                              onClick={() =>
-                                handleCompletarFlujoBoleta(boleta.id)
-                              }
-                            >
-                              {boleta.flujoCompletado
-                                ? boleta.hasPendingChanges
-                                  ? "Editar"
-                                  : "Flujo Completado"
-                                : "Completar Flujo"}
-                            </Button>
-                          )}
+                      <div className="flex gap-2">
+                        {!readOnly && (
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleSavedBoleta(boleta.id)}
-                          >
-                            {isExpanded ? "Ocultar detalle" : "Ver detalle"}
-                          </Button>
-                        </div>
-                      ) : !readOnly ? (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="success"
-                            color="success"
+                            variant={
+                              !isSaved
+                                ? "success"
+                                : boleta.hasPendingChanges
+                                  ? "info"
+                                  : "outline"
+                            }
+                            color={
+                              !isSaved
+                                ? "success"
+                                : boleta.hasPendingChanges
+                                  ? "info"
+                                  : "secondary"
+                            }
                             size="sm"
                             loading={savingBoletas.has(boleta.id)}
-                            disabled={savingBoletas.has(boleta.id)}
+                            disabled={
+                              savingBoletas.has(boleta.id) ||
+                              (isSaved && !boleta.hasPendingChanges)
+                            }
                             onClick={() => handleGuardarBoleta(boleta.id)}
                           >
-                            Guardar Boleta
+                            {!isSaved
+                              ? "Guardar Boleta"
+                              : boleta.hasPendingChanges
+                                ? "Guardar Cambios"
+                                : "Guardado"}
                           </Button>
-                        </div>
-                      ) : null}
+                        )}
+                        {/* Removed Ver Detalle button */}
+                      </div>
                     </div>
 
-                    {isExpanded && (
-                      <>
+                    <>
                         {/* <div className="grid grid-cols-1 md:grid-cols-6 gap-5 mb-5">
                           <div>
                             <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
@@ -884,7 +827,6 @@ export default function ReceptionTickets({
                           </div>
                         </div>
                       </>
-                    )}
                   </>
                 );
               })()}

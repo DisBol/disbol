@@ -867,7 +867,7 @@ export default function ReceptionScreen({
           }
 
           const newPesajeId = Date.now().toString() + Math.random().toString();
-          
+
           setTimeout(() => {
             document.getElementById(`cajas-${newPesajeId}`)?.focus();
           }, 50);
@@ -1060,6 +1060,10 @@ export default function ReceptionScreen({
     const boleta = boletas.find((b) => b.id === boletaId);
     if (!boleta) return;
 
+    if (boleta.ticketId) {
+      return handleCompletarFlujoBoleta(boletaId);
+    }
+
     try {
       // FLUJO SIMPLIFICADO: Solo hasta AddProductAssignment
       // 1. Crear assignment stage
@@ -1181,22 +1185,20 @@ export default function ReceptionScreen({
           }
         }
 
+        const updatedBoleta: Boleta = {
+          ...boleta,
+          ticketId: newTicketId.toString(),
+          id: newTicketId.toString(),
+          assignmentStageId: Number(stageId),
+          flujoCompletado: false,
+          hasPendingChanges: false,
+          detalles: { ...boleta.detalles },
+        };
+
         // Actualizar la boleta en el estado local con el ticketId
         // Esto marca a la boleta como guardada y habilita el botón "Agregar pesaje"
         setBoletas((prev) =>
-          prev.map((b) => {
-            if (b.id !== boletaId) return b;
-
-            return {
-              ...b,
-              ticketId: newTicketId.toString(),
-              id: newTicketId.toString(),
-              assignmentStageId: Number(stageId),
-              flujoCompletado: false,
-              hasPendingChanges: false,
-              detalles: { ...boleta.detalles },
-            };
-          }),
+          prev.map((b) => (b.id === boletaId ? updatedBoleta : b)),
         );
 
         console.log("Boleta guardada hasta ProductAssignment exitosamente");
@@ -1205,6 +1207,9 @@ export default function ReceptionScreen({
           ticketId: newTicketId.toString(),
           productosGuardados: boleta.codigosSeleccionados.length,
         });
+
+        // Completar flujo con la boleta actualizada
+        await handleCompletarFlujoBoleta(boletaId, updatedBoleta);
       }
     } catch (error) {
       console.error("Error saving boleta", error);
@@ -1411,8 +1416,11 @@ export default function ReceptionScreen({
     }
   };
 
-  const handleCompletarFlujoBoleta = async (boletaId: string) => {
-    const boleta = boletas.find((b) => b.id === boletaId);
+  const handleCompletarFlujoBoleta = async (
+    boletaId: string,
+    providedBoleta?: Boleta,
+  ) => {
+    const boleta = providedBoleta || boletas.find((b) => b.id === boletaId);
     if (!boleta || !boleta.ticketId) return;
 
     try {
@@ -1473,6 +1481,16 @@ export default function ReceptionScreen({
                 id: newWeighingId.toString(),
               };
             }
+          } else {
+            await UpdateTicketsWeighing(
+              Number(pesaje.id),
+              netWeight,
+              grossWeight,
+              Number(pesaje.unidades) || 0,
+              cantidadCajas,
+              Number(pesaje.contenedor) || 0,
+              "true",
+            );
           }
         }
 
@@ -1545,7 +1563,7 @@ export default function ReceptionScreen({
 
       setBoletas((prev) =>
         prev.map((b) => {
-          if (b.id !== boletaId) return b;
+          if (b.id !== boleta.id) return b;
 
           return {
             ...b,
@@ -1557,7 +1575,7 @@ export default function ReceptionScreen({
         }),
       );
 
-      console.log("Flujo completado exitosamente para boleta", boletaId);
+      console.log("Flujo completado exitosamente para boleta", boleta.id);
     } catch (error) {
       console.error("Error completando flujo de boleta", error);
     }
@@ -1593,7 +1611,6 @@ export default function ReceptionScreen({
         onRemovePesaje={handleRemovePesaje}
         onGuardarPesaje={handleGuardarPesaje}
         onGuardarBoleta={handleGuardarBoleta}
-        onCompletarFlujoBoleta={handleCompletarFlujoBoleta}
       />
 
       {/* Modal Confirmar Finalizar Recepción */}
