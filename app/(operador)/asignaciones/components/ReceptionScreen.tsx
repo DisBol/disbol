@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
 import { Modal } from "@/components/ui/Modal";
@@ -20,6 +19,7 @@ import { useUpdateAssignment } from "../hooks/useUpdateAssignment";
 import { useAddContainerMovements } from "../hooks/repartir/useAddContainerMovements";
 import { Boleta, BoletaDetail } from "../types/reception.types";
 import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
+import type { EntregaEmpresa } from "./RecibirEmpresaModal";
 
 // Interfaces
 interface ProductReception {
@@ -29,6 +29,8 @@ interface ProductReception {
   kgBruto: number;
   kgNeto: number;
   kgRecibidos: number;
+  kgRecibidosBruto: number;
+  kgRecibidosNeto: number;
   recibidosCajas: number;
   recibidosUnidades: number;
   productId: string;
@@ -70,9 +72,7 @@ export default function ReceptionScreen({
     },
   ]);
 
-  const [entregasList, setEntregasList] = useState<
-    { id: string; cajas: number; peso: number; bono: boolean }[]
-  >([]);
+  const [entregasList, setEntregasList] = useState<EntregaEmpresa[]>([]);
 
   // Transformar productos del assignment a formato de recepción
   const productos = useMemo<ProductReception[]>(() => {
@@ -96,7 +96,7 @@ export default function ReceptionScreen({
   const recibidosPorCodigo = useMemo(() => {
     const acc: Record<
       string,
-      { cajas: number; unidades: number; kgRecibidos: number }
+      { cajas: number; unidades: number; kgBruto: number; kgNeto: number }
     > = {};
 
     boletas.forEach((boleta) => {
@@ -105,7 +105,7 @@ export default function ReceptionScreen({
         if (!detalle) return;
 
         if (!acc[codigo]) {
-          acc[codigo] = { cajas: 0, unidades: 0, kgRecibidos: 0 };
+          acc[codigo] = { cajas: 0, unidades: 0, kgBruto: 0, kgNeto: 0 };
         }
 
         let cajasValue = 0;
@@ -121,21 +121,29 @@ export default function ReceptionScreen({
             0,
           );
 
-          const netoFromPesajes = detalle.pesajes.reduce((sum, pesaje) => {
-            const selectedContainer = containersData?.find(
-              (container) => container.id.toString() === pesaje.contenedor,
-            );
-            const destare = selectedContainer?.destare || 0;
-            const grossWeight = Number(pesaje.kg) || 0;
-            const cantidadCajas = Number(pesaje.cajas) || 0;
-            const netWeight = Math.max(
-              0,
-              grossWeight - destare * cantidadCajas,
-            );
-            return sum + netWeight;
-          }, 0);
+          const pesoFromPesajes = detalle.pesajes.reduce(
+            (sum, pesaje) => {
+              const selectedContainer = containersData?.find(
+                (container) => container.id.toString() === pesaje.contenedor,
+              );
+              const destare = selectedContainer?.destare || 0;
+              const grossWeight = Number(pesaje.kg) || 0;
+              const cantidadCajas = Number(pesaje.cajas) || 0;
+              const netWeight = Math.max(
+                0,
+                grossWeight - destare * cantidadCajas,
+              );
 
-          acc[codigo].kgRecibidos += netoFromPesajes;
+              return {
+                bruto: sum.bruto + grossWeight,
+                neto: sum.neto + netWeight,
+              };
+            },
+            { bruto: 0, neto: 0 },
+          );
+
+          acc[codigo].kgBruto += pesoFromPesajes.bruto;
+          acc[codigo].kgNeto += pesoFromPesajes.neto;
         }
 
         acc[codigo].cajas += cajasValue;
@@ -155,7 +163,9 @@ export default function ReceptionScreen({
           ...producto,
           recibidosCajas: recibido?.cajas || 0,
           recibidosUnidades: recibido?.unidades || 0,
-          kgRecibidos: recibido?.kgRecibidos || 0,
+          kgRecibidos: recibido?.kgNeto || 0,
+          kgRecibidosBruto: recibido?.kgBruto || 0,
+          kgRecibidosNeto: recibido?.kgNeto || 0,
         };
       }),
     [productos, recibidosPorCodigo],
@@ -168,34 +178,52 @@ export default function ReceptionScreen({
       (acc, p) => {
         if (p.codigo.toUpperCase() !== "BONO") {
           acc.cajas += Number(p.cajas) || 0;
+          acc.unidades += Number(p.unidades) || 0;
+          acc.pesoBruto += Number(p.kgBruto) || 0;
           acc.pesoNeto += Number(p.kgNeto) || 0;
         }
         return acc;
       },
-      { cajas: 0, pesoNeto: 0 }
+      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0 },
     );
+    totalSolicitud.destare = totalSolicitud.pesoBruto - totalSolicitud.pesoNeto;
 
     // 2. Total Empresa (desde entregasList)
     const totalEmpresa = entregasList.reduce(
       (acc, e) => {
         acc.cajas += Number(e.cajas) || 0;
+        acc.unidades += Number(e.unidades) || 0;
         acc.pesoNeto += Number(e.peso) || 0;
         return acc;
       },
-      { cajas: 0, pesoNeto: 0 }
+      { cajas: 0, unidades: 0, pesoNeto: 0 },
     );
 
     // 3. Total Recibido (desde recibidosPorCodigo)
     const totalRecibido = Object.values(recibidosPorCodigo).reduce(
       (acc, r) => {
         acc.cajas += Number(r.cajas) || 0;
-        acc.pesoNeto += Number(r.kgRecibidos) || 0;
+        acc.unidades += Number(r.unidades) || 0;
+        acc.pesoBruto += Number(r.kgBruto) || 0;
+        acc.pesoNeto += Number(r.kgNeto) || 0;
         return acc;
       },
-      { cajas: 0, pesoNeto: 0 }
+      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0 },
     );
+    totalRecibido.destare = totalRecibido.pesoBruto - totalRecibido.pesoNeto;
 
-    return { totalSolicitud, totalEmpresa, totalRecibido };
+    const comparativaEmpresaRecibido = {
+      cajas: totalRecibido.cajas - totalEmpresa.cajas,
+      unidades: totalRecibido.unidades - totalEmpresa.unidades,
+      pesoNeto: totalRecibido.pesoNeto - totalEmpresa.pesoNeto,
+    };
+
+    return {
+      totalSolicitud,
+      totalEmpresa,
+      totalRecibido,
+      comparativaEmpresaRecibido,
+    };
   }, [productos, entregasList, recibidosPorCodigo]);
 
   const { addAssignmentStage } = useAddAssignmentStage();
@@ -474,12 +502,7 @@ export default function ReceptionScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignment.id]);
 
-  const { costoTotalGeneral, pesoTotalGeneral } = useMemo(() => {
-    // Calcular costo total como suma de ticket_payment de todas las boletas
-    const costoTotalGeneral = boletas.reduce((sum, boleta) => {
-      return sum + (Number(boleta.ticket_payment) || 0);
-    }, 0);
-
+  const { pesoTotalGeneral } = useMemo(() => {
     // Calcular peso total general basado en pesajes
     let totalWeight = 0;
 
@@ -538,12 +561,9 @@ export default function ReceptionScreen({
     });
 
     return {
-      costoTotalGeneral: (Math.round(costoTotalGeneral * 100) / 100).toFixed(2),
       pesoTotalGeneral: (Math.round(totalWeight * 100) / 100).toFixed(2),
     };
   }, [boletas, containersData]);
-
-  const [showResumenModal, setShowResumenModal] = useState(false);
 
   const resolveProductId = (boleta: Boleta, codigo: string): string | null => {
     const fromCategory = boleta.categoryProducts?.find(
@@ -969,10 +989,6 @@ export default function ReceptionScreen({
     );
   };
 
-  const handleRegistrarRecepcion = () => {
-    setShowResumenModal(true);
-  };
-
   const { addContainerMovements } = useAddContainerMovements();
 
   const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
@@ -1032,12 +1048,6 @@ export default function ReceptionScreen({
       updateAssignmentFlags(assignment.id, { isRecibir: "true" });
     }
     onBack();
-  };
-
-  const handleConfirmarRecepcion = () => {
-    setShowResumenModal(false);
-    // Aquí iría la lógica para guardar la recepción
-    console.log("Recepción confirmada");
   };
 
   const handleGuardarBoleta = async (boletaId: string) => {
@@ -1552,9 +1562,7 @@ export default function ReceptionScreen({
       <ReceptionHeader
         assignment={assignment}
         totalesGlobales={totalesGlobales}
-        costoTotalGeneral={costoTotalGeneral}
         onBack={onBack}
-        onRegistrarRecepcion={handleRegistrarRecepcion}
         onFinalizarRecepcion={handleFinalizarRecepcion}
         isFinalizando={isFinalizando}
       />
@@ -1580,14 +1588,6 @@ export default function ReceptionScreen({
         onGuardarPesaje={handleGuardarPesaje}
         onGuardarBoleta={handleGuardarBoleta}
         onCompletarFlujoBoleta={handleCompletarFlujoBoleta}
-      />
-
-      {/* Modal de Resumen de Recepción */}
-      <ReceptionSummaryModal
-        isOpen={showResumenModal}
-        onClose={() => setShowResumenModal(false)}
-        onConfirm={handleConfirmarRecepcion}
-        productos={productosConComparacion}
       />
 
       {/* Modal Confirmar Finalizar Recepción */}
