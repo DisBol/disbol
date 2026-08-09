@@ -113,174 +113,118 @@ export default function ReceptionHeader({
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {/* TOTAL SOLICITUD */}
-          <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-lg">
-            <div className="mb-4 flex items-center justify-between gap-3 border-b border-gray-100 pb-3">
+          <div className="flex flex-col h-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 shadow-sm transition-all hover:shadow-md hover:border-slate-300">
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-slate-200/60">
               <div>
-                <h3 className="text-[13px] font-black tracking-[0.16em] text-gray-800">
-                  SOLICITUD
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Solicitud
                 </h3>
-                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+                <p className="text-[10px] font-medium text-slate-500 mt-0.5">
                   Base solicitada
                 </p>
               </div>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-600">
+              <span className="rounded-md bg-slate-200/50 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-600">
                 Original
               </span>
             </div>
-
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">
-                  Unidades
-                </span>
-                <span className="text-sm font-black text-gray-900">
-                  {formatNumber(solicitud.unidades || 0)}
-                </span>
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Unidades</span>
+                <span className="text-sm font-bold text-slate-900">{formatNumber(solicitud.unidades || 0)}</span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">
-                  Cajas
-                </span>
-                <span className="text-sm font-black text-gray-900">
-                  {formatNumber(solicitud.cajas)}
-                </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Cajas</span>
+                <span className="text-sm font-bold text-slate-900">{formatNumber(solicitud.cajas)}</span>
               </div>
             </div>
           </div>
 
           {/* TOTAL EMPRESA */}
-          <div className="overflow-hidden rounded-3xl border border-amber-200 bg-gradient-to-b from-amber-50 to-white p-5 shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-lg">
-            <div className="mb-4 flex items-center justify-between gap-3 border-b border-amber-100 pb-3">
+          <div className="flex flex-col h-full p-4 rounded-xl border border-amber-200 bg-amber-50/40 shadow-sm transition-all hover:shadow-md hover:border-amber-300">
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-amber-200/60">
               <div>
-                <h3 className="text-[13px] font-black tracking-[0.16em] text-amber-900">
-                  EMPRESA
+                <h3 className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  Empresa
                 </h3>
-                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-700/80">
+                <p className="text-[10px] font-medium text-amber-700/70 mt-0.5">
                   Entrada de la empresa
                 </p>
               </div>
             </div>
-
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between rounded-2xl border border-amber-100 bg-white px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-700">
-                  Unidades
-                </span>
-                <span className="text-sm font-black text-amber-950">
-                  {formatNumber(empresa.unidades || 0)}
-                </span>
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">Unidades</span>
+                <span className="text-sm font-bold text-amber-950">{formatNumber(empresa.unidades || 0)}</span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl border border-amber-100 bg-white px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-700">
-                  Cajas
-                </span>
-                <span className="text-sm font-black text-amber-950">
-                  {formatNumber(empresa.cajas)}
-                </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">Cajas</span>
+                <span className="text-sm font-bold text-amber-950">{formatNumber(empresa.cajas)}</span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl border border-amber-100 bg-white px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-amber-700">
-                  Peso neto
-                </span>
-                <span className="text-sm font-black text-amber-950">
-                  {formatWeight(empresa.pesoNeto || 0)}
-                </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">Peso neto</span>
+                <span className="text-sm font-bold text-amber-950">{formatWeight(empresa.pesoNeto || 0)}</span>
               </div>
             </div>
           </div>
 
           {/* TOTAL RECIBIDO */}
-          <div className="overflow-hidden rounded-3xl border border-violet-200 bg-gradient-to-b from-violet-50 to-white p-5 shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-lg">
-            <div className="mb-4 flex items-center justify-between gap-3 border-b border-violet-100 pb-3">
+          <div className="flex flex-col h-full p-4 rounded-xl border border-violet-200 bg-violet-50/40 shadow-sm transition-all hover:shadow-md hover:border-violet-300">
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-violet-200/60">
               <div>
-                <h3 className="text-[13px] font-black tracking-[0.16em] text-violet-900">
-                  RECIBIDO
+                <h3 className="text-xs font-bold text-violet-900 uppercase tracking-wider">
+                  Recibido
                 </h3>
-                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-700/80">
+                <p className="text-[10px] font-medium text-violet-700/70 mt-0.5">
                   Lo que entra a recepción
                 </p>
               </div>
             </div>
-
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between rounded-2xl border border-violet-100 bg-white px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-violet-700">
-                  Unidades
-                </span>
-                <span className="text-sm font-black text-violet-950">
-                  {formatNumber(recibido.unidades || 0)}
-                </span>
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">Unidades</span>
+                <span className="text-sm font-bold text-violet-950">{formatNumber(recibido.unidades || 0)}</span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl border border-violet-100 bg-white px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-violet-700">
-                  Cajas
-                </span>
-                <span className="text-sm font-black text-violet-950">
-                  {formatNumber(recibido.cajas)}
-                </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">Cajas</span>
+                <span className="text-sm font-bold text-violet-950">{formatNumber(recibido.cajas)}</span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl border border-violet-100 bg-white px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-violet-700">
-                  Peso neto
-                </span>
-                <span className="text-sm font-black text-violet-950">
-                  {formatWeight(recibido.pesoNeto || 0)}
-                </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">Peso neto</span>
+                <span className="text-sm font-bold text-violet-950">{formatWeight(recibido.pesoNeto || 0)}</span>
               </div>
             </div>
           </div>
 
           {/* DIFERENCIA */}
-          <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-lg">
-            <div className="mb-4 flex items-center justify-between gap-3 border-b border-gray-100 pb-3">
+          <div className="flex flex-col h-full p-4 rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md hover:border-slate-300">
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-slate-200/60">
               <div>
-                <h3 className="text-[13px] font-black tracking-[0.16em] text-gray-800">
-                  DIFERENCIA
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Diferencia
                 </h3>
-                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+                <p className="text-[10px] font-medium text-slate-500 mt-0.5">
                   Recibido - Empresa
                 </p>
               </div>
-              {/* <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em]">
-                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
-                  Empresa
-                </span>
-                <span className="rounded-full bg-violet-100 px-2.5 py-1 text-violet-800">
-                  Recibido
-                </span>
-              </div> */}
             </div>
-
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">
-                  Unidades
-                </span>
-                <span
-                  className={`text-sm font-black ${getDifferenceColorClass(diferencia.unidades)}`}
-                >
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Unidades</span>
+                <span className={`text-sm font-bold ${getDifferenceColorClass(diferencia.unidades)}`}>
                   {formatSignedNumber(diferencia.unidades)}
                 </span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">
-                  Cajas
-                </span>
-                <span
-                  className={`text-sm font-black ${getDifferenceColorClass(diferencia.cajas)}`}
-                >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Cajas</span>
+                <span className={`text-sm font-bold ${getDifferenceColorClass(diferencia.cajas)}`}>
                   {formatSignedNumber(diferencia.cajas)}
                 </span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">
-                  Peso neto
-                </span>
-                <span
-                  className={`text-sm font-black ${getDifferenceColorClass(diferencia.pesoNeto)}`}
-                >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Peso neto</span>
+                <span className={`text-sm font-bold ${getDifferenceColorClass(diferencia.pesoNeto)}`}>
                   {formatSignedWeight(diferencia.pesoNeto)}
                 </span>
               </div>

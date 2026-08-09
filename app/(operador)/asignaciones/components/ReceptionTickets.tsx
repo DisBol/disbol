@@ -281,69 +281,120 @@ export default function ReceptionTickets({
     return boleta.codigosSeleccionados.reduce(
       (acc, codigo) => {
         const detalle = boleta.detalles[codigo];
-        acc.totalCajas += Number(detalle?.cajas) || 0;
-        acc.totalUnidades += Number(detalle?.unidades) || 0;
+        if (!detalle) return acc;
+
+        acc.totalCajas += Number(detalle.cajas) || 0;
+        acc.totalUnidades += Number(detalle.unidades) || 0;
+
+        const hasPesajes = (detalle.pesajes?.length || 0) > 0;
+        let kgBruto = 0;
+        let kgNeto = 0;
+        let destare = 0;
+
+        if (hasPesajes && detalle.pesajes) {
+          kgBruto = detalle.pesajes.reduce(
+            (sum, p) => sum + (Number(p.kg) || 0),
+            0,
+          );
+          kgNeto = detalle.pesajes.reduce((sum, p) => {
+            const selectedContainer = containersData?.find(
+              (container) => container.id.toString() === p.contenedor,
+            );
+            const containerDestare = selectedContainer?.destare || 0;
+            const grossWeight = Number(p.kg) || 0;
+            const cantidadCajas = Number(p.cajas) || 0;
+            const netWeight = grossWeight - containerDestare * cantidadCajas;
+            return sum + netWeight;
+          }, 0);
+          destare = kgBruto - kgNeto;
+        } else {
+          kgBruto = Number(detalle.kgBruto) || 0;
+          kgNeto = Number(detalle.kgNeto) || 0;
+          destare = kgBruto - kgNeto;
+        }
+
+        acc.totalKgBruto += kgBruto;
+        acc.totalKgNeto += kgNeto;
+        acc.totalDestare += destare;
+
         return acc;
       },
-      { totalCajas: 0, totalUnidades: 0 },
+      {
+        totalCajas: 0,
+        totalUnidades: 0,
+        totalKgBruto: 0,
+        totalKgNeto: 0,
+        totalDestare: 0,
+      },
     );
   };
 
   const resolveBoletaProducts = (boleta: Boleta) => {
+    let result = [];
     if (boleta.categoryProducts && boleta.categoryProducts.length > 0) {
-      return boleta.categoryProducts;
+      result = boleta.categoryProducts;
+    } else {
+      const loadedProductIds = Object.values(boleta.detalles)
+        .map((detalle) => detalle.productId)
+        .filter((productId): productId is string => Boolean(productId));
+
+      if (loadedProductIds.length === 0) {
+        result = productos;
+      } else {
+        const matchedCategory = categories.find((category) => {
+          const categoryProductIds = new Set(
+            category.products.map((product) => product.id.toString()),
+          );
+
+          return loadedProductIds.every((productId) =>
+            categoryProductIds.has(productId),
+          );
+        });
+
+        if (matchedCategory) {
+          result = matchedCategory.products.map((product) => ({
+            codigo: product.name,
+            cajas: 0,
+            unidades: 0,
+            kgBruto: 0,
+            kgNeto: 0,
+            kgRecibidos: 0,
+          }));
+        } else {
+          const productsById = new Map(
+            categories
+              .flatMap((category) => category.products)
+              .map((product) => [product.id.toString(), product]),
+          );
+
+          const resolvedProducts = loadedProductIds
+            .map((productId) => productsById.get(productId))
+            .filter((product): product is { id: number; name: string } =>
+              Boolean(product),
+            )
+            .map((product) => ({
+              codigo: product.name,
+              cajas: 0,
+              unidades: 0,
+              kgBruto: 0,
+              kgNeto: 0,
+              kgRecibidos: 0,
+            }));
+
+          result = resolvedProducts.length > 0 ? resolvedProducts : productos;
+        }
+      }
     }
 
-    const loadedProductIds = Object.values(boleta.detalles)
-      .map((detalle) => detalle.productId)
-      .filter((productId): productId is string => Boolean(productId));
-
-    if (loadedProductIds.length === 0) {
-      return productos;
-    }
-
-    const matchedCategory = categories.find((category) => {
-      const categoryProductIds = new Set(
-        category.products.map((product) => product.id.toString()),
-      );
-
-      return loadedProductIds.every((productId) =>
-        categoryProductIds.has(productId),
-      );
+    // Sort by code numerically
+    return [...result].sort((a, b) => {
+      const numA = parseInt(a.codigo, 10);
+      const numB = parseInt(b.codigo, 10);
+      if (isNaN(numA) && isNaN(numB)) return a.codigo.localeCompare(b.codigo);
+      if (isNaN(numA)) return 1;
+      if (isNaN(numB)) return -1;
+      return numA - numB;
     });
-
-    if (matchedCategory) {
-      return matchedCategory.products.map((product) => ({
-        codigo: product.name,
-        cajas: 0,
-        unidades: 0,
-        kgBruto: 0,
-        kgNeto: 0,
-        kgRecibidos: 0,
-      }));
-    }
-
-    const productsById = new Map(
-      categories
-        .flatMap((category) => category.products)
-        .map((product) => [product.id.toString(), product]),
-    );
-
-    const resolvedProducts = loadedProductIds
-      .map((productId) => productsById.get(productId))
-      .filter((product): product is { id: number; name: string } =>
-        Boolean(product),
-      )
-      .map((product) => ({
-        codigo: product.name,
-        cajas: 0,
-        unidades: 0,
-        kgBruto: 0,
-        kgNeto: 0,
-        kgRecibidos: 0,
-      }));
-
-    return resolvedProducts.length > 0 ? resolvedProducts : productos;
   };
 
   return (
@@ -351,16 +402,14 @@ export default function ReceptionTickets({
       {/* Boletas de Recepción */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-md font-bold text-gray-900">
-            Boletas de Recepción
-          </h2>
+          <h2 className="text-md font-bold text-gray-900">Recepción</h2>
           {!readOnly && (
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="primary"
                 onClick={() => setIsEntregaModalOpen(true)}
               >
-                Registrar Entrega
+                Registrar entrega de empresa
               </Button>
             </div>
           )}
@@ -376,8 +425,13 @@ export default function ReceptionTickets({
                 const isSaved = Boolean(boleta.ticketId);
                 const isExpanded =
                   !isSaved || expandedSavedBoletas.has(boleta.id);
-                const { totalCajas, totalUnidades } =
-                  calculateBoletaTotals(boleta);
+                const {
+                  totalCajas,
+                  totalUnidades,
+                  totalKgBruto,
+                  totalKgNeto,
+                  totalDestare,
+                } = calculateBoletaTotals(boleta);
                 const boletaProducts = resolveBoletaProducts(boleta);
 
                 return (
@@ -386,31 +440,34 @@ export default function ReceptionTickets({
                       <div>
                         <div className="flex flex-wrap items-center gap-4 py-2">
                           <h3 className="text-md font-bold tracking-tight text-red-500 uppercase">
-                            Boleta{" "}
-                            <span className="text-red-500 ml-1">
-                              #{index + 1}
-                            </span>
+                            PESAJE
                           </h3>
 
-                          <div className="flex items-center gap-3 text-red-500">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-[12px] font-medium uppercase tracking-wider text-slate-500">
-                                Cajas
+                          <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-baseline gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                                Destare
                               </span>
-                              <span className="text-sm font-semibold text-slate-800">
-                                {totalCajas}
+                              <span className="text-sm font-bold text-gray-800">
+                                {totalDestare.toFixed(2)} kg
                               </span>
                             </div>
 
-                            {/* Separador tipo punto (bullet) más discreto que una línea vertical */}
-                            <span className="h-1 w-1 rounded-full bg-slate-300" />
-
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-[12px] font-medium uppercase tracking-wider text-slate-500">
-                                Unidades
+                            <div className="flex items-baseline gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                                Peso Bruto Total
                               </span>
-                              <span className="text-sm font-semibold text-slate-800">
-                                {totalUnidades}
+                              <span className="text-sm font-bold text-gray-800">
+                                {totalKgBruto.toFixed(2)} kg
+                              </span>
+                            </div>
+
+                            <div className="flex items-baseline gap-1.5 bg-red-50 px-2 py-1 rounded-md border border-red-200">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-red-500">
+                                Pesaje Total
+                              </span>
+                              <span className="text-sm font-bold text-red-600">
+                                {totalKgNeto.toFixed(2)} kg
                               </span>
                             </div>
                           </div>
@@ -489,21 +546,13 @@ export default function ReceptionTickets({
                           >
                             Guardar Boleta
                           </Button>
-                          <Button
-                            variant="danger"
-                            color="danger"
-                            size="sm"
-                            onClick={() => onEliminarBoleta(boleta.id)}
-                          >
-                            Eliminar Boleta
-                          </Button>
                         </div>
                       ) : null}
                     </div>
 
                     {isExpanded && (
                       <>
-                        <div className="grid grid-cols-1 md:grid-cols-6 gap-5 mb-5">
+                        {/* <div className="grid grid-cols-1 md:grid-cols-6 gap-5 mb-5">
                           <div>
                             <span className="text-xs font-bold text-gray-500 uppercase block mb-1">
                               CÓDIGO DE BOLETA
@@ -611,9 +660,9 @@ export default function ReceptionTickets({
                               Bs {calculateTotalPayment(boleta).toFixed(2)}
                             </div>
                           </div>
-                        </div>
+                        </div> */}
 
-                        <div className="mb-4">
+                        {/* <div className="mb-4">
                           <Checkbox
                             label="Precio diferido"
                             checked={boleta.precioDiferido}
@@ -626,12 +675,12 @@ export default function ReceptionTickets({
                               )
                             }
                           />
-                        </div>
+                        </div> */}
 
                         {/* Códigos en esta Boleta */}
                         <div className="mb-4">
                           <h4 className="text-sm font-bold text-gray-600 uppercase mb-3">
-                            Códigos en esta Boleta
+                            Códigos
                           </h4>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
                             {boletaProducts.map((producto) => {
@@ -865,13 +914,13 @@ export default function ReceptionTickets({
             {categories.map((category) => (
               <div
                 key={category.id}
-                className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2"
+                className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3"
               >
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <h3 className="text-sm font-semibold uppercase text-red-600">
                     {category.name}
                   </h3>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
                     <span className="text-xs text-gray-500">
                       {category.products.length} productos
                     </span>
@@ -908,13 +957,6 @@ export default function ReceptionTickets({
         entregasList={entregasList}
         setEntregasList={setEntregasList}
       />
-
-      {/* Peso Total General */}
-      <div className="text-left">
-        <span className="text-lg font-bold text-red-500">
-          Peso Total General: {pesoTotalGeneral} kg
-        </span>
-      </div>
     </Card>
   );
 }

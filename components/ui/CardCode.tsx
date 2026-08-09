@@ -661,46 +661,21 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                       key={pesaje.id}
                       className={`border rounded p-1.5 relative bg-white shadow-sm pointer-events-auto border-gray-200`}
                     >
-                      <div className="mb-1 space-y-1">
-                        <div className="flex flex-wrap items-center gap-1 min-w-0">
-                          <span className="text-[10px] font-bold text-gray-800">
-                            Pesaje {idx + 1}:
-                          </span>
-                        </div>
-                        <div className="flex flex-col sm:flex-row w-full sm:w-auto sm:justify-end items-stretch sm:items-center gap-1">
-                          {onGuardarPesaje && (
-                            <button
-                              type="button"
-                              disabled={!canSubmit}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onGuardarPesaje(pesaje.id);
-                              }}
-                              className={`w-full sm:w-auto text-[9px] font-bold px-2 py-1 rounded border ${
-                                isSaving
-                                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                  : pesaje.guardado
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 cursor-not-allowed"
-                                    : pesajePersistido
-                                      ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                      : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                              }`}
-                            >
-                              {submitLabel}
-                            </button>
-                          )}
-                          {onRemovePesaje && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onRemovePesaje(pesaje.id);
-                              }}
-                              className="w-full sm:w-4 h-6 sm:h-4 rounded bg-red-500 hover:bg-red-600 flex justify-center items-center text-white"
-                            >
-                              <svg
+                      <div className="mb-2 flex items-center justify-between w-full">
+                        <span className="text-[10px] font-bold text-gray-800 uppercase truncate">
+                          {productName ? `CÓDIGO ${productName}` : (typeof label === "string" ? label : "CÓDIGO")}
+                        </span>
+                        {onRemovePesaje && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onRemovePesaje(pesaje.id);
+                            }}
+                            className="w-4 h-4 rounded bg-red-500 hover:bg-red-600 flex justify-center items-center text-white shrink-0 ml-1"
+                          >
+                            <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 className="h-2 w-2"
                                 viewBox="0 0 20 20"
@@ -715,8 +690,6 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                             </button>
                           )}
                         </div>
-                      </div>
-
                       <div className="space-y-1">
                         <div className="flex gap-1 items-end">
                           <div className="flex-1">
@@ -724,6 +697,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                               CAJAS
                             </label>
                             <input
+                              id={`cajas-${pesaje.id}`}
                               type="number"
                               min="0"
                               value={pesaje.cajas || ""}
@@ -815,6 +789,12 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                                     : Number(e.target.value),
                                 )
                               }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  onAgregarPesaje?.();
+                                }
+                              }}
                               className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
                             />
                           </div>
@@ -853,41 +833,6 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
               </div>
             )}
 
-            {/* Agregar Pesaje Button (Bottom) */}
-            {onAgregarPesaje && pesajes && pesajes.length > 0 && (
-              <div className="mt-2 w-full px-1">
-                <button
-                  type="button"
-                  disabled={disableAgregarPesaje}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onAgregarPesaje();
-                  }}
-                  className={`w-full text-[9px] font-bold rounded py-1 px-2 transition-colors pointer-events-auto flex items-center justify-center gap-1 uppercase ${
-                    disableAgregarPesaje
-                      ? "text-gray-400 bg-gray-50 border border-gray-200 cursor-not-allowed opacity-50"
-                      : "text-red-600 bg-white border border-red-200 hover:bg-red-50 hover:border-red-300"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 12h14" />
-                    <path d="M12 5v14" />
-                  </svg>
-                  AGREGAR PESAJE
-                </button>
-              </div>
-            )}
 
             {/* Differences Section */}
             {differences && (

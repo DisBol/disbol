@@ -866,16 +866,22 @@ export default function ReceptionScreen({
             baseDetalle = detalleActual;
           }
 
+          const newPesajeId = Date.now().toString() + Math.random().toString();
+          
+          setTimeout(() => {
+            document.getElementById(`cajas-${newPesajeId}`)?.focus();
+          }, 50);
+
           const nuevosPesajes = [
-            ...(baseDetalle.pesajes || []),
             {
-              id: Date.now().toString() + Math.random().toString(),
+              id: newPesajeId,
               cajas: 0,
               unidades: 0,
               kg: 0,
               contenedor: defaultContainerId,
               guardado: false,
             },
+            ...(baseDetalle.pesajes || []),
           ];
           return {
             ...markBoletaAsPendingEdit(boleta),
