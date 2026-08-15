@@ -14,6 +14,10 @@ import { InputField } from "@/components/ui/InputField";
 import { Modal } from "@/components/ui/Modal";
 import { useAddEmpresa } from "../hooks/useAddEmpresa";
 import { useAddEmpresaStage } from "../hooks/useAddEmpresaStage";
+import { useUpdateEmpresaStage } from "../hooks/useUpdateEmpresaStage";
+import { EditIcon } from "@/components/icons/EditIcon2";
+import { CloseRoundedIcon } from "@/components/icons/CloseRoundedIcon";
+import { CheckIcon } from "@/components/icons/CheckIcon";
 
 export interface EntregaEmpresa {
   id: string;
@@ -22,6 +26,7 @@ export interface EntregaEmpresa {
   peso: number;
   bono: boolean;
   guardado?: boolean;
+  empresaId?: number;
 }
 
 interface RecibirEmpresaModalProps {
@@ -49,6 +54,15 @@ export default function RecibirEmpresaModal({
 
   const { addEmpresa, loading: loadingEmpresa } = useAddEmpresa();
   const { addEmpresaStage, loading: loadingStage } = useAddEmpresaStage();
+  const { updateEmpresaStage, loading: loadingUpdate } = useUpdateEmpresaStage();
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{
+    cajas: string;
+    unidades: string;
+    peso: string;
+    bono: boolean;
+  }>({ cajas: "", unidades: "", peso: "", bono: false });
 
   const totalPages = Math.ceil(entregasList.length / itemsPerPage) || 1;
 
@@ -130,9 +144,109 @@ export default function RecibirEmpresaModal({
 
     alert("¡Entregas registradas exitosamente!");
     setEntregasList((prev) =>
-      prev.map((e) => (pendingEntregas.includes(e) ? { ...e, guardado: true } : e))
+      prev.map((e) =>
+        pendingEntregas.includes(e) ? { ...e, guardado: true, empresaId } : e
+      )
     );
     onClose();
+  };
+
+  const handleEditClick = (entrega: EntregaEmpresa) => {
+    setEditingId(entrega.id);
+    setEditValues({
+      cajas: entrega.cajas.toString(),
+      unidades: entrega.unidades.toString(),
+      peso: entrega.peso.toString(),
+      bono: entrega.bono,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditValues({ cajas: "", unidades: "", peso: "", bono: false });
+  };
+
+  const handleSaveEdit = async (entrega: EntregaEmpresa) => {
+    const newCajas = Number(editValues.cajas);
+    const newUnidades = Number(editValues.unidades);
+    const newPeso = Number(editValues.peso);
+
+    if (entrega.guardado) {
+      if (!entrega.empresaId) {
+        alert("Falta el ID de empresa para actualizar.");
+        return;
+      }
+      
+      const response = await updateEmpresaStage({
+        EmpresaStage_id: Number(entrega.id),
+        in_container: 1,
+        out_container: 1,
+        units: newUnidades,
+        container: newCajas,
+        Empresa_id: entrega.empresaId,
+        gross_weight: 1.02,
+        net_weight: newPeso,
+        Container_id: 1,
+      });
+
+      if (!response) {
+        alert("Error al actualizar la entrega.");
+        return;
+      }
+    }
+
+    // Update list locally
+    setEntregasList((prev) =>
+      prev.map((e) =>
+        e.id === entrega.id
+          ? {
+              ...e,
+              cajas: newCajas,
+              unidades: newUnidades,
+              peso: newPeso,
+              bono: editValues.bono,
+            }
+          : e
+      )
+    );
+
+    setEditingId(null);
+  };
+
+  const handleDeleteClick = async (entrega: EntregaEmpresa) => {
+    if (entrega.guardado) {
+      if (!entrega.empresaId) {
+        alert("Falta el ID de empresa para eliminar.");
+        return;
+      }
+      
+      const confirmDelete = window.confirm("¿Estás seguro de eliminar esta entrega guardada?");
+      if (!confirmDelete) return;
+
+      const response = await updateEmpresaStage({
+        EmpresaStage_id: Number(entrega.id),
+        in_container: 1,
+        out_container: 1,
+        units: entrega.unidades,
+        container: entrega.cajas,
+        Empresa_id: entrega.empresaId,
+        gross_weight: 1.02,
+        net_weight: entrega.peso,
+        Container_id: 1,
+        active: "false", // Soft delete
+      });
+
+      if (!response) {
+        alert("Error al eliminar la entrega.");
+        return;
+      }
+    }
+
+    const newEntregas = entregasList.filter((item) => item.id !== entrega.id);
+    setEntregasList(newEntregas);
+    if (currentPage > Math.ceil(newEntregas.length / itemsPerPage) && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   return (
@@ -238,51 +352,97 @@ export default function RecibirEmpresaModal({
                     <span>Peso (kg)</span>
                     <span>Bono</span>
                   </div>
-                  <div className="w-7 shrink-0"></div>
+                  <div className="w-16 shrink-0 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-center">
+                    Aciones
+                  </div>
                 </div>
                 {paginatedEntregas.map((entrega, index) => (
                   <div
                     key={entrega.id}
                     className="flex items-center px-2 py-1.5 rounded-lg border border-gray-100 bg-white shadow-sm hover:shadow-md hover:border-red-100 transition-all duration-200 gap-3"
                   >
-                    <div className="grid grid-cols-4 gap-3 w-full text-gray-900 font-semibold text-xs items-center">
-                      <span>{entrega.cajas}</span>
-                      <span>{entrega.unidades}</span>
-                      <span>{entrega.peso}</span>
-                      <span
-                        className={`font-semibold ${entrega.bono ? "text-green-600" : "text-gray-400"}`}
-                      >
-                        {entrega.bono ? "Aplica" : "No"}
-                      </span>
-                    </div>
+                    {editingId === entrega.id ? (
+                      <div className="grid grid-cols-4 gap-3 w-full items-center">
+                        <InputField
+                          type="number"
+                          value={editValues.cajas}
+                          onChange={(e) => setEditValues({ ...editValues, cajas: e.target.value })}
+                          className="h-7 text-xs"
+                        />
+                        <InputField
+                          type="number"
+                          value={editValues.unidades}
+                          onChange={(e) => setEditValues({ ...editValues, unidades: e.target.value })}
+                          className="h-7 text-xs"
+                        />
+                        <InputField
+                          type="number"
+                          value={editValues.peso}
+                          onChange={(e) => setEditValues({ ...editValues, peso: e.target.value })}
+                          className="h-7 text-xs"
+                        />
+                        <div
+                          className="h-7 flex items-center justify-center bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded cursor-pointer transition-colors"
+                          onClick={() => setEditValues({ ...editValues, bono: !editValues.bono })}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editValues.bono}
+                            readOnly
+                            className="w-3 h-3 text-red-600 rounded border-gray-300 cursor-pointer pointer-events-none"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-4 gap-3 w-full text-gray-900 font-semibold text-xs items-center">
+                        <span>{entrega.cajas}</span>
+                        <span>{entrega.unidades}</span>
+                        <span>{entrega.peso}</span>
+                        <span
+                          className={`font-semibold ${entrega.bono ? "text-green-600" : "text-gray-400"}`}
+                        >
+                          {entrega.bono ? "Aplica" : "No"}
+                        </span>
+                      </div>
+                    )}
 
-                    <button
-                      onClick={() => {
-                        if (entrega.guardado) {
-                          alert("No se puede eliminar una entrega ya guardada.");
-                          return;
-                        }
-                        const newEntregas = entregasList.filter(
-                          (item) => item.id !== entrega.id,
-                        );
-                        setEntregasList(newEntregas);
-                        if (
-                          currentPage >
-                            Math.ceil(newEntregas.length / itemsPerPage) &&
-                          currentPage > 1
-                        ) {
-                          setCurrentPage(currentPage - 1);
-                        }
-                      }}
-                      className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center transition-colors ${
-                        entrega.guardado
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-400 hover:text-red-600 hover:bg-red-50"
-                      }`}
-                      title={entrega.guardado ? "Ya guardado" : "Eliminar"}
-                    >
-                      {entrega.guardado ? "✓" : "✕"}
-                    </button>
+                    <div className="flex items-center gap-1 w-16 shrink-0 justify-center">
+                      {editingId === entrega.id ? (
+                        <>
+                          <button
+                            onClick={() => handleSaveEdit(entrega)}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-green-600 hover:bg-green-50 transition-colors"
+                            title="Guardar"
+                          >
+                            <CheckIcon size={16} />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
+                            title="Cancelar"
+                          >
+                            <CloseRoundedIcon size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditClick(entrega)}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-blue-500 hover:bg-blue-50 transition-colors"
+                            title="Editar"
+                          >
+                            <EditIcon size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(entrega)}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors text-gray-400 hover:text-red-600 hover:bg-red-50`}
+                            title="Eliminar"
+                          >
+                            <CloseRoundedIcon size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </>

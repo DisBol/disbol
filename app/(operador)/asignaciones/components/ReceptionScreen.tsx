@@ -14,6 +14,7 @@ import { useUpdateTicket } from "../hooks/useUpdateTicket";
 import { useContainer } from "../../configuraciones/hooks/contenedores/useContainer";
 import { useGetTicketsHistory } from "../hooks/useGetTicketsHistory";
 import { useGetTicketsByAssignmentHistory } from "../hooks/useGetTicketsByAssignmentHistory";
+import { useGetEmpresaStageByAssignment } from "../hooks/useGetEmpresaStageByAssignment";
 import { UpdateTicketsWeighing } from "../service/updateticketsweighing";
 import { useUpdateAssignment } from "../hooks/useUpdateAssignment";
 import { useAddContainerMovements } from "../hooks/repartir/useAddContainerMovements";
@@ -237,6 +238,7 @@ export default function ReceptionScreen({
   const { fetchTicketsHistory } = useGetTicketsHistory();
   const { fetchTicketsByAssignmentHistory } =
     useGetTicketsByAssignmentHistory();
+  const { fetchEmpresaStageByAssignment } = useGetEmpresaStageByAssignment();
 
   const buildCategoryProductsForBoleta = (boleta: Boleta) => {
     if (boleta.categoryProducts && boleta.categoryProducts.length > 0) {
@@ -281,6 +283,21 @@ export default function ReceptionScreen({
   useEffect(() => {
     let isMounted = true;
     const loadTickets = async () => {
+      // 0) Load Empresa Stage
+      const empresaStageResponse = await fetchEmpresaStageByAssignment(Number(assignment.id));
+      if (empresaStageResponse && isMounted) {
+        const entregas: EntregaEmpresa[] = empresaStageResponse.map((stage) => ({
+          id: stage.EmpresaStage_id.toString(),
+          cajas: stage.EmpresaStage_container,
+          unidades: stage.EmpresaStage_units,
+          peso: stage.EmpresaStage_net_weight,
+          bono: false, // Default logic
+          guardado: true, // Marked as saved because it comes from server
+          empresaId: stage.EmpresaStage_Empresa_id,
+        }));
+        setEntregasList(entregas);
+      }
+
       // 1) Historial base por asignacion: asegura tickets registrados
       const boletasMap = new Map<string, Boleta>();
       const boletaProductsMap = new Map<
