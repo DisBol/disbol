@@ -1611,6 +1611,7 @@ export default function ReceptionScreen({
         onRemovePesaje={handleRemovePesaje}
         onGuardarPesaje={handleGuardarPesaje}
         onGuardarBoleta={handleGuardarBoleta}
+        assignmentId={Number(assignment.id)}
       />
 
       {/* Modal Confirmar Finalizar Recepción */}

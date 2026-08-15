@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { InputField } from "@/components/ui/InputField";
 import { Modal } from "@/components/ui/Modal";
+import { useAddEmpresa } from "../hooks/useAddEmpresa";
+import { useAddEmpresaStage } from "../hooks/useAddEmpresaStage";
 
 export interface EntregaEmpresa {
   id: string;
@@ -19,6 +21,7 @@ export interface EntregaEmpresa {
   unidades: number;
   peso: number;
   bono: boolean;
+  guardado?: boolean;
 }
 
 interface RecibirEmpresaModalProps {
@@ -26,6 +29,7 @@ interface RecibirEmpresaModalProps {
   onClose: () => void;
   entregasList: EntregaEmpresa[];
   setEntregasList: Dispatch<SetStateAction<EntregaEmpresa[]>>;
+  assignmentId: number;
 }
 
 export default function RecibirEmpresaModal({
@@ -33,6 +37,7 @@ export default function RecibirEmpresaModal({
   onClose,
   entregasList,
   setEntregasList,
+  assignmentId,
 }: RecibirEmpresaModalProps) {
   const [cajasInput, setCajasInput] = useState("");
   const [unidadesInput, setUnidadesInput] = useState("");
@@ -41,6 +46,9 @@ export default function RecibirEmpresaModal({
   const [currentPage, setCurrentPage] = useState(1);
   const cajasInputRef = useRef<HTMLInputElement>(null);
   const itemsPerPage = 20;
+
+  const { addEmpresa, loading: loadingEmpresa } = useAddEmpresa();
+  const { addEmpresaStage, loading: loadingStage } = useAddEmpresaStage();
 
   const totalPages = Math.ceil(entregasList.length / itemsPerPage) || 1;
 
@@ -91,6 +99,40 @@ export default function RecibirEmpresaModal({
     setTimeout(() => {
       cajasInputRef.current?.focus();
     }, 0);
+  };
+
+  const handleGuardarAll = async () => {
+    const pendingEntregas = entregasList.filter((e) => !e.guardado);
+    if (pendingEntregas.length === 0) {
+      alert("No hay entregas nuevas por guardar.");
+      return;
+    }
+
+    const empresaId = await addEmpresa(assignmentId);
+    if (!empresaId) {
+      alert("Error al registrar la empresa");
+      return;
+    }
+
+    for (const entrega of pendingEntregas) {
+      // Send same amount of records with requested structure and default values
+      await addEmpresaStage({
+        in_container: 1, // default
+        out_container: 1, // default
+        units: entrega.unidades, // from user input
+        container: entrega.cajas, // from user input
+        Empresa_id: empresaId, // obtained from addEmpresa
+        gross_weight: 1.02, // default as requested
+        net_weight: entrega.peso, // from user input (assuming it represents weight)
+        Container_id: 1, // default
+      });
+    }
+
+    alert("¡Entregas registradas exitosamente!");
+    setEntregasList((prev) =>
+      prev.map((e) => (pendingEntregas.includes(e) ? { ...e, guardado: true } : e))
+    );
+    onClose();
   };
 
   return (
@@ -216,6 +258,10 @@ export default function RecibirEmpresaModal({
 
                     <button
                       onClick={() => {
+                        if (entrega.guardado) {
+                          alert("No se puede eliminar una entrega ya guardada.");
+                          return;
+                        }
                         const newEntregas = entregasList.filter(
                           (item) => item.id !== entrega.id,
                         );
@@ -228,10 +274,14 @@ export default function RecibirEmpresaModal({
                           setCurrentPage(currentPage - 1);
                         }
                       }}
-                      className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                      title="Eliminar"
+                      className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center transition-colors ${
+                        entrega.guardado
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      }`}
+                      title={entrega.guardado ? "Ya guardado" : "Eliminar"}
                     >
-                      ✕
+                      {entrega.guardado ? "✓" : "✕"}
                     </button>
                   </div>
                 ))}
@@ -285,6 +335,18 @@ export default function RecibirEmpresaModal({
               </div>
             </div>
           )}
+        </div>
+
+        <div className="flex justify-end pt-4 border-t border-gray-100">
+          <Button
+            variant="success"
+            color="success"
+            onClick={handleGuardarAll}
+            loading={loadingEmpresa || loadingStage}
+            disabled={entregasList.filter((e) => !e.guardado).length === 0 || loadingEmpresa || loadingStage}
+          >
+            Guardar Entregas
+          </Button>
         </div>
       </div>
     </Modal>

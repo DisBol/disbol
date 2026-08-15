@@ -71,6 +71,7 @@ interface ReceptionTicketsProps {
   onGuardarBoleta: (boletaId: string) => void;
   entregasList: EntregaEmpresa[];
   setEntregasList: React.Dispatch<React.SetStateAction<EntregaEmpresa[]>>;
+  assignmentId: number;
 }
 
 export default function ReceptionTickets({
@@ -93,6 +94,7 @@ export default function ReceptionTickets({
   onGuardarBoleta,
   entregasList,
   setEntregasList,
+  assignmentId,
 }: ReceptionTicketsProps) {
   const { containers, containersData } = useContainer();
   const { accounts, loading: accountsLoading } = useGetAccount();
@@ -105,9 +107,7 @@ export default function ReceptionTickets({
   const [savingBoletas, setSavingBoletas] = useState<Set<string>>(new Set());
 
   const [savingPesajes, setSavingPesajes] = useState<Set<string>>(new Set());
-  const [expandedSavedBoletas, setExpandedSavedBoletas] = useState<Set<string>>(
-    new Set(),
-  );
+
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
   const [isEntregaModalOpen, setIsEntregaModalOpen] = useState(false);
 
@@ -161,17 +161,7 @@ export default function ReceptionTickets({
     }
   };
 
-  const toggleSavedBoleta = (boletaId: string) => {
-    setExpandedSavedBoletas((prev) => {
-      const next = new Set(prev);
-      if (next.has(boletaId)) {
-        next.delete(boletaId);
-      } else {
-        next.add(boletaId);
-      }
-      return next;
-    });
-  };
+
 
   const handleGuardarPesaje = async (
     boletaId: string,
@@ -399,8 +389,6 @@ export default function ReceptionTickets({
             >
               {(() => {
                 const isSaved = Boolean(boleta.ticketId);
-                const isExpanded =
-                  !isSaved || expandedSavedBoletas.has(boleta.id);
                 const {
                   totalCajas,
                   totalUnidades,
@@ -898,6 +886,7 @@ export default function ReceptionTickets({
         onClose={() => setIsEntregaModalOpen(false)}
         entregasList={entregasList}
         setEntregasList={setEntregasList}
+        assignmentId={assignmentId}
       />
     </Card>
   );
