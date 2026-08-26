@@ -18,6 +18,7 @@ import { useUpdateEmpresaStage } from "../hooks/useUpdateEmpresaStage";
 import { EditIcon } from "@/components/icons/EditIcon2";
 import { CloseRoundedIcon } from "@/components/icons/CloseRoundedIcon";
 import { CheckIcon } from "@/components/icons/CheckIcon";
+import { Select } from "@/components/ui/SelecMultipe";
 
 export interface EntregaEmpresa {
   id: string;
@@ -25,6 +26,7 @@ export interface EntregaEmpresa {
   unidades: number;
   peso: number;
   bono: boolean;
+  producto?: string;
   guardado?: boolean;
   empresaId?: number;
 }
@@ -35,6 +37,7 @@ interface RecibirEmpresaModalProps {
   entregasList: EntregaEmpresa[];
   setEntregasList: Dispatch<SetStateAction<EntregaEmpresa[]>>;
   assignmentId: number;
+  productos?: { codigo: string }[];
 }
 
 export default function RecibirEmpresaModal({
@@ -43,11 +46,13 @@ export default function RecibirEmpresaModal({
   entregasList,
   setEntregasList,
   assignmentId,
+  productos = [],
 }: RecibirEmpresaModalProps) {
   const [cajasInput, setCajasInput] = useState("");
   const [unidadesInput, setUnidadesInput] = useState("");
   const [pesoInput, setPesoInput] = useState("");
   const [bonoInput, setBonoInput] = useState(false);
+  const [productoInput, setProductoInput] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const cajasInputRef = useRef<HTMLInputElement>(null);
   const itemsPerPage = 20;
@@ -73,6 +78,12 @@ export default function RecibirEmpresaModal({
     }
   }, [totalPages, currentPage]);
 
+  useEffect(() => {
+    if (isOpen && productos.length > 0 && !productoInput) {
+      setProductoInput(productos[0].codigo);
+    }
+  }, [isOpen, productos, productoInput]);
+
   const paginatedEntregas = useMemo(
     () =>
       entregasList.slice(
@@ -91,14 +102,15 @@ export default function RecibirEmpresaModal({
   };
 
   const handleAddEntrega = () => {
-    if (!cajasInput || !unidadesInput || !pesoInput) return;
+    if (!cajasInput || !pesoInput) return;
 
     const newEntrega: EntregaEmpresa = {
       id: Math.random().toString(36).substring(7),
       cajas: Number(cajasInput),
-      unidades: Number(unidadesInput),
+      unidades: Number(unidadesInput) || 0,
       peso: Number(pesoInput),
       bono: bonoInput,
+      producto: productoInput,
     };
 
     const newList = [newEntrega, ...entregasList];
@@ -139,6 +151,7 @@ export default function RecibirEmpresaModal({
         gross_weight: 1.02, // default as requested
         net_weight: entrega.peso, // from user input (assuming it represents weight)
         Container_id: 1, // default
+        bono: entrega.bono ? "true" : "false",
       });
     }
 
@@ -168,7 +181,7 @@ export default function RecibirEmpresaModal({
 
   const handleSaveEdit = async (entrega: EntregaEmpresa) => {
     const newCajas = Number(editValues.cajas);
-    const newUnidades = Number(editValues.unidades);
+    const newUnidades = Number(editValues.unidades) || 0;
     const newPeso = Number(editValues.peso);
 
     if (entrega.guardado) {
@@ -187,6 +200,7 @@ export default function RecibirEmpresaModal({
         gross_weight: 1.02,
         net_weight: newPeso,
         Container_id: 1,
+        bono: editValues.bono ? "true" : "false",
       });
 
       if (!response) {
@@ -234,6 +248,7 @@ export default function RecibirEmpresaModal({
         net_weight: entrega.peso,
         Container_id: 1,
         active: "false", // Soft delete
+        bono: entrega.bono ? "true" : "false",
       });
 
       if (!response) {
@@ -256,9 +271,9 @@ export default function RecibirEmpresaModal({
       title={`Registrar entrega de empresa (Total: ${entregasList.length})`}
       size="xl"
     >
-      <div className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="grid grid-cols-4 gap-3 w-full">
+      <div className="space-y-4 min-h-[75vh] flex flex-col">
+        <div className="flex items-end gap-3 shrink-0">
+          <div className="grid grid-cols-5 gap-3 w-full">
             <div className="col-span-1">
               <span className="text-[10px] font-bold text-gray-500 uppercase block mb-1">
                 Cajas
@@ -294,6 +309,20 @@ export default function RecibirEmpresaModal({
                 value={pesoInput}
                 onChange={(e) => setPesoInput(e.target.value)}
                 className="h-8"
+              />
+            </div>
+            <div className="col-span-1">
+              <span className="text-[10px] font-bold text-gray-500 uppercase block mb-1">
+                Producto
+              </span>
+              <Select
+                options={productos.map((p) => ({ value: p.codigo, label: p.codigo }))}
+                selectedValues={productoInput ? [productoInput] : []}
+                onSelect={(opt) => setProductoInput(opt.value)}
+                placeholder="Seleccionar..."
+                size="sm"
+                className="w-full h-8"
+                usePortal={false}
               />
             </div>
             <div className="col-span-1 flex flex-col">
@@ -346,10 +375,11 @@ export default function RecibirEmpresaModal({
             ) : (
               <>
                 <div className="flex items-center gap-3 px-2 pb-1 border-b border-gray-100">
-                  <div className="grid grid-cols-4 gap-3 w-full text-[9px] font-bold text-gray-400 uppercase tracking-wider text-left">
+                  <div className="grid grid-cols-5 gap-3 w-full text-[9px] font-bold text-gray-400 uppercase tracking-wider text-left">
                     <span>Cajas</span>
                     <span>Unidades</span>
                     <span>Peso (kg)</span>
+                    <span>Producto</span>
                     <span>Bono</span>
                   </div>
                   <div className="w-16 shrink-0 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-center">
@@ -362,7 +392,7 @@ export default function RecibirEmpresaModal({
                     className="flex items-center px-2 py-1.5 rounded-lg border border-gray-100 bg-white shadow-sm hover:shadow-md hover:border-red-100 transition-all duration-200 gap-3"
                   >
                     {editingId === entrega.id ? (
-                      <div className="grid grid-cols-4 gap-3 w-full items-center">
+                      <div className="grid grid-cols-5 gap-3 w-full items-center">
                         <InputField
                           type="number"
                           value={editValues.cajas}
@@ -381,6 +411,9 @@ export default function RecibirEmpresaModal({
                           onChange={(e) => setEditValues({ ...editValues, peso: e.target.value })}
                           className="h-7 text-xs"
                         />
+                        <div className="h-7 flex items-center bg-gray-50 rounded border border-gray-200 px-2 text-xs text-gray-500">
+                          {entrega.producto || "-"}
+                        </div>
                         <div
                           className="h-7 flex items-center justify-center bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded cursor-pointer transition-colors"
                           onClick={() => setEditValues({ ...editValues, bono: !editValues.bono })}
@@ -394,10 +427,11 @@ export default function RecibirEmpresaModal({
                         </div>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-4 gap-3 w-full text-gray-900 font-semibold text-xs items-center">
+                      <div className="grid grid-cols-5 gap-3 w-full text-gray-900 font-semibold text-xs items-center">
                         <span>{entrega.cajas}</span>
                         <span>{entrega.unidades}</span>
                         <span>{entrega.peso}</span>
+                        <span>{entrega.producto || "-"}</span>
                         <span
                           className={`font-semibold ${entrega.bono ? "text-green-600" : "text-gray-400"}`}
                         >

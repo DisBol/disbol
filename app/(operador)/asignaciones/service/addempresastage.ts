@@ -10,6 +10,7 @@ export async function AddEmpresaStage(
   gross_weight: number,
   net_weight: number,
   Container_id: number,
+  bono: string,
 ): Promise<AddEmpresaStageResponse> {
   return apiCall("addempresastage", {
     in_container,
@@ -21,5 +22,6 @@ export async function AddEmpresaStage(
     gross_weight,
     net_weight,
     Container_id,
+    bono,
   });
 }

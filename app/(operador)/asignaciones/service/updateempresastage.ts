@@ -12,6 +12,7 @@ export async function UpdateEmpresaStage(
   net_weight: number,
   Container_id: number,
   active: string = "true",
+  bono: string,
 ): Promise<UpdateEmpresaStageResponse> {
   return apiCall("updateempresastage", {
     EmpresaStage_id,
@@ -24,5 +25,6 @@ export async function UpdateEmpresaStage(
     gross_weight,
     net_weight,
     Container_id,
+    bono,
   });
 }

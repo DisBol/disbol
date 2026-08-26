@@ -887,6 +887,7 @@ export default function ReceptionTickets({
         entregasList={entregasList}
         setEntregasList={setEntregasList}
         assignmentId={assignmentId}
+        productos={productos}
       />
     </Card>
   );

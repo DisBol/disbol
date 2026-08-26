@@ -37,13 +37,13 @@ export interface RouteReportClient {
   totalBruto: number;
   totalNeto: number;
   totalBs: number;
+  precioDiferido?: boolean; // added here for each client
 }
 
 export interface RouteReportData {
   groupName: string;
   proveedor: string;
   costoPorKg: string;
-  precioDiferido: boolean;
   vehiculo: string;
   chofer: string;
   totalCajas: number;
@@ -207,6 +207,7 @@ export default function DistributeAssignmentHeader({
               </div>
               <div style="text-align: right; font-size: 12px; color: #6b7280;">
                 <div>Monto a cobrar: <strong style="color: #111827;">Bs ${formatMoney(cliente.montoACobrar)}</strong></div>
+                ${cliente.precioDiferido ? `<div><strong style="color: #111827;">Precio Diferido Activo</strong></div>` : ""}
                 <div>Peso bruto: <strong style="color: #111827;">${formatMoney(cliente.totalBruto)} kg</strong></div>
                 <div>Peso neto: <strong style="color: #111827;">${formatMoney(cliente.totalNeto)} kg</strong></div>
               </div>
@@ -263,10 +264,6 @@ export default function DistributeAssignmentHeader({
           <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
             <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Costo por kg</div>
             <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">Bs ${report.costoPorKg}</div>
-          </div>
-          <div style="background-color: #fff7f7; border: 1px solid #ffd5dd; border-radius: 12px; padding: 12px 14px;">
-            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em;">Precio diferido</div>
-            <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 4px;">${report.precioDiferido ? "Sí" : "No"}</div>
           </div>
         </div>
 

@@ -24,6 +24,8 @@ interface ReceptionHeaderProps {
   totalesGlobales: {
     totalSolicitud: Totals;
     totalEmpresa: Totals;
+    totalEmpresaSinBono: Totals;
+    totalEmpresaBono: Totals;
     totalRecibido: Totals;
     comparativaEmpresaRecibido: ComparisonTotals;
   };
@@ -65,6 +67,8 @@ export default function ReceptionHeader({
 
   const solicitud = totalesGlobales.totalSolicitud;
   const empresa = totalesGlobales.totalEmpresa;
+  const empresaSinBono = totalesGlobales.totalEmpresaSinBono;
+  const empresaBono = totalesGlobales.totalEmpresaBono;
   const recibido = totalesGlobales.totalRecibido;
   const diferencia = totalesGlobales.comparativaEmpresaRecibido;
 
@@ -131,12 +135,20 @@ export default function ReceptionHeader({
             </div>
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Unidades</span>
-                <span className="text-sm font-bold text-slate-900">{formatNumber(solicitud.unidades || 0)}</span>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Unidades
+                </span>
+                <span className="text-sm font-bold text-slate-900">
+                  {formatNumber(solicitud.unidades || 0)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Cajas</span>
-                <span className="text-sm font-bold text-slate-900">{formatNumber(solicitud.cajas)}</span>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Cajas
+                </span>
+                <span className="text-sm font-bold text-slate-900">
+                  {formatNumber(solicitud.cajas)}
+                </span>
               </div>
             </div>
           </div>
@@ -152,19 +164,58 @@ export default function ReceptionHeader({
                   Entrada de la empresa
                 </p>
               </div>
+              {((empresaBono.unidades || 0) > 0 || (empresaBono.cajas || 0) > 0 || (empresaBono.pesoNeto || 0) > 0) && (
+                <div className="text-[9px] font-bold text-amber-800 uppercase tracking-widest bg-amber-200/50 px-2 py-0.5 rounded mr-1">
+                  Bono
+                </div>
+              )}
             </div>
+
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">Unidades</span>
-                <span className="text-sm font-bold text-amber-950">{formatNumber(empresa.unidades || 0)}</span>
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
+                  Unidades
+                </span>
+                <div className="text-right flex items-center justify-end flex-wrap gap-1">
+                  <span className="text-sm font-bold text-amber-950">
+                    {formatNumber(empresa.unidades || 0)}
+                  </span>
+                  {(empresaBono.unidades || 0) > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
+                      +{formatNumber(empresaBono.unidades || 0)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">Cajas</span>
-                <span className="text-sm font-bold text-amber-950">{formatNumber(empresa.cajas)}</span>
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
+                  Cajas
+                </span>
+                <div className="text-right flex items-center justify-end flex-wrap gap-1">
+                  <span className="text-sm font-bold text-amber-950">
+                    {formatNumber(empresa.cajas || 0)}
+                  </span>
+                  {(empresaBono.cajas || 0) > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
+                      +{formatNumber(empresaBono.cajas || 0)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">Peso neto</span>
-                <span className="text-sm font-bold text-amber-950">{formatWeight(empresa.pesoNeto || 0)}</span>
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
+                  Peso neto
+                </span>
+                <div className="text-right flex items-center justify-end flex-wrap gap-1">
+                  <span className="text-sm font-bold text-amber-950">
+                    {formatWeight(empresa.pesoNeto || 0)}
+                  </span>
+                  {(empresaBono.pesoNeto || 0) > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
+                      +{formatWeight(empresaBono.pesoNeto || 0)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -183,16 +234,28 @@ export default function ReceptionHeader({
             </div>
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">Unidades</span>
-                <span className="text-sm font-bold text-violet-950">{formatNumber(recibido.unidades || 0)}</span>
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">
+                  Unidades
+                </span>
+                <span className="text-sm font-bold text-violet-950">
+                  {formatNumber(recibido.unidades || 0)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">Cajas</span>
-                <span className="text-sm font-bold text-violet-950">{formatNumber(recibido.cajas)}</span>
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">
+                  Cajas
+                </span>
+                <span className="text-sm font-bold text-violet-950">
+                  {formatNumber(recibido.cajas)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">Peso neto</span>
-                <span className="text-sm font-bold text-violet-950">{formatWeight(recibido.pesoNeto || 0)}</span>
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">
+                  Peso neto
+                </span>
+                <span className="text-sm font-bold text-violet-950">
+                  {formatWeight(recibido.pesoNeto || 0)}
+                </span>
               </div>
             </div>
           </div>
@@ -211,20 +274,32 @@ export default function ReceptionHeader({
             </div>
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Unidades</span>
-                <span className={`text-sm font-bold ${getDifferenceColorClass(diferencia.unidades)}`}>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Unidades
+                </span>
+                <span
+                  className={`text-sm font-bold ${getDifferenceColorClass(diferencia.unidades)}`}
+                >
                   {formatSignedNumber(diferencia.unidades)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Cajas</span>
-                <span className={`text-sm font-bold ${getDifferenceColorClass(diferencia.cajas)}`}>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Cajas
+                </span>
+                <span
+                  className={`text-sm font-bold ${getDifferenceColorClass(diferencia.cajas)}`}
+                >
                   {formatSignedNumber(diferencia.cajas)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Peso neto</span>
-                <span className={`text-sm font-bold ${getDifferenceColorClass(diferencia.pesoNeto)}`}>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Peso neto
+                </span>
+                <span
+                  className={`text-sm font-bold ${getDifferenceColorClass(diferencia.pesoNeto)}`}
+                >
                   {formatSignedWeight(diferencia.pesoNeto)}
                 </span>
               </div>

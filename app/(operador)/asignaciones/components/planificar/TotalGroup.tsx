@@ -105,9 +105,7 @@ export default function TotalGroup({
     const multiplier = getMultiplier(productCode);
     if (multiplier > 0) {
       const cajasCalculadas = value / multiplier;
-      const cajasRedondeadas = Number.isInteger(cajasCalculadas)
-        ? cajasCalculadas
-        : Number(cajasCalculadas.toFixed(2));
+      const cajasRedondeadas = Math.ceil(cajasCalculadas);
       onUpdateClientCode?.(
         clienteIdx,
         clientCodeIdx,
@@ -117,10 +115,14 @@ export default function TotalGroup({
     }
   };
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm transition-all">
+    <div
+      className={`bg-white border rounded-xl overflow-hidden shadow-sm transition-all ${
+        isExpanded ? "border-red-500 ring-1 ring-red-500" : "border-gray-200"
+      }`}
+    >
       {/* Accordion Header (Group Total) */}
       <div
-        className="flex flex-col lg:flex-row items-center p-3 gap-4 cursor-pointer hover:bg-gray-50/50"
+        className="flex flex-col lg:flex-row items-center p-3 gap-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
         onClick={onToggleExpand}
       >
         {/* Left group name */}
@@ -254,8 +256,8 @@ export default function TotalGroup({
 
       {/* Accordion Content (Nested Client Orders) */}
       {isExpanded && clientes && clientes.length > 0 && (
-        <div className="bg-slate-50 border-t border-gray-200 p-3">
-          <h4 className="text-[11px] font-bold text-gray-500 mb-3 px-1">
+        <div className="bg-blue-100 border-t border-blue-300 p-3 shadow-inner">
+          <h4 className="text-[11px] font-bold text-blue-900 mb-3 px-1">
             Pedidos de Clientes:
           </h4>
 

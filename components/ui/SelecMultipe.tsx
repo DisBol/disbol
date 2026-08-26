@@ -49,6 +49,7 @@ interface SelectProps extends VariantProps<typeof selectVariants> {
   emptyMessage?: string;
   closeOnSelect?: boolean;
   disabled?: boolean;
+  usePortal?: boolean;
 }
 
 export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
@@ -66,6 +67,7 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       emptyMessage = "No hay opciones disponibles",
       closeOnSelect = true,
       disabled,
+      usePortal = true,
     },
     ref,
   ) => {
@@ -148,12 +150,14 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
         const shouldOpenUp = spaceBelow < 280 && spaceAbove > spaceBelow;
 
         setDropdownStyle({
-          position: "fixed",
-          top: shouldOpenUp ? undefined : rect.bottom + 4,
-          bottom: shouldOpenUp ? window.innerHeight - rect.top + 4 : undefined,
-          left: rect.left,
-          width: rect.width,
+          position: usePortal ? "fixed" : "absolute",
+          top: usePortal ? (shouldOpenUp ? undefined : rect.bottom + 4) : (shouldOpenUp ? undefined : "100%"),
+          bottom: usePortal ? (shouldOpenUp ? window.innerHeight - rect.top + 4 : undefined) : (shouldOpenUp ? "100%" : undefined),
+          left: usePortal ? rect.left : 0,
+          width: usePortal ? rect.width : "100%",
           zIndex: 9999,
+          marginTop: usePortal ? 0 : (shouldOpenUp ? 0 : 4),
+          marginBottom: usePortal ? 0 : (shouldOpenUp ? 4 : 0),
           maxHeight: Math.max(160, Math.min(280, shouldOpenUp ? rect.top - 16 : spaceBelow - 16)),
         });
         setDropdownPlacement(shouldOpenUp ? "top" : "bottom");
@@ -215,67 +219,69 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
           </button>
 
         {isOpen && typeof document !== "undefined"
-          ? createPortal(
-              <div
-                ref={dropdownRef}
-                style={dropdownStyle}
-                className={clsx(
-                  "bg-white border border-gray-200 rounded-md shadow-lg overflow-auto animate-in fade-in zoom-in-95 duration-100 flex flex-col",
-                  dropdownPlacement === "top" ? "origin-bottom" : "origin-top",
-                )}
-              >
-                <div className="p-2 sticky top-0 bg-white border-b border-gray-100 z-10">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    className="w-full px-2 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
-                    placeholder="Buscar..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                <div className="overflow-y-auto">
-                  {filteredOptions.length > 0 ? (
-                    filteredOptions.map((option) => {
-                      const isSelected = selectedValues.includes(option.value);
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          disabled={isSelected}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelect(option);
-                            if (closeOnSelect) {
-                              setIsOpen(false);
-                            }
-                          }}
-                          className={clsx(
-                            "w-full text-left px-3 py-2.5 text-sm flex justify-between items-center transition-colors border-b last:border-0 border-gray-50",
-                            isSelected
-                              ? "bg-gray-50 text-gray-400 cursor-not-allowed"
-                              : "text-gray-700 hover:bg-gray-100 hover:text-primary",
-                          )}
-                        >
-                          <span className="font-medium">{option.label}</span>
-                          {isSelected && (
-                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase font-bold">
-                              Agregado
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="px-4 py-3 text-sm text-gray-500 italic text-center">
-                      {emptyMessage}
-                    </div>
+          ? (() => {
+              const dropdownContent = (
+                <div
+                  ref={dropdownRef}
+                  style={dropdownStyle}
+                  className={clsx(
+                    "bg-white border border-gray-200 rounded-md shadow-lg overflow-auto animate-in fade-in zoom-in-95 duration-100 flex flex-col",
+                    dropdownPlacement === "top" ? "origin-bottom" : "origin-top",
                   )}
+                >
+                  <div className="p-2 sticky top-0 bg-white border-b border-gray-100 z-10">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      className="w-full px-2 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
+                      placeholder="Buscar..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="overflow-y-auto">
+                    {filteredOptions.length > 0 ? (
+                      filteredOptions.map((option) => {
+                        const isSelected = selectedValues.includes(option.value);
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            disabled={isSelected}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelect(option);
+                              if (closeOnSelect) {
+                                setIsOpen(false);
+                              }
+                            }}
+                            className={clsx(
+                              "w-full text-left px-3 py-2.5 text-sm flex justify-between items-center transition-colors border-b last:border-0 border-gray-50",
+                              isSelected
+                                ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                                : "text-gray-700 hover:bg-gray-100 hover:text-primary",
+                            )}
+                          >
+                            <span className="font-medium">{option.label}</span>
+                            {isSelected && (
+                              <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase font-bold">
+                                Agregado
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500 italic text-center">
+                        {emptyMessage}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>,
-              document.body,
-            )
+              );
+              return usePortal ? createPortal(dropdownContent, document.body) : dropdownContent;
+            })()
           : null}
         </div>
       </div>

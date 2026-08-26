@@ -190,15 +190,35 @@ export default function ReceptionScreen({
     totalSolicitud.destare = totalSolicitud.pesoBruto - totalSolicitud.pesoNeto;
 
     // 2. Total Empresa (desde entregasList)
-    const totalEmpresa = entregasList.reduce(
+    const totalEmpresaSinBono = entregasList.reduce(
       (acc, e) => {
-        acc.cajas += Number(e.cajas) || 0;
-        acc.unidades += Number(e.unidades) || 0;
-        acc.pesoNeto += Number(e.peso) || 0;
+        if (!e.bono) {
+          acc.cajas += Number(e.cajas) || 0;
+          acc.unidades += Number(e.unidades) || 0;
+          acc.pesoNeto += Number(e.peso) || 0;
+        }
         return acc;
       },
       { cajas: 0, unidades: 0, pesoNeto: 0 },
     );
+
+    const totalEmpresaBono = entregasList.reduce(
+      (acc, e) => {
+        if (e.bono) {
+          acc.cajas += Number(e.cajas) || 0;
+          acc.unidades += Number(e.unidades) || 0;
+          acc.pesoNeto += Number(e.peso) || 0;
+        }
+        return acc;
+      },
+      { cajas: 0, unidades: 0, pesoNeto: 0 },
+    );
+
+    const totalEmpresa = {
+      cajas: totalEmpresaSinBono.cajas + totalEmpresaBono.cajas,
+      unidades: totalEmpresaSinBono.unidades + totalEmpresaBono.unidades,
+      pesoNeto: totalEmpresaSinBono.pesoNeto + totalEmpresaBono.pesoNeto,
+    };
 
     // 3. Total Recibido (desde recibidosPorCodigo)
     const totalRecibido = Object.values(recibidosPorCodigo).reduce(
@@ -222,6 +242,8 @@ export default function ReceptionScreen({
     return {
       totalSolicitud,
       totalEmpresa,
+      totalEmpresaSinBono,
+      totalEmpresaBono,
       totalRecibido,
       comparativaEmpresaRecibido,
     };
@@ -291,10 +313,10 @@ export default function ReceptionScreen({
           cajas: stage.EmpresaStage_container,
           unidades: stage.EmpresaStage_units,
           peso: stage.EmpresaStage_net_weight,
-          bono: false, // Default logic
+          bono: String(stage.EmpresaStage_Bono).toLowerCase() === "true",
           guardado: true, // Marked as saved because it comes from server
           empresaId: stage.EmpresaStage_Empresa_id,
-        }));
+        })).reverse();
         setEntregasList(entregas);
       }
 
@@ -1082,6 +1104,18 @@ export default function ReceptionScreen({
     }
 
     try {
+      // Calcular totales antes de enviar
+      let totalCajas = 0;
+      let totalUnidades = 0;
+
+      for (const codigo of boleta.codigosSeleccionados) {
+        const detalle = boleta.detalles[codigo];
+        if (detalle) {
+          totalCajas += Number(detalle.cajas) || 0;
+          totalUnidades += Number(detalle.unidades) || 0;
+        }
+      }
+
       // FLUJO SIMPLIFICADO: Solo hasta AddProductAssignment
       // 1. Crear assignment stage
       // 2. Crear ticket
@@ -1093,8 +1127,8 @@ export default function ReceptionScreen({
         position: "2",
         in_container: 0,
         out_container: 0,
-        units: 0,
-        container: 0,
+        units: totalUnidades,
+        container: totalCajas,
         payment: "0",
         Assignment_id: assignment.id,
       });
@@ -1112,8 +1146,8 @@ export default function ReceptionScreen({
         total_payment: boleta.costoTotal || "0",
         product_payment: boleta.precioDiferido ? "0" : boleta.costoPorKg || "0",
         AssignmentStage_id: newStageId,
-        total_container: "0",
-        total_units: "0",
+        total_container: totalCajas.toString(),
+        total_units: totalUnidades.toString(),
         ticket_payment: Number(boleta.ticket_payment) || 0.0,
         ticket_weight: Number(boleta.ticket_weight) || 0.0,
         Account_id: boleta.Account_id,
@@ -1311,14 +1345,17 @@ export default function ReceptionScreen({
           const itemDestare = container?.destare || 0;
           const itemGross = Number(p.kg) || 0;
           const itemCajas = Number(p.cajas) || 0;
+          const itemUnidades = Number(p.unidades) || 0;
           const itemNet = Math.max(0, itemGross - itemDestare * itemCajas);
 
           return {
             gross: acc.gross + itemGross,
             net: acc.net + itemNet,
+            cajas: acc.cajas + itemCajas,
+            unidades: acc.unidades + itemUnidades,
           };
         },
-        { gross: 0, net: 0 },
+        { gross: 0, net: 0, cajas: 0, unidades: 0 },
       );
 
       const paymentValue = boleta.precioDiferido ? detalle.precio || "0" : "0";
@@ -1328,8 +1365,8 @@ export default function ReceptionScreen({
 
       const updateProductOk = await updateProductAssignment({
         id: detalle.productAssignmentId,
-        container: Number(detalle.cajas) || 0,
-        units: Number(detalle.unidades) || 0,
+        container: totalesProducto.cajas,
+        units: totalesProducto.unidades,
         menudencia: "0",
         net_weight: totalesProducto.net.toString(),
         gross_weight: totalesProducto.gross.toString(),
@@ -1352,6 +1389,8 @@ export default function ReceptionScreen({
           ...detalleActualizado,
           kgBruto: totalesProducto.gross,
           kgNeto: totalesProducto.net,
+          cajas: totalesProducto.cajas,
+          unidades: totalesProducto.unidades,
         },
       };
 
@@ -1465,6 +1504,8 @@ export default function ReceptionScreen({
         const pesajes = [...(detalle.pesajes || [])];
         let totalNetWeight = 0;
         let totalGrossWeight = 0;
+        let totalCajas = 0;
+        let totalUnidades = 0;
 
         for (let i = 0; i < pesajes.length; i += 1) {
           const pesaje = pesajes[i];
@@ -1475,10 +1516,13 @@ export default function ReceptionScreen({
           const destare = selectedContainer?.destare || 0;
           const grossWeight = Number(pesaje.kg) || 0;
           const cantidadCajas = Number(pesaje.cajas) || 0;
+          const unidades = Number(pesaje.unidades) || 0;
           const netWeight = Math.max(0, grossWeight - destare * cantidadCajas);
 
           totalNetWeight += netWeight;
           totalGrossWeight += grossWeight;
+          totalCajas += cantidadCajas;
+          totalUnidades += unidades;
 
           const pesajePersistido = /^\d+$/.test(String(pesaje.id));
 
@@ -1522,8 +1566,8 @@ export default function ReceptionScreen({
 
         const updateProductOk = await updateProductAssignment({
           id: productAssignmentId,
-          container: Number(detalle.cajas) || 0,
-          units: Number(detalle.unidades) || 0,
+          container: totalCajas,
+          units: totalUnidades,
           menudencia: "0",
           net_weight: totalNetWeight.toString(),
           gross_weight: totalGrossWeight.toString(),
@@ -1543,6 +1587,8 @@ export default function ReceptionScreen({
           pesajes,
           kgBruto: totalGrossWeight,
           kgNeto: totalNetWeight,
+          cajas: totalCajas,
+          unidades: totalUnidades,
         };
       }
 
