@@ -87,6 +87,8 @@ export default function ReceptionScreen({
         kgBruto: p.kgBruto,
         kgNeto: p.kgNeto,
         kgRecibidos: 0.0,
+        kgRecibidosBruto: 0.0,
+        kgRecibidosNeto: 0.0,
         recibidosCajas: 0,
         recibidosUnidades: 0,
         productId: p.productId,
@@ -185,7 +187,7 @@ export default function ReceptionScreen({
         }
         return acc;
       },
-      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0 },
+      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0, destare: 0 },
     );
     totalSolicitud.destare = totalSolicitud.pesoBruto - totalSolicitud.pesoNeto;
 
@@ -229,7 +231,7 @@ export default function ReceptionScreen({
         acc.pesoNeto += Number(r.kgNeto) || 0;
         return acc;
       },
-      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0 },
+      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0, destare: 0 },
     );
     totalRecibido.destare = totalRecibido.pesoBruto - totalRecibido.pesoNeto;
 

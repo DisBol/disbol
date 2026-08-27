@@ -48,6 +48,7 @@ export interface RouteReportData {
   chofer: string;
   totalCajas: number;
   totalUnid: number;
+  precioDiferido?: boolean;
   clientes: RouteReportClient[];
 }
 
