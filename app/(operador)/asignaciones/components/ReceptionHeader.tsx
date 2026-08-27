@@ -2,47 +2,81 @@
 
 import React from "react";
 import { Button } from "@/components/ui/Button";
-import { CarOutlineIcon } from "@/components/icons/CarOutlineIcon";
 import { Card } from "@/components/ui/Card";
-import CardCode from "@/components/ui/CardCode";
 import { Assignment } from "../stores/assignments-store";
 
-interface ProductReception {
-  codigo: string;
+interface Totals {
+  cajas: number;
+  unidades?: number;
+  pesoBruto?: number;
+  pesoNeto?: number;
+  destare?: number;
+}
+
+interface ComparisonTotals {
   cajas: number;
   unidades: number;
-  kgBruto: number;
-  kgNeto: number;
-  kgRecibidos: number;
-  recibidosCajas: number;
-  recibidosUnidades: number;
-  active: boolean; // Agregar estado activo
+  pesoNeto: number;
 }
 
 interface ReceptionHeaderProps {
   assignment: Assignment;
-  productos: ProductReception[];
-  costoTotalGeneral: string;
+  totalesGlobales: {
+    totalSolicitud: Totals;
+    totalEmpresa: Totals;
+    totalEmpresaSinBono: Totals;
+    totalEmpresaBono: Totals;
+    totalRecibido: Totals;
+    comparativaEmpresaRecibido: ComparisonTotals;
+  };
   onBack: () => void;
-  onRegistrarRecepcion: () => void;
   onFinalizarRecepcion: () => void;
   isFinalizando?: boolean;
 }
 
 export default function ReceptionHeader({
   assignment,
-  productos,
-  costoTotalGeneral,
+  totalesGlobales,
   onBack,
-  onRegistrarRecepcion,
   onFinalizarRecepcion,
   isFinalizando,
 }: ReceptionHeaderProps) {
+  const formatNumber = (value: number) =>
+    value.toLocaleString("es-BO", {
+      maximumFractionDigits: 0,
+    });
+
+  const formatWeight = (value: number) =>
+    `${(Math.round(value * 10) / 10).toFixed(1).replace(".", ",")} kg`;
+
+  const formatSignedNumber = (value: number) => {
+    const formatted = formatNumber(Math.abs(value));
+    return value >= 0 ? `+${formatted}` : `-${formatted}`;
+  };
+
+  const formatSignedWeight = (value: number) => {
+    const formatted = formatWeight(Math.abs(value));
+    return value >= 0 ? `+${formatted}` : `-${formatted}`;
+  };
+
+  const getDifferenceColorClass = (value: number) => {
+    if (value > 0) return "text-green-600";
+    if (value < 0) return "text-red-600";
+    return "text-gray-900";
+  };
+
+  const solicitud = totalesGlobales.totalSolicitud;
+  const empresa = totalesGlobales.totalEmpresa;
+  const empresaSinBono = totalesGlobales.totalEmpresaSinBono;
+  const empresaBono = totalesGlobales.totalEmpresaBono;
+  const recibido = totalesGlobales.totalRecibido;
+  const diferencia = totalesGlobales.comparativaEmpresaRecibido;
+
   return (
-    <Card className="p-4 md:p-6">
+    <Card className="p-4 md:p-6 mb-6">
       {/* Header con información general */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4 pb-4 border-b border-gray-100">
+        <div className="min-w-0 flex flex-wrap gap-2 items-center">
           <span className="text-xs font-bold text-gray-500 uppercase block">
             PROVEEDOR:
           </span>
@@ -51,38 +85,10 @@ export default function ReceptionHeader({
           </span>
         </div>
 
-        {/* <div>
-            <span className="text-xs font-bold text-gray-500 uppercase block">
-              CLIENTE:
-            </span>
-            <span className="text-md font-bold text-gray-900">
-              Pollería El Rey
-            </span>
-          </div> */}
-
-        <div>
-          <span className="text-xs font-bold text-gray-500 uppercase block">
-            COSTO TOTAL GENERAL
-          </span>
-          <span className="text-md font-bold text-red-500">
-            Bs {costoTotalGeneral}
-          </span>
-        </div>
-
-        <div className="flex gap-3 flex-wrap items-center">
+        <div className="flex gap-3 flex-wrap items-center md:justify-end">
           <Button variant="outline" color="secondary" onClick={onBack}>
             Cancelar
           </Button>
-          {assignment.isRecibir !== "true" && (
-            <Button
-              variant="success"
-              color="success"
-              leftIcon={<CarOutlineIcon />}
-              onClick={onRegistrarRecepcion}
-            >
-              Registrar Recepción
-            </Button>
-          )}
           <button
             onClick={onFinalizarRecepcion}
             disabled={isFinalizando || assignment.isRecibir === "true"}
@@ -103,45 +109,202 @@ export default function ReceptionHeader({
         </div>
       </div>
 
-      {/* Detalles de la Asignación */}
-      <div className="mb-8">
-        <h2 className="text-md font-bold text-gray-900 mb-4">
-          Detalles de la Asignación
-        </h2>
+      {/* Detalles de la Asignación (Totales) */}
+      <div>
+        <div className="mb-5 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+          <h2 className="text-md font-bold text-gray-900">
+            Resumen de Totales
+          </h2>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          {productos.map((producto) => (
-            <div
-              key={producto.codigo}
-              className={`${!producto.active ? "opacity-60" : ""}`}
-            >
-              <div
-                className={!producto.active ? "bg-gray-200 rounded-lg p-1" : ""}
-              >
-                <CardCode
-                  label={`Código ${producto.codigo}`}
-                  cajas={producto.cajas}
-                  unidades={producto.unidades}
-                  readOnly={true}
-                  compareReadOnly={{
-                    leftLabel: "Asig.",
-                    rightLabel: "Rec.",
-                    rightCajas: producto.recibidosCajas,
-                    rightUnidades: producto.recibidosUnidades,
-                  }}
-                  differences={{
-                    cajas: producto.recibidosCajas - producto.cajas,
-                    unidades: producto.recibidosUnidades - producto.unidades,
-                  }}
-                  weightInfo={{
-                    // bruto: `${producto.kgBruto.toFixed(2)}`,
-                    // neto: `${producto.kgNeto.toFixed(2)}`,
-                    recibidos: `${producto.kgRecibidos.toFixed(2)}`,
-                  }}
-                />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {/* TOTAL SOLICITUD */}
+          <div className="flex flex-col h-full p-4 rounded-xl border border-slate-200 bg-slate-50/50 shadow-sm transition-all hover:shadow-md hover:border-slate-300">
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-slate-200/60">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Solicitud
+                </h3>
+                <p className="text-[10px] font-medium text-slate-500 mt-0.5">
+                  Base solicitada
+                </p>
+              </div>
+              <span className="rounded-md bg-slate-200/50 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                Original
+              </span>
+            </div>
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Unidades
+                </span>
+                <span className="text-sm font-bold text-slate-900">
+                  {formatNumber(solicitud.unidades || 0)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Cajas
+                </span>
+                <span className="text-sm font-bold text-slate-900">
+                  {formatNumber(solicitud.cajas)}
+                </span>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* TOTAL EMPRESA */}
+          <div className="flex flex-col h-full p-4 rounded-xl border border-amber-200 bg-amber-50/40 shadow-sm transition-all hover:shadow-md hover:border-amber-300">
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-amber-200/60">
+              <div>
+                <h3 className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  Empresa
+                </h3>
+                <p className="text-[10px] font-medium text-amber-700/70 mt-0.5">
+                  Entrada de la empresa
+                </p>
+              </div>
+              {((empresaBono.unidades || 0) > 0 || (empresaBono.cajas || 0) > 0 || (empresaBono.pesoNeto || 0) > 0) && (
+                <div className="text-[9px] font-bold text-amber-800 uppercase tracking-widest bg-amber-200/50 px-2 py-0.5 rounded mr-1">
+                  Bono
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
+                  Unidades
+                </span>
+                <div className="text-right flex items-center justify-end flex-wrap gap-1">
+                  <span className="text-sm font-bold text-amber-950">
+                    {formatNumber(empresa.unidades || 0)}
+                  </span>
+                  {(empresaBono.unidades || 0) > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
+                      +{formatNumber(empresaBono.unidades || 0)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
+                  Cajas
+                </span>
+                <div className="text-right flex items-center justify-end flex-wrap gap-1">
+                  <span className="text-sm font-bold text-amber-950">
+                    {formatNumber(empresa.cajas || 0)}
+                  </span>
+                  {(empresaBono.cajas || 0) > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
+                      +{formatNumber(empresaBono.cajas || 0)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
+                  Peso neto
+                </span>
+                <div className="text-right flex items-center justify-end flex-wrap gap-1">
+                  <span className="text-sm font-bold text-amber-950">
+                    {formatWeight(empresa.pesoNeto || 0)}
+                  </span>
+                  {(empresaBono.pesoNeto || 0) > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
+                      +{formatWeight(empresaBono.pesoNeto || 0)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* TOTAL RECIBIDO */}
+          <div className="flex flex-col h-full p-4 rounded-xl border border-violet-200 bg-violet-50/40 shadow-sm transition-all hover:shadow-md hover:border-violet-300">
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-violet-200/60">
+              <div>
+                <h3 className="text-xs font-bold text-violet-900 uppercase tracking-wider">
+                  Recibido
+                </h3>
+                <p className="text-[10px] font-medium text-violet-700/70 mt-0.5">
+                  Lo que entra a recepción
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">
+                  Unidades
+                </span>
+                <span className="text-sm font-bold text-violet-950">
+                  {formatNumber(recibido.unidades || 0)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">
+                  Cajas
+                </span>
+                <span className="text-sm font-bold text-violet-950">
+                  {formatNumber(recibido.cajas)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">
+                  Peso neto
+                </span>
+                <span className="text-sm font-bold text-violet-950">
+                  {formatWeight(recibido.pesoNeto || 0)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* DIFERENCIA */}
+          <div className="flex flex-col h-full p-4 rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md hover:border-slate-300">
+            <div className="mb-4 flex items-center justify-between pb-3 border-b border-slate-200/60">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Diferencia
+                </h3>
+                <p className="text-[10px] font-medium text-slate-500 mt-0.5">
+                  Recibido - Empresa
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Unidades
+                </span>
+                <span
+                  className={`text-sm font-bold ${getDifferenceColorClass(diferencia.unidades)}`}
+                >
+                  {formatSignedNumber(diferencia.unidades)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Cajas
+                </span>
+                <span
+                  className={`text-sm font-bold ${getDifferenceColorClass(diferencia.cajas)}`}
+                >
+                  {formatSignedNumber(diferencia.cajas)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  Peso neto
+                </span>
+                <span
+                  className={`text-sm font-bold ${getDifferenceColorClass(diferencia.pesoNeto)}`}
+                >
+                  {formatSignedWeight(diferencia.pesoNeto)}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Card>

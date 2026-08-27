@@ -33,11 +33,11 @@ export function Modal({
         {/* Overlay/Backdrop con opacidad muy sutil */}
         <Dialog.Overlay className="fixed inset-0 bg-black/10 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
-        {/* Content */}
         <Dialog.Content
           className={`
-            fixed left-[50%] top-[50%] z-50 grid w-full ${sizeClasses[size]} 
-            translate-x-[-50%] translate-y-[-50%] gap-4 bg-white p-0 shadow-lg 
+            fixed left-[50%] top-[50%] z-50 flex flex-col w-[calc(100vw-2rem)] ${sizeClasses[size]} 
+            max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)]
+            translate-x-[-50%] translate-y-[-50%] bg-white p-0 shadow-lg 
             duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out 
             data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 
             data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 
@@ -48,7 +48,7 @@ export function Modal({
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <div className="flex-none flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <Dialog.Title className="text-lg font-semibold text-gray-900">
                 {title}
               </Dialog.Title>
@@ -61,7 +61,7 @@ export function Modal({
           )}
 
           {/* Content */}
-          <div className="px-6 py-4">{children}</div>
+          <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

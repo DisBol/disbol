@@ -100,7 +100,10 @@ export interface CardCodeProps
     rightCajas: string | number;
     rightUnidades: string | number;
     rightCajasHidden?: boolean;
+    rightUnidadesHidden?: boolean;
   };
+  // Force top inputs to be read only
+  topReadOnly?: boolean;
 }
 
 const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
@@ -137,6 +140,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       disableAgregarPesaje = false,
       disableAutoComplete = false,
       compareReadOnly,
+      topReadOnly,
       ...props
     },
     ref,
@@ -359,7 +363,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               CAJAS
             </label>
-            {readOnly ? (
+            {readOnly || topReadOnly ? (
               compareReadOnly ? (
                 compareReadOnly.rightCajasHidden ? (
                   <div>
@@ -429,7 +433,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
             <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               UNID.
             </label>
-            {readOnly ? (
+            {readOnly || topReadOnly ? (
               compareReadOnly ? (
                 <div className="grid grid-cols-2 gap-1">
                   <div>
@@ -652,75 +656,26 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                         ? "EDITAR"
                         : "GUARDAR";
 
-                  const limiteCajas = Number(cajas) || 0;
-                  const limiteUnidades = Number(unidades) || 0;
-                  const acumuladoHastaAqui = pesajes.slice(0, idx + 1).reduce(
-                    (acc, p) => ({
-                      cajas: acc.cajas + (Number(p.cajas) || 0),
-                      unidades: acc.unidades + (Number(p.unidades) || 0),
-                    }),
-                    { cajas: 0, unidades: 0 },
-                  );
-
-                  const excesoCajas = Math.max(
-                    0,
-                    acumuladoHastaAqui.cajas - limiteCajas,
-                  );
-                  const excesoUnidades = Math.max(
-                    0,
-                    acumuladoHastaAqui.unidades - limiteUnidades,
-                  );
-                  const pesajeExcedido = excesoCajas > 0 || excesoUnidades > 0;
-
                   return (
                     <div
                       key={pesaje.id}
-                      className={`border rounded p-1.5 relative bg-white shadow-sm pointer-events-auto ${
-                        pesajeExcedido
-                          ? "border-red-300 bg-red-50/30"
-                          : "border-gray-200"
-                      }`}
+                      className={`border rounded p-1.5 relative bg-white shadow-sm pointer-events-auto border-gray-200`}
                     >
-                      <div className="mb-1 space-y-1">
-                        <div className="flex flex-wrap items-center gap-1 min-w-0">
-                          <span className="text-[10px] font-bold text-gray-800">
-                            Pesaje {idx + 1}:
-                          </span>
-                        </div>
-                        <div className="flex flex-col sm:flex-row w-full sm:w-auto sm:justify-end items-stretch sm:items-center gap-1">
-                          {onGuardarPesaje && (
-                            <button
-                              type="button"
-                              disabled={!canSubmit}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onGuardarPesaje(pesaje.id);
-                              }}
-                              className={`w-full sm:w-auto text-[9px] font-bold px-2 py-1 rounded border ${
-                                isSaving
-                                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                  : pesaje.guardado
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 cursor-not-allowed"
-                                    : pesajePersistido
-                                      ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                      : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                              }`}
-                            >
-                              {submitLabel}
-                            </button>
-                          )}
-                          {onRemovePesaje && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onRemovePesaje(pesaje.id);
-                              }}
-                              className="w-full sm:w-4 h-6 sm:h-4 rounded bg-red-500 hover:bg-red-600 flex justify-center items-center text-white"
-                            >
-                              <svg
+                      <div className="mb-2 flex items-center justify-between w-full">
+                        <span className="text-[10px] font-bold text-gray-800 uppercase truncate">
+                          {productName ? `CÓDIGO ${productName}` : (typeof label === "string" ? label : "CÓDIGO")}
+                        </span>
+                        {onRemovePesaje && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onRemovePesaje(pesaje.id);
+                            }}
+                            className="w-4 h-4 rounded bg-red-500 hover:bg-red-600 flex justify-center items-center text-white shrink-0 ml-1"
+                          >
+                            <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 className="h-2 w-2"
                                 viewBox="0 0 20 20"
@@ -735,15 +690,6 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                             </button>
                           )}
                         </div>
-                      </div>
-
-                      {pesajeExcedido && (
-                        <div className="mb-1 text-[10px] font-bold text-red-600">
-                          Excedente: +{excesoCajas} cajas, +{excesoUnidades}{" "}
-                          unid.
-                        </div>
-                      )}
-
                       <div className="space-y-1">
                         <div className="flex gap-1 items-end">
                           <div className="flex-1">
@@ -751,6 +697,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                               CAJAS
                             </label>
                             <input
+                              id={`cajas-${pesaje.id}`}
                               type="number"
                               min="0"
                               value={pesaje.cajas || ""}
@@ -842,6 +789,12 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                                     : Number(e.target.value),
                                 )
                               }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  onAgregarPesaje?.();
+                                }
+                              }}
                               className="w-full px-1 py-0.5 bg-white border border-gray-300 rounded focus:border-blue-400 focus:outline-none text-[10px] text-gray-900 h-5"
                             />
                           </div>
@@ -879,6 +832,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                 })}
               </div>
             )}
+
 
             {/* Differences Section */}
             {differences && (

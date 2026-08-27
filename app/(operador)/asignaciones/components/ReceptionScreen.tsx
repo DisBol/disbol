@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import ReceptionSummaryModal from "./ReceptionSummaryModal";
 import ReceptionHeader from "./ReceptionHeader";
 import ReceptionTickets from "./ReceptionTickets";
 import { Modal } from "@/components/ui/Modal";
@@ -15,11 +14,13 @@ import { useUpdateTicket } from "../hooks/useUpdateTicket";
 import { useContainer } from "../../configuraciones/hooks/contenedores/useContainer";
 import { useGetTicketsHistory } from "../hooks/useGetTicketsHistory";
 import { useGetTicketsByAssignmentHistory } from "../hooks/useGetTicketsByAssignmentHistory";
+import { useGetEmpresaStageByAssignment } from "../hooks/useGetEmpresaStageByAssignment";
 import { UpdateTicketsWeighing } from "../service/updateticketsweighing";
 import { useUpdateAssignment } from "../hooks/useUpdateAssignment";
 import { useAddContainerMovements } from "../hooks/repartir/useAddContainerMovements";
 import { Boleta, BoletaDetail } from "../types/reception.types";
 import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
+import type { EntregaEmpresa } from "./RecibirEmpresaModal";
 
 // Interfaces
 interface ProductReception {
@@ -29,6 +30,8 @@ interface ProductReception {
   kgBruto: number;
   kgNeto: number;
   kgRecibidos: number;
+  kgRecibidosBruto: number;
+  kgRecibidosNeto: number;
   recibidosCajas: number;
   recibidosUnidades: number;
   productId: string;
@@ -70,6 +73,8 @@ export default function ReceptionScreen({
     },
   ]);
 
+  const [entregasList, setEntregasList] = useState<EntregaEmpresa[]>([]);
+
   // Transformar productos del assignment a formato de recepción
   const productos = useMemo<ProductReception[]>(() => {
     // Mostrar todos los productos del assignment que tienen posición === 1 (activos e inactivos)
@@ -92,7 +97,7 @@ export default function ReceptionScreen({
   const recibidosPorCodigo = useMemo(() => {
     const acc: Record<
       string,
-      { cajas: number; unidades: number; kgRecibidos: number }
+      { cajas: number; unidades: number; kgBruto: number; kgNeto: number }
     > = {};
 
     boletas.forEach((boleta) => {
@@ -101,32 +106,49 @@ export default function ReceptionScreen({
         if (!detalle) return;
 
         if (!acc[codigo]) {
-          acc[codigo] = { cajas: 0, unidades: 0, kgRecibidos: 0 };
+          acc[codigo] = { cajas: 0, unidades: 0, kgBruto: 0, kgNeto: 0 };
         }
 
-        const cajasValue = Number(detalle.cajas) || 0;
-        const unidadesValue = Number(detalle.unidades) || 0;
+        let cajasValue = 0;
+        let unidadesValue = 0;
+
+        if (detalle.pesajes && detalle.pesajes.length > 0) {
+          cajasValue = detalle.pesajes.reduce(
+            (sum, p) => sum + (Number(p.cajas) || 0),
+            0,
+          );
+          unidadesValue = detalle.pesajes.reduce(
+            (sum, p) => sum + (Number(p.unidades) || 0),
+            0,
+          );
+
+          const pesoFromPesajes = detalle.pesajes.reduce(
+            (sum, pesaje) => {
+              const selectedContainer = containersData?.find(
+                (container) => container.id.toString() === pesaje.contenedor,
+              );
+              const destare = selectedContainer?.destare || 0;
+              const grossWeight = Number(pesaje.kg) || 0;
+              const cantidadCajas = Number(pesaje.cajas) || 0;
+              const netWeight = Math.max(
+                0,
+                grossWeight - destare * cantidadCajas,
+              );
+
+              return {
+                bruto: sum.bruto + grossWeight,
+                neto: sum.neto + netWeight,
+              };
+            },
+            { bruto: 0, neto: 0 },
+          );
+
+          acc[codigo].kgBruto += pesoFromPesajes.bruto;
+          acc[codigo].kgNeto += pesoFromPesajes.neto;
+        }
 
         acc[codigo].cajas += cajasValue;
         acc[codigo].unidades += unidadesValue;
-
-        if (detalle.pesajes && detalle.pesajes.length > 0) {
-          const netoFromPesajes = detalle.pesajes.reduce((sum, pesaje) => {
-            const selectedContainer = containersData?.find(
-              (container) => container.id.toString() === pesaje.contenedor,
-            );
-            const destare = selectedContainer?.destare || 0;
-            const grossWeight = Number(pesaje.kg) || 0;
-            const cantidadCajas = Number(pesaje.cajas) || 0;
-            const netWeight = Math.max(
-              0,
-              grossWeight - destare * cantidadCajas,
-            );
-            return sum + netWeight;
-          }, 0);
-
-          acc[codigo].kgRecibidos += netoFromPesajes;
-        }
       });
     });
 
@@ -142,11 +164,90 @@ export default function ReceptionScreen({
           ...producto,
           recibidosCajas: recibido?.cajas || 0,
           recibidosUnidades: recibido?.unidades || 0,
-          kgRecibidos: recibido?.kgRecibidos || 0,
+          kgRecibidos: recibido?.kgNeto || 0,
+          kgRecibidosBruto: recibido?.kgBruto || 0,
+          kgRecibidosNeto: recibido?.kgNeto || 0,
         };
       }),
     [productos, recibidosPorCodigo],
   );
+
+  // Calcular totales globales para el encabezado
+  const totalesGlobales = useMemo(() => {
+    // 1. Total Solicitud (desde assignment)
+    const totalSolicitud = productos.reduce(
+      (acc, p) => {
+        if (p.codigo.toUpperCase() !== "BONO") {
+          acc.cajas += Number(p.cajas) || 0;
+          acc.unidades += Number(p.unidades) || 0;
+          acc.pesoBruto += Number(p.kgBruto) || 0;
+          acc.pesoNeto += Number(p.kgNeto) || 0;
+        }
+        return acc;
+      },
+      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0 },
+    );
+    totalSolicitud.destare = totalSolicitud.pesoBruto - totalSolicitud.pesoNeto;
+
+    // 2. Total Empresa (desde entregasList)
+    const totalEmpresaSinBono = entregasList.reduce(
+      (acc, e) => {
+        if (!e.bono) {
+          acc.cajas += Number(e.cajas) || 0;
+          acc.unidades += Number(e.unidades) || 0;
+          acc.pesoNeto += Number(e.peso) || 0;
+        }
+        return acc;
+      },
+      { cajas: 0, unidades: 0, pesoNeto: 0 },
+    );
+
+    const totalEmpresaBono = entregasList.reduce(
+      (acc, e) => {
+        if (e.bono) {
+          acc.cajas += Number(e.cajas) || 0;
+          acc.unidades += Number(e.unidades) || 0;
+          acc.pesoNeto += Number(e.peso) || 0;
+        }
+        return acc;
+      },
+      { cajas: 0, unidades: 0, pesoNeto: 0 },
+    );
+
+    const totalEmpresa = {
+      cajas: totalEmpresaSinBono.cajas + totalEmpresaBono.cajas,
+      unidades: totalEmpresaSinBono.unidades + totalEmpresaBono.unidades,
+      pesoNeto: totalEmpresaSinBono.pesoNeto + totalEmpresaBono.pesoNeto,
+    };
+
+    // 3. Total Recibido (desde recibidosPorCodigo)
+    const totalRecibido = Object.values(recibidosPorCodigo).reduce(
+      (acc, r) => {
+        acc.cajas += Number(r.cajas) || 0;
+        acc.unidades += Number(r.unidades) || 0;
+        acc.pesoBruto += Number(r.kgBruto) || 0;
+        acc.pesoNeto += Number(r.kgNeto) || 0;
+        return acc;
+      },
+      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0 },
+    );
+    totalRecibido.destare = totalRecibido.pesoBruto - totalRecibido.pesoNeto;
+
+    const comparativaEmpresaRecibido = {
+      cajas: totalRecibido.cajas - totalEmpresa.cajas,
+      unidades: totalRecibido.unidades - totalEmpresa.unidades,
+      pesoNeto: totalRecibido.pesoNeto - totalEmpresa.pesoNeto,
+    };
+
+    return {
+      totalSolicitud,
+      totalEmpresa,
+      totalEmpresaSinBono,
+      totalEmpresaBono,
+      totalRecibido,
+      comparativaEmpresaRecibido,
+    };
+  }, [productos, entregasList, recibidosPorCodigo]);
 
   const { addAssignmentStage } = useAddAssignmentStage();
   const { addTicket } = useAddTicket();
@@ -159,6 +260,7 @@ export default function ReceptionScreen({
   const { fetchTicketsHistory } = useGetTicketsHistory();
   const { fetchTicketsByAssignmentHistory } =
     useGetTicketsByAssignmentHistory();
+  const { fetchEmpresaStageByAssignment } = useGetEmpresaStageByAssignment();
 
   const buildCategoryProductsForBoleta = (boleta: Boleta) => {
     if (boleta.categoryProducts && boleta.categoryProducts.length > 0) {
@@ -203,6 +305,23 @@ export default function ReceptionScreen({
   useEffect(() => {
     let isMounted = true;
     const loadTickets = async () => {
+      // 0) Load Empresa Stage
+      const empresaStageResponse = await fetchEmpresaStageByAssignment(Number(assignment.id));
+      if (empresaStageResponse && isMounted) {
+        const entregas: EntregaEmpresa[] = empresaStageResponse.map((stage) => ({
+          id: stage.EmpresaStage_id.toString(),
+          cajas: stage.EmpresaStage_container,
+          unidades: stage.EmpresaStage_units,
+          peso: stage.EmpresaStage_net_weight,
+          bono: String(stage.EmpresaStage_Bono).toLowerCase() === "true",
+          guardado: true, // Marked as saved because it comes from server
+          empresaId: stage.EmpresaStage_Empresa_id,
+          producto: stage.Product_name || undefined,
+          productoId: stage.Empresa_Product_id || undefined,
+        })).reverse();
+        setEntregasList(entregas);
+      }
+
       // 1) Historial base por asignacion: asegura tickets registrados
       const boletasMap = new Map<string, Boleta>();
       const boletaProductsMap = new Map<
@@ -424,12 +543,7 @@ export default function ReceptionScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignment.id]);
 
-  const { costoTotalGeneral, pesoTotalGeneral } = useMemo(() => {
-    // Calcular costo total como suma de ticket_payment de todas las boletas
-    const costoTotalGeneral = boletas.reduce((sum, boleta) => {
-      return sum + (Number(boleta.ticket_payment) || 0);
-    }, 0);
-
+  const { pesoTotalGeneral } = useMemo(() => {
     // Calcular peso total general basado en pesajes
     let totalWeight = 0;
 
@@ -488,12 +602,9 @@ export default function ReceptionScreen({
     });
 
     return {
-      costoTotalGeneral: (Math.round(costoTotalGeneral * 100) / 100).toFixed(2),
       pesoTotalGeneral: (Math.round(totalWeight * 100) / 100).toFixed(2),
     };
   }, [boletas, containersData]);
-
-  const [showResumenModal, setShowResumenModal] = useState(false);
 
   const resolveProductId = (boleta: Boleta, codigo: string): string | null => {
     const fromCategory = boleta.categoryProducts?.find(
@@ -796,16 +907,22 @@ export default function ReceptionScreen({
             baseDetalle = detalleActual;
           }
 
+          const newPesajeId = Date.now().toString() + Math.random().toString();
+
+          setTimeout(() => {
+            document.getElementById(`cajas-${newPesajeId}`)?.focus();
+          }, 50);
+
           const nuevosPesajes = [
-            ...(baseDetalle.pesajes || []),
             {
-              id: Date.now().toString() + Math.random().toString(),
+              id: newPesajeId,
               cajas: 0,
               unidades: 0,
               kg: 0,
               contenedor: defaultContainerId,
               guardado: false,
             },
+            ...(baseDetalle.pesajes || []),
           ];
           return {
             ...markBoletaAsPendingEdit(boleta),
@@ -919,10 +1036,6 @@ export default function ReceptionScreen({
     );
   };
 
-  const handleRegistrarRecepcion = () => {
-    setShowResumenModal(true);
-  };
-
   const { addContainerMovements } = useAddContainerMovements();
 
   const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
@@ -984,17 +1097,27 @@ export default function ReceptionScreen({
     onBack();
   };
 
-  const handleConfirmarRecepcion = () => {
-    setShowResumenModal(false);
-    // Aquí iría la lógica para guardar la recepción
-    console.log("Recepción confirmada");
-  };
-
   const handleGuardarBoleta = async (boletaId: string) => {
     const boleta = boletas.find((b) => b.id === boletaId);
     if (!boleta) return;
 
+    if (boleta.ticketId) {
+      return handleCompletarFlujoBoleta(boletaId);
+    }
+
     try {
+      // Calcular totales antes de enviar
+      let totalCajas = 0;
+      let totalUnidades = 0;
+
+      for (const codigo of boleta.codigosSeleccionados) {
+        const detalle = boleta.detalles[codigo];
+        if (detalle) {
+          totalCajas += Number(detalle.cajas) || 0;
+          totalUnidades += Number(detalle.unidades) || 0;
+        }
+      }
+
       // FLUJO SIMPLIFICADO: Solo hasta AddProductAssignment
       // 1. Crear assignment stage
       // 2. Crear ticket
@@ -1006,8 +1129,8 @@ export default function ReceptionScreen({
         position: "2",
         in_container: 0,
         out_container: 0,
-        units: 0,
-        container: 0,
+        units: totalUnidades,
+        container: totalCajas,
         payment: "0",
         Assignment_id: assignment.id,
       });
@@ -1025,8 +1148,8 @@ export default function ReceptionScreen({
         total_payment: boleta.costoTotal || "0",
         product_payment: boleta.precioDiferido ? "0" : boleta.costoPorKg || "0",
         AssignmentStage_id: newStageId,
-        total_container: "0",
-        total_units: "0",
+        total_container: totalCajas.toString(),
+        total_units: totalUnidades.toString(),
         ticket_payment: Number(boleta.ticket_payment) || 0.0,
         ticket_weight: Number(boleta.ticket_weight) || 0.0,
         Account_id: boleta.Account_id,
@@ -1115,22 +1238,20 @@ export default function ReceptionScreen({
           }
         }
 
+        const updatedBoleta: Boleta = {
+          ...boleta,
+          ticketId: newTicketId.toString(),
+          id: newTicketId.toString(),
+          assignmentStageId: Number(stageId),
+          flujoCompletado: false,
+          hasPendingChanges: false,
+          detalles: { ...boleta.detalles },
+        };
+
         // Actualizar la boleta en el estado local con el ticketId
         // Esto marca a la boleta como guardada y habilita el botón "Agregar pesaje"
         setBoletas((prev) =>
-          prev.map((b) => {
-            if (b.id !== boletaId) return b;
-
-            return {
-              ...b,
-              ticketId: newTicketId.toString(),
-              id: newTicketId.toString(),
-              assignmentStageId: Number(stageId),
-              flujoCompletado: false,
-              hasPendingChanges: false,
-              detalles: { ...boleta.detalles },
-            };
-          }),
+          prev.map((b) => (b.id === boletaId ? updatedBoleta : b)),
         );
 
         console.log("Boleta guardada hasta ProductAssignment exitosamente");
@@ -1139,6 +1260,9 @@ export default function ReceptionScreen({
           ticketId: newTicketId.toString(),
           productosGuardados: boleta.codigosSeleccionados.length,
         });
+
+        // Completar flujo con la boleta actualizada
+        await handleCompletarFlujoBoleta(boletaId, updatedBoleta);
       }
     } catch (error) {
       console.error("Error saving boleta", error);
@@ -1223,14 +1347,17 @@ export default function ReceptionScreen({
           const itemDestare = container?.destare || 0;
           const itemGross = Number(p.kg) || 0;
           const itemCajas = Number(p.cajas) || 0;
+          const itemUnidades = Number(p.unidades) || 0;
           const itemNet = Math.max(0, itemGross - itemDestare * itemCajas);
 
           return {
             gross: acc.gross + itemGross,
             net: acc.net + itemNet,
+            cajas: acc.cajas + itemCajas,
+            unidades: acc.unidades + itemUnidades,
           };
         },
-        { gross: 0, net: 0 },
+        { gross: 0, net: 0, cajas: 0, unidades: 0 },
       );
 
       const paymentValue = boleta.precioDiferido ? detalle.precio || "0" : "0";
@@ -1240,8 +1367,8 @@ export default function ReceptionScreen({
 
       const updateProductOk = await updateProductAssignment({
         id: detalle.productAssignmentId,
-        container: Number(detalle.cajas) || 0,
-        units: Number(detalle.unidades) || 0,
+        container: totalesProducto.cajas,
+        units: totalesProducto.unidades,
         menudencia: "0",
         net_weight: totalesProducto.net.toString(),
         gross_weight: totalesProducto.gross.toString(),
@@ -1264,6 +1391,8 @@ export default function ReceptionScreen({
           ...detalleActualizado,
           kgBruto: totalesProducto.gross,
           kgNeto: totalesProducto.net,
+          cajas: totalesProducto.cajas,
+          unidades: totalesProducto.unidades,
         },
       };
 
@@ -1345,8 +1474,11 @@ export default function ReceptionScreen({
     }
   };
 
-  const handleCompletarFlujoBoleta = async (boletaId: string) => {
-    const boleta = boletas.find((b) => b.id === boletaId);
+  const handleCompletarFlujoBoleta = async (
+    boletaId: string,
+    providedBoleta?: Boleta,
+  ) => {
+    const boleta = providedBoleta || boletas.find((b) => b.id === boletaId);
     if (!boleta || !boleta.ticketId) return;
 
     try {
@@ -1374,6 +1506,8 @@ export default function ReceptionScreen({
         const pesajes = [...(detalle.pesajes || [])];
         let totalNetWeight = 0;
         let totalGrossWeight = 0;
+        let totalCajas = 0;
+        let totalUnidades = 0;
 
         for (let i = 0; i < pesajes.length; i += 1) {
           const pesaje = pesajes[i];
@@ -1384,10 +1518,13 @@ export default function ReceptionScreen({
           const destare = selectedContainer?.destare || 0;
           const grossWeight = Number(pesaje.kg) || 0;
           const cantidadCajas = Number(pesaje.cajas) || 0;
+          const unidades = Number(pesaje.unidades) || 0;
           const netWeight = Math.max(0, grossWeight - destare * cantidadCajas);
 
           totalNetWeight += netWeight;
           totalGrossWeight += grossWeight;
+          totalCajas += cantidadCajas;
+          totalUnidades += unidades;
 
           const pesajePersistido = /^\d+$/.test(String(pesaje.id));
 
@@ -1407,6 +1544,16 @@ export default function ReceptionScreen({
                 id: newWeighingId.toString(),
               };
             }
+          } else {
+            await UpdateTicketsWeighing(
+              Number(pesaje.id),
+              netWeight,
+              grossWeight,
+              Number(pesaje.unidades) || 0,
+              cantidadCajas,
+              Number(pesaje.contenedor) || 0,
+              "true",
+            );
           }
         }
 
@@ -1421,8 +1568,8 @@ export default function ReceptionScreen({
 
         const updateProductOk = await updateProductAssignment({
           id: productAssignmentId,
-          container: Number(detalle.cajas) || 0,
-          units: Number(detalle.unidades) || 0,
+          container: totalCajas,
+          units: totalUnidades,
           menudencia: "0",
           net_weight: totalNetWeight.toString(),
           gross_weight: totalGrossWeight.toString(),
@@ -1442,6 +1589,8 @@ export default function ReceptionScreen({
           pesajes,
           kgBruto: totalGrossWeight,
           kgNeto: totalNetWeight,
+          cajas: totalCajas,
+          unidades: totalUnidades,
         };
       }
 
@@ -1479,7 +1628,7 @@ export default function ReceptionScreen({
 
       setBoletas((prev) =>
         prev.map((b) => {
-          if (b.id !== boletaId) return b;
+          if (b.id !== boleta.id) return b;
 
           return {
             ...b,
@@ -1491,7 +1640,7 @@ export default function ReceptionScreen({
         }),
       );
 
-      console.log("Flujo completado exitosamente para boleta", boletaId);
+      console.log("Flujo completado exitosamente para boleta", boleta.id);
     } catch (error) {
       console.error("Error completando flujo de boleta", error);
     }
@@ -1501,10 +1650,8 @@ export default function ReceptionScreen({
     <div className="min-h-screen max-w-full">
       <ReceptionHeader
         assignment={assignment}
-        productos={productosConComparacion}
-        costoTotalGeneral={costoTotalGeneral}
+        totalesGlobales={totalesGlobales}
         onBack={onBack}
-        onRegistrarRecepcion={handleRegistrarRecepcion}
         onFinalizarRecepcion={handleFinalizarRecepcion}
         isFinalizando={isFinalizando}
       />
@@ -1514,6 +1661,8 @@ export default function ReceptionScreen({
         boletas={boletas}
         pesoTotalGeneral={pesoTotalGeneral}
         isRecibir={assignment.isRecibir}
+        entregasList={entregasList}
+        setEntregasList={setEntregasList}
         onAgregarBoleta={handleAgregarBoleta}
         onAgregarBoletaFromCategory={handleAgregarBoletaFromCategory}
         onEliminarBoleta={handleEliminarBoleta}
@@ -1527,15 +1676,7 @@ export default function ReceptionScreen({
         onRemovePesaje={handleRemovePesaje}
         onGuardarPesaje={handleGuardarPesaje}
         onGuardarBoleta={handleGuardarBoleta}
-        onCompletarFlujoBoleta={handleCompletarFlujoBoleta}
-      />
-
-      {/* Modal de Resumen de Recepción */}
-      <ReceptionSummaryModal
-        isOpen={showResumenModal}
-        onClose={() => setShowResumenModal(false)}
-        onConfirm={handleConfirmarRecepcion}
-        productos={productosConComparacion}
+        assignmentId={Number(assignment.id)}
       />
 
       {/* Modal Confirmar Finalizar Recepción */}

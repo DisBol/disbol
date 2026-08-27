@@ -101,7 +101,9 @@ export default function DistributeGroup({
   const [savedClients, setSavedClients] = useState<Set<number>>(new Set());
   const [saveErrors, setSaveErrors] = useState<Record<number, string>>({});
   const [isStarted, setIsStarted] = useState(isActive);
-  const [precioDiferido, setPrecioDiferido] = useState(false);
+  const [precioDiferidoCliente, setPrecioDiferidoCliente] = useState<
+    Record<number, boolean>
+  >({});
   const [precioVentaCliente, setPrecioVentaCliente] = useState<
     Record<number, string>
   >({});
@@ -137,7 +139,7 @@ export default function DistributeGroup({
     ): number => {
       let total = 0;
 
-      if (!precioDiferido) {
+      if (!precioDiferidoCliente[clienteIdx]) {
         // Sin precio diferido: precioVenta × Σ net_weight de todos los pesajes
         const costo = Number(precioVenta) || 0;
         let totalNetWeight = 0;
@@ -182,7 +184,7 @@ export default function DistributeGroup({
 
       return Math.round(total * 100) / 100;
     };
-  }, [precioDiferido, containersData, pesajesMap, preciosMap]);
+  }, [precioDiferidoCliente, containersData, pesajesMap, preciosMap]);
 
   // Sincroniza los totales calculados por cliente con el store global para el PDF
   useEffect(() => {
@@ -585,7 +587,7 @@ export default function DistributeGroup({
               };
             });
 
-            const precioUnitario = precioDiferido
+            const precioUnitario = precioDiferidoCliente[clienteIdx]
               ? Number(preciosMap[`${clienteIdx}-${codeIdx}`]) || 0
               : Number(precioVentaCliente[clienteIdx]) || 0;
             const totalProducto = precioUnitario * neto;
@@ -622,6 +624,7 @@ export default function DistributeGroup({
           totalBruto,
           totalNeto,
           totalBs,
+          precioDiferido: precioDiferidoCliente[clienteIdx] || false,
         };
       },
     );
@@ -630,7 +633,6 @@ export default function DistributeGroup({
       groupName: name,
       proveedor,
       costoPorKg: String(costoPorKg ?? "10.00"),
-      precioDiferido,
       vehiculo: vehiculo || "No asignado",
       chofer: chofer || "No asignado",
       totalCajas,
@@ -645,7 +647,7 @@ export default function DistributeGroup({
     costoPorKg,
     isStarted,
     name,
-    precioDiferido,
+    precioDiferidoCliente,
     precioVentaCliente,
     preciosMap,
     totalCajas,
@@ -690,7 +692,8 @@ export default function DistributeGroup({
           }
 
           // Precio del código: diferido usa precio por código, normal usa precio global
-          const precioProducto = precioDiferido
+          const isPrecioDiferido = precioDiferidoCliente[clienteIdx];
+          const precioProducto = isPrecioDiferido
             ? Number(preciosMap[`${clienteIdx}-${idx}`]) || 0
             : precioVenta;
 
@@ -727,7 +730,7 @@ export default function DistributeGroup({
             <p style="margin: 5px 0;"><strong>Cliente:</strong> ${clienteNombre}</p>
             <p style="margin: 5px 0;"><strong>Grupo:</strong> ${name}</p>
             <p style="margin: 5px 0;"><strong>Encargado:</strong> ${encargado || "No asignado"}</p>
-            ${!precioDiferido ? `<p style="margin: 5px 0;"><strong>Precio Venta:</strong> Bs ${precioVenta.toFixed(2)}/kg</p>` : ""}
+            ${!precioDiferidoCliente[clienteIdx] ? `<p style="margin: 5px 0;"><strong>Precio Venta:</strong> Bs ${precioVenta.toFixed(2)}/kg</p>` : ""}
           </div>
 
           <h2 style="font-size: 18px; font-weight: bold; color: #1e293b; margin: 25px 0 15px 0;">
@@ -947,7 +950,7 @@ export default function DistributeGroup({
                         PRECIO VENTA (Bs/Kg):
                       </span>
                       <div className="flex items-center gap-3 flex-wrap">
-                        {!precioDiferido && (
+                        {!precioDiferidoCliente[clienteIdx] && (
                           <InputField
                             placeholder="0.00"
                             className="w-32 text-xs"
@@ -967,10 +970,13 @@ export default function DistributeGroup({
                           <input
                             type="checkbox"
                             className="w-4 h-4"
-                            checked={precioDiferido}
+                            checked={precioDiferidoCliente[clienteIdx] || false}
                             disabled={readOnly}
                             onChange={(e) =>
-                              setPrecioDiferido(e.target.checked)
+                              setPrecioDiferidoCliente((prev) => ({
+                                ...prev,
+                                [clienteIdx]: e.target.checked,
+                              }))
                             }
                           />
                           <span className="text-xs text-gray-600">
@@ -999,7 +1005,7 @@ export default function DistributeGroup({
                               cajas={code.cajas}
                               unidades={code.unidades}
                               readOnly={true}
-                              showPrecio={precioDiferido}
+                              showPrecio={precioDiferidoCliente[clienteIdx] || false}
                               precio={preciosMap[`${clienteIdx}-${idx}`] || ""}
                               onPrecioChange={
                                 readOnly
