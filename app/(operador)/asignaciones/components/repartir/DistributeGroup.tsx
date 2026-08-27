@@ -255,6 +255,8 @@ export default function DistributeGroup({
     });
     setSavingClient(clienteIdx);
 
+    const precioDiferido = precioDiferidoCliente[clienteIdx] || false;
+
     let allOk = true;
     let totalContainers = 0; // acumulado de cajas de todos los productos
     let totalUnits = 0; // acumulado de unidades de todos los productos
