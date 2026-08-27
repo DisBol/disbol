@@ -316,6 +316,8 @@ export default function ReceptionScreen({
           bono: String(stage.EmpresaStage_Bono).toLowerCase() === "true",
           guardado: true, // Marked as saved because it comes from server
           empresaId: stage.EmpresaStage_Empresa_id,
+          producto: stage.Product_name || undefined,
+          productoId: stage.Empresa_Product_id || undefined,
         })).reverse();
         setEntregasList(entregas);
       }

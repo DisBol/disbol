@@ -12,6 +12,7 @@ interface UseAddEmpresaStageParams {
   net_weight: number;
   Container_id: number;
   bono: string;
+  Product_id: number;
 }
 
 export const useAddEmpresaStage = () => {
@@ -33,7 +34,8 @@ export const useAddEmpresaStage = () => {
         params.gross_weight,
         params.net_weight,
         params.Container_id,
-        params.bono
+        params.bono,
+        params.Product_id
       );
 
       setData(response.data);

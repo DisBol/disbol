@@ -27,6 +27,7 @@ export interface EntregaEmpresa {
   peso: number;
   bono: boolean;
   producto?: string;
+  productoId?: number;
   guardado?: boolean;
   empresaId?: number;
 }
@@ -37,7 +38,7 @@ interface RecibirEmpresaModalProps {
   entregasList: EntregaEmpresa[];
   setEntregasList: Dispatch<SetStateAction<EntregaEmpresa[]>>;
   assignmentId: number;
-  productos?: { codigo: string }[];
+  productos?: { codigo: string; productId?: string | number }[];
 }
 
 export default function RecibirEmpresaModal({
@@ -141,6 +142,9 @@ export default function RecibirEmpresaModal({
     }
 
     for (const entrega of pendingEntregas) {
+      const selectedProduct = productos.find(p => p.codigo === entrega.producto);
+      const productId = selectedProduct?.productId ? Number(selectedProduct.productId) : 1;
+
       // Send same amount of records with requested structure and default values
       await addEmpresaStage({
         in_container: 1, // default
@@ -152,6 +156,7 @@ export default function RecibirEmpresaModal({
         net_weight: entrega.peso, // from user input (assuming it represents weight)
         Container_id: 1, // default
         bono: entrega.bono ? "true" : "false",
+        Product_id: productId,
       });
     }
 

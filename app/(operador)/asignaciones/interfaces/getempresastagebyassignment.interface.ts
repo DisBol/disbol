@@ -17,6 +17,8 @@ export interface EmpresaStageByAssignmentDatum {
   EmpresaStage_net_weight: number;
   EmpresaStage_Container_id: number;
   EmpresaStage_Bono?: string | null;
+  Empresa_Product_id?: number | null;
+  Product_name?: string | null;
 }
 
 export interface Metadata {
