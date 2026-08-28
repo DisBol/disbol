@@ -192,61 +192,107 @@ export default function ReceptionScreen({
     totalSolicitud.destare = totalSolicitud.pesoBruto - totalSolicitud.pesoNeto;
 
     // 2. Total Empresa (desde entregasList)
-    const totalEmpresaSinBono = entregasList.reduce(
-      (acc, e) => {
-        if (!e.bono) {
-          acc.cajas += Number(e.cajas) || 0;
-          acc.unidades += Number(e.unidades) || 0;
-          acc.pesoNeto += Number(e.peso) || 0;
-        }
-        return acc;
-      },
-      { cajas: 0, unidades: 0, pesoNeto: 0 },
-    );
+    const empresaProductosMap = new Map<
+      string,
+      {
+        id: number | null;
+        nombre: string;
+        cajas: number;
+        unidades: number;
+        pesoNeto: number;
+      }
+    >();
 
-    const totalEmpresaBono = entregasList.reduce(
-      (acc, e) => {
-        if (e.bono) {
-          acc.cajas += Number(e.cajas) || 0;
-          acc.unidades += Number(e.unidades) || 0;
-          acc.pesoNeto += Number(e.peso) || 0;
-        }
-        return acc;
-      },
-      { cajas: 0, unidades: 0, pesoNeto: 0 },
-    );
+    entregasList.forEach((entrega) => {
+      const key = entrega.productoId?.toString() || "sin-producto";
+      const current = empresaProductosMap.get(key) || {
+        id: entrega.productoId ?? null,
+        nombre: entrega.producto || "Sin producto",
+        cajas: 0,
+        unidades: 0,
+        pesoNeto: 0,
+      };
 
-    const totalEmpresa = {
-      cajas: totalEmpresaSinBono.cajas + totalEmpresaBono.cajas,
-      unidades: totalEmpresaSinBono.unidades + totalEmpresaBono.unidades,
-      pesoNeto: totalEmpresaSinBono.pesoNeto + totalEmpresaBono.pesoNeto,
-    };
+      current.cajas += Number(entrega.cajas) || 0;
+      current.unidades += Number(entrega.unidades) || 0;
+      current.pesoNeto += Number(entrega.peso) || 0;
+      empresaProductosMap.set(key, current);
+    });
+
+    const totalEmpresaProductos = Array.from(empresaProductosMap.values());
+    const totalEmpresa = totalEmpresaProductos
+      .filter((producto) => {
+        const nombre = producto.nombre.trim().toLowerCase();
+        return !["bono", "menudencia", "embutido"].includes(nombre);
+      })
+      .reduce(
+        (acc, producto) => ({
+          cajas: acc.cajas + producto.cajas,
+          unidades: acc.unidades + producto.unidades,
+          pesoNeto: acc.pesoNeto + producto.pesoNeto,
+        }),
+        { cajas: 0, unidades: 0, pesoNeto: 0 },
+      );
 
     // 3. Total Recibido (desde recibidosPorCodigo)
-    const totalRecibido = Object.values(recibidosPorCodigo).reduce(
-      (acc, r) => {
-        acc.cajas += Number(r.cajas) || 0;
-        acc.unidades += Number(r.unidades) || 0;
-        acc.pesoBruto += Number(r.kgBruto) || 0;
-        acc.pesoNeto += Number(r.kgNeto) || 0;
-        return acc;
-      },
-      { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0, destare: 0 },
-    );
-    totalRecibido.destare = totalRecibido.pesoBruto - totalRecibido.pesoNeto;
+    const recibidoProductosMap = new Map<
+      string,
+      {
+        id: number | null;
+        nombre: string;
+        cajas: number;
+        unidades: number;
+        pesoNeto: number;
+      }
+    >();
+
+    Object.entries(recibidosPorCodigo).forEach(([codigo, recibido]) => {
+      const producto = productos.find((item) => item.codigo === codigo);
+      const productId = producto?.productId ? Number(producto.productId) : null;
+      const key = productId?.toString() || codigo;
+      const current = recibidoProductosMap.get(key) || {
+        id: productId,
+        nombre: codigo,
+        cajas: 0,
+        unidades: 0,
+        pesoNeto: 0,
+      };
+
+      current.cajas += Number(recibido.cajas) || 0;
+      current.unidades += Number(recibido.unidades) || 0;
+      current.pesoNeto += Number(recibido.kgNeto) || 0;
+      recibidoProductosMap.set(key, current);
+    });
+
+    const totalRecibidoProductos = Array.from(recibidoProductosMap.values());
+    const totalRecibidoPrincipal = totalRecibidoProductos
+      .filter((producto) => {
+        const nombre = producto.nombre.trim().toLowerCase();
+        return !["bono", "menudencia", "embutido", "embutidos"].includes(
+          nombre,
+        );
+      })
+      .reduce(
+        (acc, producto) => ({
+          cajas: acc.cajas + producto.cajas,
+          unidades: acc.unidades + producto.unidades,
+          pesoNeto: acc.pesoNeto + producto.pesoNeto,
+        }),
+        { cajas: 0, unidades: 0, pesoNeto: 0 },
+      );
 
     const comparativaEmpresaRecibido = {
-      cajas: totalRecibido.cajas - totalEmpresa.cajas,
-      unidades: totalRecibido.unidades - totalEmpresa.unidades,
-      pesoNeto: totalRecibido.pesoNeto - totalEmpresa.pesoNeto,
+      cajas: totalRecibidoPrincipal.cajas - totalEmpresa.cajas,
+      unidades: totalRecibidoPrincipal.unidades - totalEmpresa.unidades,
+      pesoNeto: totalRecibidoPrincipal.pesoNeto - totalEmpresa.pesoNeto,
     };
 
     return {
       totalSolicitud,
       totalEmpresa,
-      totalEmpresaSinBono,
-      totalEmpresaBono,
-      totalRecibido,
+      totalEmpresaProductos,
+      totalRecibido: totalRecibidoPrincipal,
+      totalRecibidoProductos,
       comparativaEmpresaRecibido,
     };
   }, [productos, entregasList, recibidosPorCodigo]);
@@ -308,19 +354,22 @@ export default function ReceptionScreen({
     let isMounted = true;
     const loadTickets = async () => {
       // 0) Load Empresa Stage
-      const empresaStageResponse = await fetchEmpresaStageByAssignment(Number(assignment.id));
+      const empresaStageResponse = await fetchEmpresaStageByAssignment(
+        Number(assignment.id),
+      );
       if (empresaStageResponse && isMounted) {
-        const entregas: EntregaEmpresa[] = empresaStageResponse.map((stage) => ({
-          id: stage.EmpresaStage_id.toString(),
-          cajas: stage.EmpresaStage_container,
-          unidades: stage.EmpresaStage_units,
-          peso: stage.EmpresaStage_net_weight,
-          bono: String(stage.EmpresaStage_Bono).toLowerCase() === "true",
-          guardado: true, // Marked as saved because it comes from server
-          empresaId: stage.EmpresaStage_Empresa_id,
-          producto: stage.Product_name || undefined,
-          productoId: stage.Empresa_Product_id || undefined,
-        })).reverse();
+        const entregas: EntregaEmpresa[] = empresaStageResponse
+          .map((stage) => ({
+            id: stage.EmpresaStage_id.toString(),
+            cajas: stage.EmpresaStage_container,
+            unidades: stage.EmpresaStage_units,
+            peso: stage.EmpresaStage_net_weight,
+            guardado: true, // Marked as saved because it comes from server
+            empresaId: stage.EmpresaStage_Empresa_id,
+            producto: stage.Product_name || undefined,
+            productoId: stage.Empresa_Product_id ?? undefined,
+          }))
+          .reverse();
         setEntregasList(entregas);
       }
 

@@ -19,14 +19,22 @@ interface ComparisonTotals {
   pesoNeto: number;
 }
 
+interface EmpresaProductTotal {
+  id: number | null;
+  nombre: string;
+  cajas: number;
+  unidades: number;
+  pesoNeto: number;
+}
+
 interface ReceptionHeaderProps {
   assignment: Assignment;
   totalesGlobales: {
     totalSolicitud: Totals;
     totalEmpresa: Totals;
-    totalEmpresaSinBono: Totals;
-    totalEmpresaBono: Totals;
+    totalEmpresaProductos: EmpresaProductTotal[];
     totalRecibido: Totals;
+    totalRecibidoProductos: EmpresaProductTotal[];
     comparativaEmpresaRecibido: ComparisonTotals;
   };
   onBack: () => void;
@@ -66,10 +74,47 @@ export default function ReceptionHeader({
   };
 
   const solicitud = totalesGlobales.totalSolicitud;
-  const empresa = totalesGlobales.totalEmpresa;
-  const empresaSinBono = totalesGlobales.totalEmpresaSinBono;
-  const empresaBono = totalesGlobales.totalEmpresaBono;
+  const isProductoEspecial = (producto: EmpresaProductTotal) =>
+    ["bono", "menudencia", "embutido", "embutidos"].includes(
+      producto.nombre.trim().toLowerCase(),
+    );
+  const empresaProductos =
+    totalesGlobales.totalEmpresaProductos.filter(isProductoEspecial);
   const recibido = totalesGlobales.totalRecibido;
+  const recibidoProductos =
+    totalesGlobales.totalRecibidoProductos.filter(isProductoEspecial);
+  const productosEspeciales = [
+    ...empresaProductos,
+    ...recibidoProductos,
+  ].filter(
+    (producto, index, productos) =>
+      productos.findIndex(
+        (item) =>
+          (item.id !== null && item.id === producto.id) ||
+          (item.id === null &&
+            producto.id === null &&
+            item.nombre.trim().toLowerCase() ===
+              producto.nombre.trim().toLowerCase()),
+      ) === index,
+  );
+  const getProductoTotal = (
+    productos: EmpresaProductTotal[],
+    producto: EmpresaProductTotal,
+  ) =>
+    productos.find(
+      (item) =>
+        (producto.id !== null && item.id === producto.id) ||
+        (producto.id === null &&
+          item.id === null &&
+          item.nombre.trim().toLowerCase() ===
+            producto.nombre.trim().toLowerCase()),
+    ) || {
+      id: producto.id,
+      nombre: producto.nombre,
+      cajas: 0,
+      unidades: 0,
+      pesoNeto: 0,
+    };
   const diferencia = totalesGlobales.comparativaEmpresaRecibido;
 
   return (
@@ -164,11 +209,6 @@ export default function ReceptionHeader({
                   Entrada de la empresa
                 </p>
               </div>
-              {((empresaBono.unidades || 0) > 0 || (empresaBono.cajas || 0) > 0 || (empresaBono.pesoNeto || 0) > 0) && (
-                <div className="text-[9px] font-bold text-amber-800 uppercase tracking-widest bg-amber-200/50 px-2 py-0.5 rounded mr-1">
-                  Bono
-                </div>
-              )}
             </div>
 
             <div className="space-y-3 flex-1">
@@ -176,47 +216,49 @@ export default function ReceptionHeader({
                 <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
                   Unidades
                 </span>
-                <div className="text-right flex items-center justify-end flex-wrap gap-1">
-                  <span className="text-sm font-bold text-amber-950">
-                    {formatNumber(empresa.unidades || 0)}
-                  </span>
-                  {(empresaBono.unidades || 0) > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
-                      +{formatNumber(empresaBono.unidades || 0)}
-                    </span>
-                  )}
-                </div>
+                <span className="text-sm font-bold text-amber-950">
+                  {formatNumber(totalesGlobales.totalEmpresa.unidades || 0)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
                   Cajas
                 </span>
-                <div className="text-right flex items-center justify-end flex-wrap gap-1">
-                  <span className="text-sm font-bold text-amber-950">
-                    {formatNumber(empresa.cajas || 0)}
-                  </span>
-                  {(empresaBono.cajas || 0) > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
-                      +{formatNumber(empresaBono.cajas || 0)}
-                    </span>
-                  )}
-                </div>
+                <span className="text-sm font-bold text-amber-950">
+                  {formatNumber(totalesGlobales.totalEmpresa.cajas || 0)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
                   Peso neto
                 </span>
-                <div className="text-right flex items-center justify-end flex-wrap gap-1">
-                  <span className="text-sm font-bold text-amber-950">
-                    {formatWeight(empresa.pesoNeto || 0)}
-                  </span>
-                  {(empresaBono.pesoNeto || 0) > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-200/60 text-amber-800">
-                      +{formatWeight(empresaBono.pesoNeto || 0)}
-                    </span>
-                  )}
-                </div>
+                <span className="text-sm font-bold text-amber-950">
+                  {formatWeight(totalesGlobales.totalEmpresa.pesoNeto || 0)}
+                </span>
               </div>
+
+              {productosEspeciales.length > 0 && (
+                <div className="mt-4 border-t border-amber-200/60 pt-3 space-y-3">
+                  {productosEspeciales.map((producto) => {
+                    const total = getProductoTotal(empresaProductos, producto);
+                    return (
+                      <div
+                        key={`empresa-${producto.id ?? producto.nombre}`}
+                        className="space-y-1.5 opacity-75"
+                      >
+                        <span className="text-[10px] font-semibold text-amber-800">
+                          {producto.nombre}
+                        </span>
+                        <div className="flex items-center justify-between text-[10px] text-amber-800/80">
+                          <span>{formatNumber(total.unidades)} unidades</span>
+                          <span>{formatNumber(total.cajas)} cajas</span>
+                          <span>{formatWeight(total.pesoNeto)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -257,6 +299,29 @@ export default function ReceptionHeader({
                   {formatWeight(recibido.pesoNeto || 0)}
                 </span>
               </div>
+
+              {productosEspeciales.length > 0 && (
+                <div className="mt-4 border-t border-violet-200/60 pt-3 space-y-3">
+                  {productosEspeciales.map((producto) => {
+                    const total = getProductoTotal(recibidoProductos, producto);
+                    return (
+                      <div
+                        key={`recibido-${producto.id ?? producto.nombre}`}
+                        className="space-y-1.5 opacity-75"
+                      >
+                        <span className="text-[10px] font-semibold text-violet-800">
+                          {producto.nombre}
+                        </span>
+                        <div className="flex items-center justify-between text-[10px] text-violet-800/80">
+                          <span>{formatNumber(total.unidades)} unidades</span>
+                          <span>{formatNumber(total.cajas)} cajas</span>
+                          <span>{formatWeight(total.pesoNeto)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -303,6 +368,61 @@ export default function ReceptionHeader({
                   {formatSignedWeight(diferencia.pesoNeto)}
                 </span>
               </div>
+
+              {productosEspeciales.length > 0 && (
+                <div className="mt-4 border-t border-slate-200/60 pt-3 space-y-3">
+                  {productosEspeciales.map((producto) => {
+                    const empresa = getProductoTotal(
+                      empresaProductos,
+                      producto,
+                    );
+                    const recibido = getProductoTotal(
+                      recibidoProductos,
+                      producto,
+                    );
+                    const diferenciaProducto = {
+                      cajas: recibido.cajas - empresa.cajas,
+                      unidades: recibido.unidades - empresa.unidades,
+                      pesoNeto: recibido.pesoNeto - empresa.pesoNeto,
+                    };
+
+                    return (
+                      <div
+                        key={`diferencia-${producto.id ?? producto.nombre}`}
+                        className="space-y-1.5 opacity-75"
+                      >
+                        <span className="text-[10px] font-semibold text-slate-700">
+                          {producto.nombre}
+                        </span>
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span
+                            className={getDifferenceColorClass(
+                              diferenciaProducto.unidades,
+                            )}
+                          >
+                            {formatSignedNumber(diferenciaProducto.unidades)}{" "}
+                            unidades
+                          </span>
+                          <span
+                            className={getDifferenceColorClass(
+                              diferenciaProducto.cajas,
+                            )}
+                          >
+                            {formatSignedNumber(diferenciaProducto.cajas)} cajas
+                          </span>
+                          <span
+                            className={getDifferenceColorClass(
+                              diferenciaProducto.pesoNeto,
+                            )}
+                          >
+                            {formatSignedWeight(diferenciaProducto.pesoNeto)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
