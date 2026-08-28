@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { DateField } from "@/components/ui/DateField";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/SelecMultipe";
@@ -18,6 +18,21 @@ const HistoryAssignmentFilters: React.FC<HistoryAssignmentFiltersProps> = ({
 }) => {
   const { filters, setFilters, showInventarioScreen } = useAssignmentsStore();
   const { providers, loading: isLoadingProviders } = useCategoryProvider();
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    onApplyFilters();
+  }, [
+    filters.fechaInicio,
+    filters.fechaFin,
+    filters.proveedor,
+    onApplyFilters,
+  ]);
 
   const providerOptions = useMemo(() => {
     return providers.map((p) => ({
@@ -73,18 +88,6 @@ const HistoryAssignmentFilters: React.FC<HistoryAssignmentFiltersProps> = ({
         />
       </div>
 
-      {/* Botón Filtrar */}
-      <div>
-        <Button
-          variant="primary"
-          color="primary"
-          size="sm"
-          onClick={onApplyFilters}
-          disabled={loading}
-        >
-          Filtrar
-        </Button>
-      </div>
       {/* Botón Inventario */}
       <div>
         <Button
