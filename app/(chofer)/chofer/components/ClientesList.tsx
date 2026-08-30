@@ -55,6 +55,7 @@ interface SolicitudAcciones {
   entregado: boolean;
   metodoCobro: string | null;
   montoCobro: string;
+  pagoConfirmado: boolean;
   canastosConfirmados: boolean;
   canastosDevueltos: Record<string, number>;
 }
@@ -155,6 +156,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
           entregado: false,
           metodoCobro: null,
           montoCobro: "",
+          pagoConfirmado: false,
           canastosConfirmados: s.requestStateInContainer > 0,
           canastosDevueltos: {},
         },
@@ -166,6 +168,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
     entregado: false,
     metodoCobro: null,
     montoCobro: "",
+    pagoConfirmado: false,
     canastosConfirmados: false,
     canastosDevueltos: {},
   };
@@ -203,7 +206,10 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
     setSavingPaymentId(solicitudId);
     try {
       await addPaymentType(Number(solicitudId), Number(acc.metodoCobro), monto);
-      update(solicitudId, { montoCobro: monto.toFixed(2) });
+      update(solicitudId, {
+        montoCobro: monto.toFixed(2),
+        pagoConfirmado: true,
+      });
     } catch {
       alert("No se pudo registrar el tipo de pago");
     } finally {
@@ -294,6 +300,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
           entregado: false,
           metodoCobro: null,
           montoCobro: "",
+          pagoConfirmado: false,
           canastosConfirmados: sol.requestStateInContainer > 0,
           canastosDevueltos: {},
         };
@@ -301,6 +308,10 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         const metodoLabel =
           metodosCobroOptions.find((o) => o.value === acc.metodoCobro)?.label ??
           null;
+        const pagoConfirmado =
+          acc.pagoConfirmado ||
+          sol.paymentTypeName === "Efectivo" ||
+          sol.paymentTypeName === "Qr";
         const displayStateName =
           acc.entregado || sol.requestStateName === "ENTREGADO"
             ? "ENTREGADO"
@@ -432,24 +443,12 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
 
                   {/* Paso 2 – Cobrar */}
                   <div className="flex items-center gap-3">
-                    <StepCircle
-                      done={
-                        !!acc.metodoCobro ||
-                        sol.paymentTypeName === "Efectivo" ||
-                        sol.paymentTypeName === "Qr"
-                      }
-                      step={2}
-                    />
-                    {acc.metodoCobro ||
-                    sol.paymentTypeName === "Efectivo" ||
-                    sol.paymentTypeName === "Qr" ? (
-                      <button
-                        onClick={() => update(sol.id, { metodoCobro: null })}
-                        className="flex-1 h-11 bg-green-500 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-green-600 transition-colors"
-                      >
+                    <StepCircle done={pagoConfirmado} step={2} />
+                    {pagoConfirmado ? (
+                      <div className="flex-1 h-11 bg-green-500 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
                         <CheckIcon />
                         Pagado ({metodoLabel ?? sol.paymentTypeName})
-                      </button>
+                      </div>
                     ) : (
                       <div className="flex-1 space-y-2">
                         <Select
@@ -461,6 +460,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
                             update(sol.id, {
                               metodoCobro: opt.value,
                               montoCobro: sol.totalACobrar.toFixed(2),
+                              pagoConfirmado: false,
                             });
                           }}
                           placeholder="Seleccionar método de cobro..."
