@@ -10,6 +10,7 @@ import {
 } from "./hooks/useGetSolicitudesChofer";
 import { useClients } from "@/app/(operador)/configuraciones/hooks/clientes/useClients";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { GetRequestPaymentTypeByRequestId } from "./service/getrequestpaymenttypebyrequestid";
 
 const MapaChofer = dynamic(() => import("./components/MapaChofer"), {
   ssr: false,
@@ -99,6 +100,80 @@ export default function ChoferPage() {
   const { data, loading, error, filters, updateFilter } =
     useGetSolicitudesChofer();
   const { rawData: clientesRaw } = useClients();
+  const [paymentSummary, setPaymentSummary] = React.useState({
+    qr: 0,
+    efectivo: 0,
+    deuda: 0,
+    noPagados: 0,
+  });
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const calcularTotales = async () => {
+      if (!data.length) {
+        if (isMounted) {
+          setPaymentSummary({ qr: 0, efectivo: 0, deuda: 0, noPagados: 0 });
+        }
+        return;
+      }
+
+      const resultados = await Promise.allSettled(
+        data.map((solicitud) =>
+          GetRequestPaymentTypeByRequestId(solicitud.Request_id),
+        ),
+      );
+
+      if (!isMounted) return;
+
+      let totalQR = 0;
+      let totalEfectivo = 0;
+      let totalDeuda = 0;
+
+      for (const resultado of resultados) {
+        if (resultado.status !== "fulfilled") continue;
+
+        const pagos = resultado.value?.data ?? [];
+        const activos = pagos.filter(
+          (p) => p.RequestPaymentType_active === "true",
+        );
+
+        totalQR += activos
+          .filter((p) => p.PaymentType_name === "Qr")
+          .reduce(
+            (sum, p) => sum + Number(p.RequestPaymentType_amount ?? 0),
+            0,
+          );
+
+        totalEfectivo += activos
+          .filter((p) => p.PaymentType_name === "Efectivo")
+          .reduce(
+            (sum, p) => sum + Number(p.RequestPaymentType_amount ?? 0),
+            0,
+          );
+
+        totalDeuda += activos
+          .filter((p) => p.PaymentType_name === "Deuda")
+          .reduce(
+            (sum, p) => sum + Number(p.RequestPaymentType_amount ?? 0),
+            0,
+          );
+      }
+
+      setPaymentSummary({
+        qr: totalQR,
+        efectivo: totalEfectivo,
+        deuda: totalDeuda,
+        noPagados: 0,
+      });
+    };
+
+    calcularTotales();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [data]);
 
   const solicitudes = mapToSolicitudes(data);
   const totalACobrar = data.reduce((sum, r) => sum + r.RequestStage_payment, 0);
@@ -164,13 +239,9 @@ export default function ChoferPage() {
     (r) => r.PaymentType_name && r.PaymentType_name !== "No Pagado",
   ).length;
 
-  const totalQR = data
-    .filter((r) => r.PaymentType_name?.toLowerCase().includes("qr"))
-    .reduce((sum, r) => sum + r.RequestStage_payment, 0);
-
-  const totalEfectivo = data
-    .filter((r) => r.PaymentType_name?.toLowerCase().includes("efectivo"))
-    .reduce((sum, r) => sum + r.RequestStage_payment, 0);
+  const totalQR = paymentSummary.qr;
+  const totalEfectivo = paymentSummary.efectivo;
+  const totalDeudas = paymentSummary.deuda;
 
   const totalCajasEnviadas = data.reduce(
     (sum, r) => sum + (r.RequestState_in_container ?? 0),
@@ -390,6 +461,14 @@ export default function ChoferPage() {
                           </span>
                           <span className="text-sm font-semibold text-green-600">
                             Bs {totalEfectivo.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">
+                            Total Deudas
+                          </span>
+                          <span className="text-sm font-semibold text-orange-600">
+                            Bs {totalDeudas.toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-t border-b">
