@@ -74,19 +74,10 @@ export default function ReceptionHeader({
   };
 
   const solicitud = totalesGlobales.totalSolicitud;
-  const isProductoEspecial = (producto: EmpresaProductTotal) =>
-    ["bono", "menudencia", "embutido", "embutidos"].includes(
-      producto.nombre.trim().toLowerCase(),
-    );
-  const empresaProductos =
-    totalesGlobales.totalEmpresaProductos.filter(isProductoEspecial);
+  const empresaProductos = totalesGlobales.totalEmpresaProductos;
   const recibido = totalesGlobales.totalRecibido;
-  const recibidoProductos =
-    totalesGlobales.totalRecibidoProductos.filter(isProductoEspecial);
-  const productosEspeciales = [
-    ...empresaProductos,
-    ...recibidoProductos,
-  ].filter(
+  const recibidoProductos = totalesGlobales.totalRecibidoProductos;
+  const productosDetalle = [...empresaProductos, ...recibidoProductos].filter(
     (producto, index, productos) =>
       productos.findIndex(
         (item) =>
@@ -237,9 +228,9 @@ export default function ReceptionHeader({
                 </span>
               </div>
 
-              {productosEspeciales.length > 0 && (
+              {productosDetalle.length > 0 && (
                 <div className="mt-4 border-t border-amber-200/60 pt-3 space-y-3">
-                  {productosEspeciales.map((producto) => {
+                  {productosDetalle.map((producto) => {
                     const total = getProductoTotal(empresaProductos, producto);
                     return (
                       <div
@@ -300,9 +291,9 @@ export default function ReceptionHeader({
                 </span>
               </div>
 
-              {productosEspeciales.length > 0 && (
+              {productosDetalle.length > 0 && (
                 <div className="mt-4 border-t border-violet-200/60 pt-3 space-y-3">
-                  {productosEspeciales.map((producto) => {
+                  {productosDetalle.map((producto) => {
                     const total = getProductoTotal(recibidoProductos, producto);
                     return (
                       <div
@@ -369,9 +360,9 @@ export default function ReceptionHeader({
                 </span>
               </div>
 
-              {productosEspeciales.length > 0 && (
+              {productosDetalle.length > 0 && (
                 <div className="mt-4 border-t border-slate-200/60 pt-3 space-y-3">
-                  {productosEspeciales.map((producto) => {
+                  {productosDetalle.map((producto) => {
                     const empresa = getProductoTotal(
                       empresaProductos,
                       producto,

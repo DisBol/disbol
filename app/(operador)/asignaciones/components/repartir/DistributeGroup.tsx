@@ -375,7 +375,7 @@ export default function DistributeGroup({
       );
       const resultRS = await updateRequestStage(
         clientes[clienteIdx].RequestStage_id ?? 0, // id del RequestStage
-        1, // position
+        2, // position
         0, // in_container
         0, // out_container
         totalUnits, // units = total de todos los productos
@@ -1007,7 +1007,9 @@ export default function DistributeGroup({
                               cajas={code.cajas}
                               unidades={code.unidades}
                               readOnly={true}
-                              showPrecio={precioDiferidoCliente[clienteIdx] || false}
+                              showPrecio={
+                                precioDiferidoCliente[clienteIdx] || false
+                              }
                               precio={preciosMap[`${clienteIdx}-${idx}`] || ""}
                               onPrecioChange={
                                 readOnly

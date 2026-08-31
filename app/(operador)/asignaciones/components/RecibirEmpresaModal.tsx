@@ -38,11 +38,6 @@ interface RecibirEmpresaModalProps {
   productos?: { codigo: string; productId?: string | number }[];
 }
 
-const isSpecialEmpresaProduct = (codigo: string) =>
-  ["bono", "menudencia", "embutido", "embutidos"].includes(
-    codigo.trim().toLowerCase(),
-  );
-
 export default function RecibirEmpresaModal({
   isOpen,
   onClose,
@@ -72,11 +67,7 @@ export default function RecibirEmpresaModal({
 
   const totalPages = Math.ceil(entregasList.length / itemsPerPage) || 1;
 
-  const productosEspeciales = useMemo(
-    () =>
-      productos.filter((producto) => isSpecialEmpresaProduct(producto.codigo)),
-    [productos],
-  );
+  const productosDisponibles = useMemo(() => productos, [productos]);
 
   const paginatedEntregas = useMemo(
     () =>
@@ -317,13 +308,16 @@ export default function RecibirEmpresaModal({
                 Producto
               </span>
               <Select
-                options={productosEspeciales.map((p) => ({
-                  value: p.codigo,
-                  label: p.codigo,
-                }))}
+                options={[
+                  { value: "", label: "Vacío" },
+                  ...productosDisponibles.map((p) => ({
+                    value: p.codigo,
+                    label: p.codigo,
+                  })),
+                ]}
                 selectedValues={productoInput ? [productoInput] : []}
                 onSelect={(opt) => setProductoInput(opt.value)}
-                placeholder="Seleccionar..."
+                placeholder="Vacío"
                 size="sm"
                 className="w-full h-8"
                 usePortal={false}

@@ -179,12 +179,10 @@ export default function ReceptionScreen({
     // 1. Total Solicitud (desde assignment)
     const totalSolicitud = productos.reduce(
       (acc, p) => {
-        if (p.codigo.toUpperCase() !== "BONO") {
-          acc.cajas += Number(p.cajas) || 0;
-          acc.unidades += Number(p.unidades) || 0;
-          acc.pesoBruto += Number(p.kgBruto) || 0;
-          acc.pesoNeto += Number(p.kgNeto) || 0;
-        }
+        acc.cajas += Number(p.cajas) || 0;
+        acc.unidades += Number(p.unidades) || 0;
+        acc.pesoBruto += Number(p.kgBruto) || 0;
+        acc.pesoNeto += Number(p.kgNeto) || 0;
         return acc;
       },
       { cajas: 0, unidades: 0, pesoBruto: 0, pesoNeto: 0, destare: 0 },
@@ -220,19 +218,14 @@ export default function ReceptionScreen({
     });
 
     const totalEmpresaProductos = Array.from(empresaProductosMap.values());
-    const totalEmpresa = totalEmpresaProductos
-      .filter((producto) => {
-        const nombre = producto.nombre.trim().toLowerCase();
-        return !["bono", "menudencia", "embutido"].includes(nombre);
-      })
-      .reduce(
-        (acc, producto) => ({
-          cajas: acc.cajas + producto.cajas,
-          unidades: acc.unidades + producto.unidades,
-          pesoNeto: acc.pesoNeto + producto.pesoNeto,
-        }),
-        { cajas: 0, unidades: 0, pesoNeto: 0 },
-      );
+    const totalEmpresa = totalEmpresaProductos.reduce(
+      (acc, producto) => ({
+        cajas: acc.cajas + producto.cajas,
+        unidades: acc.unidades + producto.unidades,
+        pesoNeto: acc.pesoNeto + producto.pesoNeto,
+      }),
+      { cajas: 0, unidades: 0, pesoNeto: 0 },
+    );
 
     // 3. Total Recibido (desde recibidosPorCodigo)
     const recibidoProductosMap = new Map<
@@ -265,21 +258,14 @@ export default function ReceptionScreen({
     });
 
     const totalRecibidoProductos = Array.from(recibidoProductosMap.values());
-    const totalRecibidoPrincipal = totalRecibidoProductos
-      .filter((producto) => {
-        const nombre = producto.nombre.trim().toLowerCase();
-        return !["bono", "menudencia", "embutido", "embutidos"].includes(
-          nombre,
-        );
-      })
-      .reduce(
-        (acc, producto) => ({
-          cajas: acc.cajas + producto.cajas,
-          unidades: acc.unidades + producto.unidades,
-          pesoNeto: acc.pesoNeto + producto.pesoNeto,
-        }),
-        { cajas: 0, unidades: 0, pesoNeto: 0 },
-      );
+    const totalRecibidoPrincipal = totalRecibidoProductos.reduce(
+      (acc, producto) => ({
+        cajas: acc.cajas + producto.cajas,
+        unidades: acc.unidades + producto.unidades,
+        pesoNeto: acc.pesoNeto + producto.pesoNeto,
+      }),
+      { cajas: 0, unidades: 0, pesoNeto: 0 },
+    );
 
     const comparativaEmpresaRecibido = {
       cajas: totalRecibidoPrincipal.cajas - totalEmpresa.cajas,
