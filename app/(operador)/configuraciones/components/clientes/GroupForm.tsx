@@ -130,10 +130,10 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
   return (
     <div
       ref={formRef}
-      className="bg-gray-50 border border-gray-200 rounded-lg p-6 animate-in slide-in-from-top"
+      className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 sm:p-5 md:p-6 animate-in slide-in-from-top"
     >
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
           <InputField
             label="Nombre del Grupo *"
             value={formData.nombre}
@@ -147,8 +147,8 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
               <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pl-0.5 mb-2 block">
                 Ruta *
               </label>
-              <div className="h-11 bg-gray-100 animate-pulse rounded-md flex items-center px-3">
-                <span className="text-gray-500 text-sm">Cargando rutas...</span>
+              <div className="h-10 bg-gray-100 animate-pulse rounded-md flex items-center px-3">
+                <span className="text-gray-500 text-xs sm:text-sm">Cargando rutas...</span>
               </div>
             </div>
           ) : geofencesError ? (
@@ -193,20 +193,21 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
 
         {/* Error de guardado */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
-            <p className="text-sm text-red-600">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 sm:mb-6">
+            <p className="text-xs sm:text-sm text-red-600">
               Error al guardar: {error.message}
             </p>
           </div>
         )}
 
         {/* Botones de acción */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:justify-end">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end">
           <Button
             variant="outline"
             size="sm"
             onClick={onCancel}
             disabled={loading}
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
             Cancelar
           </Button>
@@ -219,6 +220,7 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
               loading || !formData.nombre.trim() || !formData.idCerca.trim()
             }
             loading={loading}
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
             {loading
               ? "Guardando..."

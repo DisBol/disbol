@@ -15,19 +15,18 @@ export function ClientHeader() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-lg font-bold">Clientes</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base sm:text-lg font-bold text-gray-900">Clientes</h2>
 
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button
-            variant="danger"
-            size="sm"
-            leftIcon={<RoundPlusIcon className="h-4 w-4" />}
-            onClick={() => setIsFormOpen(true)}
-          >
-            Nuevo Cliente
-          </Button>
-        </div>
+        <Button
+          variant="danger"
+          size="sm"
+          leftIcon={<RoundPlusIcon className="h-4 w-4 shrink-0" />}
+          onClick={() => setIsFormOpen(true)}
+          className="text-xs sm:text-sm shrink-0"
+        >
+          Nuevo Cliente
+        </Button>
       </div>
 
       {/* Modal de Cliente */}

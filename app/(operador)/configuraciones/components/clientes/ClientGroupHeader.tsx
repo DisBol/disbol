@@ -66,21 +66,22 @@ export function ClientGroupHeader({
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-lg font-bold">
-          {isClientTab ? "Clientes" : "Grupos"}
-        </h2>
-
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button
-            variant="danger"
-            size="sm"
-            leftIcon={<RoundPlusIcon className="h-4 w-4" />}
-            onClick={handleNewClick}
-          >
-            {isClientTab ? "Nuevo Cliente" : "Nuevo Grupo"}
-          </Button>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-gray-900">
+            {isClientTab ? "Clientes" : "Grupos"}
+          </h2>
         </div>
+
+        <Button
+          variant="danger"
+          size="sm"
+          leftIcon={<RoundPlusIcon className="h-4 w-4 shrink-0" />}
+          onClick={handleNewClick}
+          className="text-xs sm:text-sm shrink-0 whitespace-nowrap"
+        >
+          {isClientTab ? "Nuevo Cliente" : "Nuevo Grupo"}
+        </Button>
       </div>
 
       {/* Modal de Cliente */}

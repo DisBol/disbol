@@ -75,12 +75,14 @@ export const MapSelector: React.FC<MapSelectorProps> = ({
       </MapContainer>
 
       {/* Información de coordenadas */}
-      <div className="bg-gray-50 px-3 py-2 text-xs text-gray-600 border-t">
-        <span className="font-medium">Coordenadas:</span>
-        <span className="ml-2">Lat: {lat.toFixed(6)}</span>
-        <span className="ml-3">Lng: {lng.toFixed(6)}</span>
-        <span className="ml-3 text-gray-500">
-          • Haga clic en el mapa para cambiar la ubicación
+      <div className="bg-gray-50 px-2.5 sm:px-3 py-2 text-[11px] sm:text-xs text-gray-600 border-t flex flex-wrap items-center justify-between gap-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-gray-700">Coords:</span>
+          <span>Lat: {lat.toFixed(5)}</span>
+          <span>Lng: {lng.toFixed(5)}</span>
+        </div>
+        <span className="text-gray-400 text-[10px] sm:text-[11px]">
+          • Toque el mapa para ubicar
         </span>
       </div>
     </div>

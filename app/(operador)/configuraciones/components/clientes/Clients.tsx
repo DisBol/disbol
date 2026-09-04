@@ -50,12 +50,12 @@ export default function Clients() {
   };
 
   return (
-    <Card className="p-6">
+    <Card className="p-3 sm:p-5 md:p-6">
       <Tabs
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as TabType)}
       >
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <ClientTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
           <TabsContent value="clientes" animation="fade">
@@ -63,7 +63,7 @@ export default function Clients() {
               activeTab="clientes"
               onClientSaved={handleClientSaved}
             />
-            <div className="mt-6">
+            <div className="mt-4 sm:mt-6">
               <ClientTable
                 key={refreshClients}
                 onClientUpdated={handleClientSaved}
@@ -78,7 +78,7 @@ export default function Clients() {
               editingGroup={editingGroup}
               onGroupEdit={handleGroupEditCancel}
             />
-            <div className="mt-6">
+            <div className="mt-4 sm:mt-6">
               <GroupTable
                 key={refreshGroups}
                 onEdit={handleGroupEdit}

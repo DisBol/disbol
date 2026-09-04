@@ -207,16 +207,19 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
       title={isEditing ? "Editar Cliente" : "Nuevo Cliente"}
       size="lg"
     >
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-          <InputField
-            label="Nombre del Cliente"
-            value={formData.name}
-            onChange={handleInputChange("name")}
-            placeholder="Ingrese el nombre del cliente"
-            error={errors.name}
-          />
-          <div className="space-y-2">
+      <div className="space-y-3.5 sm:space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="sm:col-span-2">
+            <InputField
+              label="Nombre del Cliente *"
+              value={formData.name}
+              onChange={handleInputChange("name")}
+              placeholder="Ingrese el nombre del cliente"
+              error={errors.name}
+            />
+          </div>
+
+          <div className="space-y-1.5 sm:space-y-2">
             <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer pl-0.5">
               Grupo / Ruta *
             </label>
@@ -231,10 +234,11 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
               disabled={groupsLoading}
             />
             {errors.clientGroupId && (
-              <p className="text-sm text-red-600">{errors.clientGroupId}</p>
+              <p className="text-xs sm:text-sm text-red-600">{errors.clientGroupId}</p>
             )}
           </div>
-          <div className="space-y-2">
+
+          <div className="space-y-1.5 sm:space-y-2">
             <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer pl-0.5">
               Tipo de Cliente *
             </label>
@@ -247,56 +251,61 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
               disabled={typesLoading}
             />
             {errors.clientTypeId && (
-              <p className="text-sm text-red-600">{errors.clientTypeId}</p>
+              <p className="text-xs sm:text-sm text-red-600">{errors.clientTypeId}</p>
             )}
+          </div>
+
+          <div>
+            <InputField
+              label="Documento"
+              value={formData.document}
+              onChange={handleInputChange("document")}
+              placeholder="Ej: 100000"
+              error={errors.document}
+            />
+          </div>
+
+          <div>
+            <InputField
+              label="Teléfono"
+              value={formData.phone}
+              onChange={handleInputChange("phone")}
+              placeholder="Ej: 70404040"
+              error={errors.phone}
+            />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-          <InputField
-            label="Documento"
-            value={formData.document}
-            onChange={handleInputChange("document")}
-            placeholder="Ej: 100000"
-            error={errors.document}
-          />
-
-          <InputField
-            label="Teléfono"
-            value={formData.phone}
-            onChange={handleInputChange("phone")}
-            placeholder="Ej: 70404040"
-            error={errors.phone}
-          />
-        </div>
-
         {/* Sección del mapa */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Ubicación</label>
+        <div className="space-y-1.5 sm:space-y-2 pt-1">
+          <label className="text-xs sm:text-sm font-semibold text-gray-700">
+            Ubicación en Mapa
+          </label>
           <MapSelector
             lat={formData.lat}
             lng={formData.lng}
             onLocationChange={handleLocationChange}
-            height={256}
+            height={220}
           />
         </div>
 
         {/* Error de guardado */}
         {saveError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-600">
+            <p className="text-xs sm:text-sm text-red-600">
               Error al guardar: {saveError.message}
             </p>
           </div>
         )}
 
         {/* Botones de acción */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:justify-end pt-4 border-t border-gray-200">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end pt-3 sm:pt-4 border-t border-gray-200">
           <Button
             variant="outline"
             size="sm"
             onClick={handleCancel}
             disabled={saving}
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
             Cancelar
           </Button>
@@ -307,6 +316,7 @@ const ClientForm: React.FC<ClientFormModalProps> = ({
             onClick={handleSave}
             disabled={saving || !formData.name.trim()}
             loading={saving}
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
             {saving
               ? `${isEditing ? "Actualizando" : "Guardando"}...`

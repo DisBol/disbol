@@ -35,25 +35,25 @@ export function Modal({
 
         <Dialog.Content
           className={`
-            fixed left-[50%] top-[50%] z-50 flex flex-col w-[calc(100vw-2rem)] ${sizeClasses[size]} 
-            max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)]
+            fixed left-[50%] top-[50%] z-50 flex flex-col w-[calc(100vw-1.5rem)] sm:w-[calc(100vw-2rem)] ${sizeClasses[size]} 
+            max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-4rem)]
             translate-x-[-50%] translate-y-[-50%] bg-white p-0 shadow-lg 
             duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out 
             data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 
             data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 
             data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] 
             data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] 
-            rounded-lg 
+            rounded-xl 
           `}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex-none flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              <Dialog.Title className="text-lg font-semibold text-gray-900">
+            <div className="flex-none flex items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
+              <Dialog.Title className="text-base sm:text-lg font-semibold text-gray-900">
                 {title}
               </Dialog.Title>
               {showCloseButton && (
-                <Dialog.Close className="rounded-md p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors">
+                <Dialog.Close className="rounded-md p-1.5 sm:p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors">
                   <CloseRoundedIcon className="h-5 w-5" />
                 </Dialog.Close>
               )}
@@ -61,7 +61,7 @@ export function Modal({
           )}
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
+          <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

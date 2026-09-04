@@ -27,25 +27,27 @@ export default function Configuracion() {
 
   return (
     <RouteProtection requiredTransaction="Configuracion">
-      <div className="bg-gray-50 p-3 md:p-6">
+      <div className="bg-gray-50 p-2.5 sm:p-4 md:p-6 min-h-[calc(100vh-4rem)]">
         <Tabs defaultValue="proveedores">
-          <TabsList
-            variant="solid"
-            className="w-full md:w-auto flex-wrap md:flex-nowrap justify-start md:justify-center"
-          >
-            {tabsConfig.map((tab) => (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                variant="solid"
-                size="md"
-                className="gap-2 flex-1 md:flex-none min-w-max"
-              >
-                <tab.icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+            <TabsList
+              variant="solid"
+              className="inline-flex w-max min-w-full sm:min-w-0 sm:w-auto flex-nowrap justify-start sm:justify-center gap-1 p-1"
+            >
+              {tabsConfig.map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  variant="solid"
+                  size="md"
+                  className="gap-1.5 sm:gap-2 shrink-0 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium"
+                >
+                  <tab.icon className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-nowrap">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           <TabsContent value="proveedores" animation="slide">
             <Providers />
