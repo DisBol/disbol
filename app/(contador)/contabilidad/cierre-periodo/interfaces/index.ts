@@ -36,3 +36,15 @@ export interface ValidacionResponse {
   mensaje: string;
   errores?: string[];
 }
+
+export * from "./getaccountingperiod.interface";
+export type {
+  AddAccountingPeriodPayload,
+  AddAccountingPeriodResponse,
+  AddAccountingPeriodData,
+} from "./addaccountingperiod.interface";
+export type {
+  UpdateAccountingPeriodPayload,
+  UpdateAccountingPeriodResponse,
+  UpdateAccountingPeriodData,
+} from "./updateaccountingperiod.interface";

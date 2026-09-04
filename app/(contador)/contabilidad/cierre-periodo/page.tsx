@@ -90,7 +90,10 @@ export default function CierrePeriodoPage() {
         )}
 
         {/* Selector de período */}
-        <SelectorPeriodo onValidar={handleValidar} />
+        <SelectorPeriodo
+          onValidar={handleValidar}
+          onPeriodAdded={() => setRefreshKey((prev) => prev + 1)}
+        />
 
         {/* Historial de cierres */}
         <HistorialCierres
