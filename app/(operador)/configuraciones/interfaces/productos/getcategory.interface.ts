@@ -12,8 +12,11 @@ export interface CategoryResponse {
 
 export interface CategoryData {
   id: number;
-  name: string;
+  name_0: string;
   active: string;
   created_at: string;
   updated_at: string;
+  CategoryUnit_id: string;
+  unit: string;
+  name: string;
 }

@@ -41,6 +41,8 @@ export interface CardCodeProps
   label: React.ReactNode;
   cajas: string | number;
   unidades: string | number;
+  cajasLabel?: string;
+  unidadesLabel?: string;
   onCajasChange?: (val: string) => void;
   onUnidadesChange?: (val: string) => void;
   // Optional productName for autocomplete rules
@@ -114,6 +116,8 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
       label,
       cajas,
       unidades,
+      cajasLabel,
+      unidadesLabel,
       onCajasChange,
       onUnidadesChange,
       productName,
@@ -361,7 +365,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
         <div className="space-y-1.5 flex-1">
           <div>
             <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-              CAJAS
+              {cajasLabel || "CAJAS"}
             </label>
             {readOnly || topReadOnly ? (
               compareReadOnly ? (
@@ -431,7 +435,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
 
           <div>
             <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-              UNID.
+              {unidadesLabel || "UNID."}
             </label>
             {readOnly || topReadOnly ? (
               compareReadOnly ? (

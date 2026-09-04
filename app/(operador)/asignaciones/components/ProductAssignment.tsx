@@ -9,6 +9,7 @@ import { InputField } from "@/components/ui/InputField";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useCategoryProvider } from "../../configuraciones/hooks/proveedores/useCategoryprovider";
 import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
+import { useCategory } from "../../configuraciones/hooks/proveedores/useCategory";
 import {
   useAddAssignment,
   useAddAssignmentStage,
@@ -39,6 +40,7 @@ export default function ProductAssignment({
   const [precio, setPrecio] = useState("");
   const [precioDiferido, setPrecioDiferido] = useState(false);
   const { categories: categoriesWithProducts } = useProductsByCategory();
+  const { rawData: categoriesData } = useCategory();
 
   // Hooks para las operaciones de asignación
   const { addAssignment, loading: loadingAssignment } = useAddAssignment();
@@ -80,16 +82,56 @@ export default function ProductAssignment({
     }));
   }, [proveedor, providers]);
 
+  // Obtener la categoría seleccionada de productsByCategory
+  const selectedCategory = useMemo(() => {
+    if (!grupo) return null;
+    return categoriesWithProducts.find((c) => c.id.toString() === grupo);
+  }, [grupo, categoriesWithProducts]);
+
+  // Obtener el nombre del grupo seleccionado desde groupOptions
+  const selectedGroupName = useMemo(() => {
+    if (!grupo || !groupOptions) return "";
+    const found = groupOptions.find((g) => g.value === grupo);
+    return found?.label || "";
+  }, [grupo, groupOptions]);
+
+  // Buscar información de unidad y contenedor (cajas/empaque/maple)
+  const categoryInfo = useMemo(() => {
+    if (!categoriesData) return null;
+
+    // 1. Buscar por ID de categoría
+    const byId = categoriesData.find((c) => c.id.toString() === grupo);
+    if (byId) return byId;
+
+    // 2. Buscar por nombre del grupo seleccionado
+    if (selectedGroupName) {
+      const byGroupName = categoriesData.find(
+        (c) =>
+          c.name_0 &&
+          c.name_0.trim().toLowerCase() === selectedGroupName.trim().toLowerCase(),
+      );
+      if (byGroupName) return byGroupName;
+    }
+
+    // 3. Buscar por nombre de selectedCategory
+    if (selectedCategory?.name) {
+      const byCategoryName = categoriesData.find(
+        (c) =>
+          c.name_0 &&
+          c.name_0.trim().toLowerCase() ===
+            selectedCategory.name.trim().toLowerCase(),
+      );
+      if (byCategoryName) return byCategoryName;
+    }
+
+    return null;
+  }, [grupo, categoriesData, selectedGroupName, selectedCategory]);
+
   // Obtiene los productos disponibles según el Grupo seleccionado
   const availableProducts = useMemo(() => {
-    if (!grupo) return [];
-
-    const selectedCategory = categoriesWithProducts.find(
-      (c) => c.id.toString() === grupo,
-    );
-
-    return selectedCategory ? selectedCategory.products : [];
-  }, [grupo, categoriesWithProducts]);
+    if (!selectedCategory) return [];
+    return selectedCategory.products || [];
+  }, [selectedCategory]);
 
   const [productosData, setProductosData] = useState<ProductsData>({});
 
@@ -353,6 +395,8 @@ export default function ProductAssignment({
                     <CardCode
                       key={producto.id}
                       label={producto.name}
+                      cajasLabel={categoryInfo?.name}
+                      unidadesLabel={categoryInfo?.unit}
                       cajas={state.cajas}
                       unidades={state.unidades}
                       onCajasChange={(val) =>

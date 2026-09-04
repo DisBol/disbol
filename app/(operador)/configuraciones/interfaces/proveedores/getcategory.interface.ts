@@ -5,10 +5,13 @@ export interface CategoryResponse {
 
 export interface Datum {
     id:         number;
-    name:       string;
+    name_0:     string;
     active:     string;
     created_at: Date;
     updated_at: Date;
+    CategoryUnit_id: string;
+    unit:       string;
+    name:       string;
 }
 
 export interface Metadata {
