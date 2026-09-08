@@ -14,6 +14,8 @@ interface EditableProductCardProps {
   ) => void;
   onDelete: (productCode: string) => void;
   isUpdating?: boolean;
+  cajasLabel?: string;
+  unidadesLabel?: string;
 }
 
 const EditableProductCard: React.FC<EditableProductCardProps> = ({
@@ -22,7 +24,14 @@ const EditableProductCard: React.FC<EditableProductCardProps> = ({
   onLocalChange,
   onDelete,
   isUpdating = false,
+  cajasLabel,
+  unidadesLabel,
 }) => {
+  const effectiveCajasLabel =
+    cajasLabel || product.CategoryUnit_name || product.categoryUnitName;
+  const effectiveUnidadesLabel =
+    unidadesLabel || product.CategoryUnit_unit || product.categoryUnitUnit;
+
   // Estado local para valores editables
   const [localValues, setLocalValues] = useState({
     cajas: product.cajas.toString(),
@@ -67,6 +76,8 @@ const EditableProductCard: React.FC<EditableProductCardProps> = ({
           label={`Código ${product.codigo}`}
           cajas={localValues.cajas}
           unidades={localValues.unidades}
+          cajasLabel={effectiveCajasLabel}
+          unidadesLabel={effectiveUnidadesLabel}
           onCajasChange={
             isEditing ? (value) => handleFieldChange("cajas", value) : undefined
           }

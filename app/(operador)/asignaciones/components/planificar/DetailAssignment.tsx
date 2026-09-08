@@ -5,12 +5,18 @@ import CardCode from "@/components/ui/CardCode";
 interface DetailAssignmentProps {
   proveedor?: string;
   clienteOrigen?: string;
+  cajasLabel?: string;
+  unidadesLabel?: string;
   detalles: Array<{
     label: string;
     cajas: string;
     unidades: string;
     cajasExcedidas?: boolean;
     unidadesExcedidas?: boolean;
+    cajasLabel?: string;
+    unidadesLabel?: string;
+    CategoryUnit_name?: string;
+    CategoryUnit_unit?: string;
   }>;
   isPlanificar?: string;
   isFinalizando?: boolean;
@@ -23,6 +29,8 @@ interface DetailAssignmentProps {
 export default function DetailAssignment({
   proveedor = "SOFIA",
   clienteOrigen = "Pollería El Rey",
+  cajasLabel,
+  unidadesLabel,
   detalles,
   isPlanificar,
   isFinalizando,
@@ -131,6 +139,8 @@ export default function DetailAssignment({
                       label={d.label}
                       cajas={cajas.recibido}
                       unidades={unidades.recibido}
+                      cajasLabel={d.cajasLabel || d.CategoryUnit_name || cajasLabel}
+                      unidadesLabel={d.unidadesLabel || d.CategoryUnit_unit || unidadesLabel}
                       cajasExcedidas={d.cajasExcedidas}
                       unidadesExcedidas={d.unidadesExcedidas}
                       readOnly={true}
@@ -156,7 +166,7 @@ export default function DetailAssignment({
                       <div className="flex items-center justify-center gap-2">
                         <div className="flex flex-col items-center">
                           <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">
-                            Caj.
+                            {d.cajasLabel || d.CategoryUnit_name || cajasLabel || "Caj."}
                           </span>
                           <span
                             className={`text-[13px] font-black leading-none tabular-nums ${
@@ -175,7 +185,7 @@ export default function DetailAssignment({
                         <div className="w-px h-5 bg-gray-200" />
                         <div className="flex flex-col items-center">
                           <span className="text-[7px] font-medium text-gray-400 uppercase leading-none mb-0.5">
-                            Unid.
+                            {d.unidadesLabel || d.CategoryUnit_unit || unidadesLabel || "Unid."}
                           </span>
                           <span
                             className={`text-[13px] font-black leading-none tabular-nums ${

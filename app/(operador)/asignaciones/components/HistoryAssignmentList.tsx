@@ -357,6 +357,18 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                     <EditableProductCard
                       key={producto.codigo}
                       product={producto}
+                      cajasLabel={
+                        assignment.CategoryUnit_name ||
+                        assignment.categoryUnitName ||
+                        producto.CategoryUnit_name ||
+                        producto.categoryUnitName
+                      }
+                      unidadesLabel={
+                        assignment.CategoryUnit_unit ||
+                        assignment.categoryUnitUnit ||
+                        producto.CategoryUnit_unit ||
+                        producto.categoryUnitUnit
+                      }
                       isEditing={isEditing}
                       isUpdating={isUpdating}
                       onLocalChange={(productCode, updates) =>

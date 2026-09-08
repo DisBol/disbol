@@ -25,6 +25,8 @@ export interface Datum {
   ProductRequest_units: number;
   ProductRequest_containers: number;
   ProductRequest_menudencia: string;
+  CategoryUnit_unit?: string;
+  CategoryUnit_name?: string;
 }
 
 export interface Metadata {

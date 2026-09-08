@@ -40,8 +40,14 @@ export default function Planificar({
   const { mutate: addProductInventory } = useAddProductInventoryRequest();
 
   // Hook para procesamiento de datos
-  const { detalles, processedGroups, proveedor, clienteOrigen } =
-    usePlanningData(assignment, rawData, requestData);
+  const {
+    detalles,
+    processedGroups,
+    proveedor,
+    clienteOrigen,
+    cajasLabel,
+    unidadesLabel,
+  } = usePlanningData(assignment, rawData, requestData);
 
   // Hook para planificación automática
   const { executeAutomaticPlanning, recalculateGroupTotals } =
@@ -456,6 +462,8 @@ export default function Planificar({
           proveedor={proveedor}
           clienteOrigen={clienteOrigen}
           detalles={updatedDetalles}
+          cajasLabel={cajasLabel}
+          unidadesLabel={unidadesLabel}
           isPlanificar={assignment?.isPlanificar}
           isFinalizando={isFinalizando}
           onCancel={onClose}
@@ -492,6 +500,8 @@ export default function Planificar({
                   clientes={group.clientes}
                   isExpanded={expandedGroups.includes(groupIdx)}
                   readOnly={assignment?.isPlanificar === "true"}
+                  cajasLabel={cajasLabel}
+                  unidadesLabel={unidadesLabel}
                   onToggleExpand={() => toggleGroup(groupIdx)}
                   onSaveGroup={() => handleSaveGroup(groupIdx)}
                   onUpdateClientCode={(clientIndex, codeIndex, field, value) =>

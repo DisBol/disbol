@@ -32,6 +32,8 @@ interface TotalGroupProps {
   clientes: Cliente[];
   isExpanded: boolean;
   readOnly?: boolean;
+  cajasLabel?: string;
+  unidadesLabel?: string;
   onToggleExpand: () => void;
   onSaveGroup?: () => void | Promise<void>;
   onUpdateClientCode?: (
@@ -51,6 +53,8 @@ export default function TotalGroup({
   clientes,
   isExpanded,
   readOnly = false,
+  cajasLabel,
+  unidadesLabel,
   onToggleExpand,
   onSaveGroup,
   onUpdateClientCode,
@@ -141,6 +145,8 @@ export default function TotalGroup({
                 label={code.label}
                 cajas={code.cajas}
                 unidades={code.unidades}
+                cajasLabel={cajasLabel}
+                unidadesLabel={unidadesLabel}
                 readOnly={true}
               />
             </div>
@@ -155,7 +161,7 @@ export default function TotalGroup({
               <div className="space-y-1 flex-1 flex flex-col justify-start pt-1">
                 <div>
                   <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                    CAJAS
+                    {cajasLabel || "CAJAS"}
                   </label>
                   <div className="w-full px-1 py-0.5 bg-white rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner">
                     {totalCajas}
@@ -163,7 +169,7 @@ export default function TotalGroup({
                 </div>
                 <div>
                   <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                    UNID.
+                    {unidadesLabel || "UNID."}
                   </label>
                   <div className="w-full px-1 py-0.5 bg-white rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner">
                     {totalUnid}
@@ -299,7 +305,7 @@ export default function TotalGroup({
                         <div className="space-y-1 flex-1 flex flex-col justify-end">
                           <div>
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
-                              CAJAS
+                              {cajasLabel || "CAJAS"}
                             </label>
                             {status === "guardado" || readOnly ? (
                               <div className="w-full px-1 py-0.5 bg-gray-200 rounded text-[10px] font-bold text-gray-600 text-center h-5 flex items-center justify-center shadow-inner border border-gray-300">
@@ -325,7 +331,7 @@ export default function TotalGroup({
                           </div>
                           <div>
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
-                              UNID.
+                              {unidadesLabel || "UNID."}
                             </label>
                             {status === "guardado" || readOnly ? (
                               <div className="w-full px-1 py-0.5 bg-gray-200 rounded text-[10px] font-bold text-gray-600 text-center h-5 flex items-center justify-center shadow-inner border border-gray-300">
@@ -379,7 +385,7 @@ export default function TotalGroup({
                       <div className="space-y-1 flex-1 flex flex-col justify-start pt-3">
                         <div>
                           <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                            CAJAS
+                            {cajasLabel || "CAJAS"}
                           </label>
                           <div className="w-full px-1 py-0.5 bg-white rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner">
                             {cliente.totalCajas}
@@ -387,7 +393,7 @@ export default function TotalGroup({
                         </div>
                         <div>
                           <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                            UNID.
+                            {unidadesLabel || "UNID."}
                           </label>
                           <div className="w-full px-1 py-0.5 bg-white rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner">
                             {cliente.totalUnid}

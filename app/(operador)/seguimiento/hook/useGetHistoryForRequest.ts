@@ -42,6 +42,12 @@ export function useGetHistoryForRequest(
             const existing = acc.find((r) => r.Request_id === curr.Request_id);
             if (existing) {
               existing.items.push(curr);
+              if (!existing.CategoryUnit_unit && curr.CategoryUnit_unit) {
+                existing.CategoryUnit_unit = curr.CategoryUnit_unit;
+              }
+              if (!existing.CategoryUnit_name && curr.CategoryUnit_name) {
+                existing.CategoryUnit_name = curr.CategoryUnit_name;
+              }
             } else {
               const isPaid = curr.PaymentType_name === "Efectivo";
 
@@ -58,6 +64,8 @@ export function useGetHistoryForRequest(
                 pagado: isPaid,
                 RequestStage_payment: curr.RequestStage_payment,
                 PaymentType_name: String(curr.PaymentType_name),
+                CategoryUnit_unit: curr.CategoryUnit_unit,
+                CategoryUnit_name: curr.CategoryUnit_name,
                 items: [curr],
               });
             }

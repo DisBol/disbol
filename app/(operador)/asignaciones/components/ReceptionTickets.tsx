@@ -72,6 +72,8 @@ interface ReceptionTicketsProps {
   entregasList: EntregaEmpresa[];
   setEntregasList: React.Dispatch<React.SetStateAction<EntregaEmpresa[]>>;
   assignmentId: number;
+  cajasLabel?: string;
+  unidadesLabel?: string;
 }
 
 export default function ReceptionTickets({
@@ -95,6 +97,8 @@ export default function ReceptionTickets({
   entregasList,
   setEntregasList,
   assignmentId,
+  cajasLabel,
+  unidadesLabel,
 }: ReceptionTicketsProps) {
   const { containers, containersData } = useContainer();
   const { accounts, loading: accountsLoading } = useGetAccount();
@@ -703,6 +707,8 @@ export default function ReceptionTickets({
                                         }
                                         cajas={totalPesajeCajas}
                                         unidades={totalPesajeUnidades}
+                                        cajasLabel={cajasLabel}
+                                        unidadesLabel={unidadesLabel}
                                         topReadOnly={true}
                                         readOnly={readOnly}
                                         onCajasChange={(val) =>

@@ -80,6 +80,15 @@ export default function InventarioPlanning({
     error: errorRequest,
   } = useGetRequestForPlanning(categoryProviderId);
 
+  const cajasLabel = useMemo(
+    () => requestData?.data?.find((r) => r.CategoryUnit_name)?.CategoryUnit_name,
+    [requestData],
+  );
+  const unidadesLabel = useMemo(
+    () => requestData?.data?.find((r) => r.CategoryUnit_unit)?.CategoryUnit_unit,
+    [requestData],
+  );
+
   // Build EditableGroupData from request data
   const processedGroups = useMemo((): EditableGroupData[] => {
     if (!requestData?.data || requestData.data.length === 0) return [];
@@ -253,9 +262,11 @@ export default function InventarioPlanning({
         unidades: `${planned.unidades}/${inventory.units}`,
         cajasExcedidas: planned.cajas > inventory.containers,
         unidadesExcedidas: planned.unidades > inventory.units,
+        cajasLabel,
+        unidadesLabel,
       };
     });
-  }, [plannedTotals, inventoryData, requestData, contenedor]);
+  }, [plannedTotals, inventoryData, requestData, contenedor, cajasLabel, unidadesLabel]);
 
   const updateClientCode = useCallback(
     (
@@ -630,7 +641,7 @@ export default function InventarioPlanning({
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-xs text-gray-600 font-semibold">
-                  Total Cajas
+                  Total {cajasLabel || "Cajas"}
                 </p>
                 <p className="text-lg font-bold text-[#1e293b]">
                   {activeGroup.totalCajas}
@@ -638,7 +649,7 @@ export default function InventarioPlanning({
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-xs text-gray-600 font-semibold">
-                  Total Unidades
+                  Total {unidadesLabel || "Unidades"}
                 </p>
                 <p className="text-lg font-bold text-[#1e293b]">
                   {activeGroup.totalUnid}
@@ -676,6 +687,8 @@ export default function InventarioPlanning({
               vehiculo={vehiculo}
               chofer={chofer}
               proveedor={proveedor}
+              cajasLabel={cajasLabel}
+              unidadesLabel={unidadesLabel}
               onStarted={() => {}}
               onRouteReportChange={setRouteReport}
             />
@@ -691,6 +704,8 @@ export default function InventarioPlanning({
       <div className="p-3">
         <DetailInventario
           detalles={detalles}
+          cajasLabel={cajasLabel}
+          unidadesLabel={unidadesLabel}
           providerOptions={providerOptions}
           groupOptions={groupOptions}
           selectedProveedor={proveedor}
@@ -744,6 +759,8 @@ export default function InventarioPlanning({
                   onSave={() => handleSaveGroup(groupIdx)}
                   isSaving={savingGroups.includes(groupIdx)}
                   selectedContenedor={contenedor}
+                  cajasLabel={cajasLabel}
+                  unidadesLabel={unidadesLabel}
                   onUpdateClientCode={(clientIndex, codeIndex, field, value) =>
                     updateClientCode(
                       groupIdx,
@@ -812,8 +829,8 @@ export default function InventarioPlanning({
                 <tr style="background: #e11d48; color: #fff;">
                   <th style="padding: 10px 12px; text-align: left;">Código</th>
                   <th style="padding: 10px 12px; text-align: right;">Solic.</th>
-                  <th style="padding: 10px 12px; text-align: right;">Cajas</th>
-                  <th style="padding: 10px 12px; text-align: right;">Unid.</th>
+                  <th style="padding: 10px 12px; text-align: right;">${cajasLabel || "Cajas"}</th>
+                  <th style="padding: 10px 12px; text-align: right;">${unidadesLabel || "Unid."}</th>
                   <th style="padding: 10px 12px; text-align: right;">Bruto kg</th>
                   <th style="padding: 10px 12px; text-align: right;">Neto kg</th>
                   <th style="padding: 10px 12px; text-align: right;">Precio kg</th>

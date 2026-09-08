@@ -13,6 +13,8 @@ export interface ProductoChofer {
   cajas: number;
   unidades: number;
   menudencia: string;
+  CategoryUnit_unit?: string;
+  CategoryUnit_name?: string;
 }
 
 interface DatumExtended extends Datum {
@@ -39,6 +41,8 @@ export interface SolicitudChofer {
   ProductRequest_active?: string;
   ProductRequest_units: number;
   ProductRequest_containers: number;
+  CategoryUnit_unit?: string;
+  CategoryUnit_name?: string;
   items: ProductoChofer[];
 }
 
@@ -90,7 +94,15 @@ export function useGetSolicitudesChofer() {
             cajas: curr.ProductRequest_containers,
             unidades: curr.ProductRequest_units,
             menudencia: curr.ProductRequest_menudencia,
+            CategoryUnit_unit: curr.CategoryUnit_unit,
+            CategoryUnit_name: curr.CategoryUnit_name,
           });
+          if (!existing.CategoryUnit_unit && curr.CategoryUnit_unit) {
+            existing.CategoryUnit_unit = curr.CategoryUnit_unit;
+          }
+          if (!existing.CategoryUnit_name && curr.CategoryUnit_name) {
+            existing.CategoryUnit_name = curr.CategoryUnit_name;
+          }
         } else {
           acc.push({
             Request_id: curr.Request_id,
@@ -109,6 +121,8 @@ export function useGetSolicitudesChofer() {
             ProductRequest_active: curr.ProductRequest_active ?? "true",
             ProductRequest_units: curr.ProductRequest_units,
             ProductRequest_containers: curr.ProductRequest_containers,
+            CategoryUnit_unit: curr.CategoryUnit_unit,
+            CategoryUnit_name: curr.CategoryUnit_name,
             items: [
               {
                 nombre: curr.Product_name,
@@ -116,6 +130,8 @@ export function useGetSolicitudesChofer() {
                 cajas: curr.ProductRequest_containers,
                 unidades: curr.ProductRequest_units,
                 menudencia: curr.ProductRequest_menudencia,
+                CategoryUnit_unit: curr.CategoryUnit_unit,
+                CategoryUnit_name: curr.CategoryUnit_name,
               },
             ],
           });

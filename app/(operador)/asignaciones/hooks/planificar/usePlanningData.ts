@@ -137,11 +137,19 @@ export const usePlanningData = (
     }
 
     // Procesar detalles si hay assignment y rawData
-    let detallesArray: Array<{
-      label: string;
-      cajas: string;
-      unidades: string;
-    }> = [];
+    let detallesArray: ProcessedPlanningData["detalles"] = [];
+
+    const defaultCajasLabel =
+      assignment?.CategoryUnit_name ||
+      assignment?.categoryUnitName ||
+      rawData?.find((r) => r.CategoryUnit_name)?.CategoryUnit_name ||
+      requestData?.data?.find((r) => r.CategoryUnit_name)?.CategoryUnit_name;
+
+    const defaultUnidadesLabel =
+      assignment?.CategoryUnit_unit ||
+      assignment?.categoryUnitUnit ||
+      rawData?.find((r) => r.CategoryUnit_unit)?.CategoryUnit_unit ||
+      requestData?.data?.find((r) => r.CategoryUnit_unit)?.CategoryUnit_unit;
 
     if (assignment && rawData) {
       const assignmentData = rawData.filter(
@@ -166,6 +174,10 @@ export const usePlanningData = (
         label: code,
         cajas: pos2 ? `0/${pos2.ProductAssignment_container}` : "0/0",
         unidades: pos2 ? `0/${pos2.ProductAssignment_units}` : "0/0",
+        cajasLabel: pos2?.CategoryUnit_name || defaultCajasLabel,
+        unidadesLabel: pos2?.CategoryUnit_unit || defaultUnidadesLabel,
+        CategoryUnit_name: pos2?.CategoryUnit_name || defaultCajasLabel,
+        CategoryUnit_unit: pos2?.CategoryUnit_unit || defaultUnidadesLabel,
       }));
     } else if (groups.length > 0) {
       // Si no hay assignment/rawData, crear detalles base desde los productos de los grupos
@@ -180,6 +192,10 @@ export const usePlanningData = (
         label: productName,
         cajas: "0/0",
         unidades: "0/0",
+        cajasLabel: defaultCajasLabel,
+        unidadesLabel: defaultUnidadesLabel,
+        CategoryUnit_name: defaultCajasLabel,
+        CategoryUnit_unit: defaultUnidadesLabel,
       }));
     }
 
@@ -188,6 +204,10 @@ export const usePlanningData = (
       processedGroups: groups,
       proveedor: assignment ? assignment.proveedor : proveedorNombre,
       clienteOrigen: assignment ? assignment.proveedor : "",
+      cajasLabel: defaultCajasLabel,
+      unidadesLabel: defaultUnidadesLabel,
+      CategoryUnit_name: defaultCajasLabel,
+      CategoryUnit_unit: defaultUnidadesLabel,
     };
   }, [assignment, rawData, requestData]);
 };

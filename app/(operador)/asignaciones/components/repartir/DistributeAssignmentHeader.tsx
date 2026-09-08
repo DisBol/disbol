@@ -56,6 +56,8 @@ interface DistributeAssignmentHeaderProps {
   proveedor?: string;
   costoPorKg?: string;
   precioDiferido?: boolean;
+  cajasLabel?: string;
+  unidadesLabel?: string;
   detalles: Array<{
     label: string;
     cajas: string;
@@ -86,6 +88,8 @@ export default function DistributeAssignmentHeader({
   proveedor = "SOFIA",
   costoPorKg = "10.00",
   precioDiferido = false,
+  cajasLabel,
+  unidadesLabel,
   detalles,
   isRepartir,
   isFinalizando,
@@ -515,6 +519,8 @@ export default function DistributeAssignmentHeader({
                       label={d.label}
                       cajas={cajas.asignado}
                       unidades={unidades.asignado}
+                      cajasLabel={cajasLabel}
+                      unidadesLabel={unidadesLabel}
                       readOnly={true}
                       compareReadOnly={{
                         leftLabel: "Asig.",
@@ -534,16 +540,16 @@ export default function DistributeAssignmentHeader({
                   </h3>
                   <div className="space-y-1.5 flex-1 flex flex-col justify-end">
                     <div>
-                      <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                        CAJAS
+                      <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-1">
+                        {cajasLabel || "CAJAS"}
                       </label>
                       <div className="w-full px-1.5 py-0.5 bg-white rounded text-[11px] font-bold text-gray-900 text-center h-6 flex items-center justify-center shadow-inner">
                         {totalCajas}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                        UNID.
+                      <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-1">
+                        {unidadesLabel || "UNID."}
                       </label>
                       <div className="w-full px-1.5 py-0.5 bg-white rounded text-[11px] font-bold text-gray-900 text-center h-6 flex items-center justify-center shadow-inner">
                         {totalUnid}
@@ -624,6 +630,8 @@ export default function DistributeAssignmentHeader({
                     label={d.label}
                     cajas={cajas.solicitado}
                     unidades={unidades.solicitado}
+                    cajasLabel={cajasLabel}
+                    unidadesLabel={unidadesLabel}
                     readOnly={true}
                     compareReadOnly={{
                       leftLabel: "Asig.",

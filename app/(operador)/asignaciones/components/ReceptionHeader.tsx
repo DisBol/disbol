@@ -107,6 +107,10 @@ export default function ReceptionHeader({
       pesoNeto: 0,
     };
   const diferencia = totalesGlobales.comparativaEmpresaRecibido;
+  const cajasLabel =
+    assignment.CategoryUnit_name || assignment.categoryUnitName || "Cajas";
+  const unidadesLabel =
+    assignment.CategoryUnit_unit || assignment.categoryUnitUnit || "Unidades";
 
   return (
     <Card className="p-4 md:p-6 mb-6">
@@ -205,7 +209,7 @@ export default function ReceptionHeader({
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
-                  Unidades
+                  {unidadesLabel}
                 </span>
                 <span className="text-sm font-bold text-amber-950">
                   {formatNumber(totalesGlobales.totalEmpresa.unidades || 0)}
@@ -213,7 +217,7 @@ export default function ReceptionHeader({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-amber-800/80 uppercase tracking-wide">
-                  Cajas
+                  {cajasLabel}
                 </span>
                 <span className="text-sm font-bold text-amber-950">
                   {formatNumber(totalesGlobales.totalEmpresa.cajas || 0)}
@@ -268,7 +272,7 @@ export default function ReceptionHeader({
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">
-                  Unidades
+                  {unidadesLabel}
                 </span>
                 <span className="text-sm font-bold text-violet-950">
                   {formatNumber(recibido.unidades || 0)}
@@ -276,7 +280,7 @@ export default function ReceptionHeader({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-violet-800/80 uppercase tracking-wide">
-                  Cajas
+                  {cajasLabel}
                 </span>
                 <span className="text-sm font-bold text-violet-950">
                   {formatNumber(recibido.cajas)}
@@ -304,8 +308,12 @@ export default function ReceptionHeader({
                           {producto.nombre}
                         </span>
                         <div className="flex items-center justify-between text-[10px] text-violet-800/80">
-                          <span>{formatNumber(total.unidades)} unidades</span>
-                          <span>{formatNumber(total.cajas)} cajas</span>
+                          <span>
+                            {formatNumber(total.unidades)} {unidadesLabel.toLowerCase()}
+                          </span>
+                          <span>
+                            {formatNumber(total.cajas)} {cajasLabel.toLowerCase()}
+                          </span>
                           <span>{formatWeight(total.pesoNeto)}</span>
                         </div>
                       </div>
@@ -331,7 +339,7 @@ export default function ReceptionHeader({
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                  Unidades
+                  {unidadesLabel}
                 </span>
                 <span
                   className={`text-sm font-bold ${getDifferenceColorClass(diferencia.unidades)}`}
@@ -341,7 +349,7 @@ export default function ReceptionHeader({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                  Cajas
+                  {cajasLabel}
                 </span>
                 <span
                   className={`text-sm font-bold ${getDifferenceColorClass(diferencia.cajas)}`}
@@ -364,43 +372,44 @@ export default function ReceptionHeader({
                 <div className="mt-4 border-t border-slate-200/60 pt-3 space-y-3">
                   {productosDetalle.map((producto) => {
                     const empresa = getProductoTotal(
-                      empresaProductos,
-                      producto,
-                    );
-                    const recibido = getProductoTotal(
-                      recibidoProductos,
-                      producto,
-                    );
-                    const diferenciaProducto = {
-                      cajas: recibido.cajas - empresa.cajas,
-                      unidades: recibido.unidades - empresa.unidades,
-                      pesoNeto: recibido.pesoNeto - empresa.pesoNeto,
-                    };
+                       empresaProductos,
+                       producto,
+                     );
+                     const recibido = getProductoTotal(
+                       recibidoProductos,
+                       producto,
+                     );
+                     const diferenciaProducto = {
+                       cajas: recibido.cajas - empresa.cajas,
+                       unidades: recibido.unidades - empresa.unidades,
+                       pesoNeto: recibido.pesoNeto - empresa.pesoNeto,
+                     };
 
-                    return (
-                      <div
-                        key={`diferencia-${producto.id ?? producto.nombre}`}
-                        className="space-y-1.5 opacity-75"
-                      >
-                        <span className="text-[10px] font-semibold text-slate-700">
-                          {producto.nombre}
-                        </span>
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span
-                            className={getDifferenceColorClass(
-                              diferenciaProducto.unidades,
-                            )}
-                          >
-                            {formatSignedNumber(diferenciaProducto.unidades)}{" "}
-                            unidades
-                          </span>
-                          <span
-                            className={getDifferenceColorClass(
-                              diferenciaProducto.cajas,
-                            )}
-                          >
-                            {formatSignedNumber(diferenciaProducto.cajas)} cajas
-                          </span>
+                     return (
+                       <div
+                         key={`diferencia-${producto.id ?? producto.nombre}`}
+                         className="space-y-1.5 opacity-75"
+                       >
+                         <span className="text-[10px] font-semibold text-slate-700">
+                           {producto.nombre}
+                         </span>
+                         <div className="flex items-center justify-between text-[10px]">
+                           <span
+                             className={getDifferenceColorClass(
+                               diferenciaProducto.unidades,
+                             )}
+                           >
+                             {formatSignedNumber(diferenciaProducto.unidades)}{" "}
+                             {unidadesLabel.toLowerCase()}
+                           </span>
+                           <span
+                             className={getDifferenceColorClass(
+                               diferenciaProducto.cajas,
+                             )}
+                           >
+                             {formatSignedNumber(diferenciaProducto.cajas)}{" "}
+                             {cajasLabel.toLowerCase()}
+                           </span>
                           <span
                             className={getDifferenceColorClass(
                               diferenciaProducto.pesoNeto,

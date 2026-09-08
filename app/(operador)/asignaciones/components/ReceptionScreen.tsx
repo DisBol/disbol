@@ -1698,6 +1698,8 @@ export default function ReceptionScreen({
         boletas={boletas}
         pesoTotalGeneral={pesoTotalGeneral}
         isRecibir={assignment.isRecibir}
+        cajasLabel={assignment.CategoryUnit_name || assignment.categoryUnitName}
+        unidadesLabel={assignment.CategoryUnit_unit || assignment.categoryUnitUnit}
         entregasList={entregasList}
         setEntregasList={setEntregasList}
         onAgregarBoleta={handleAgregarBoleta}

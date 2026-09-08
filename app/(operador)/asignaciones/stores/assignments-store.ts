@@ -25,6 +25,10 @@ export interface ProductQuantity {
   ticketId: string;
   productAssignmentId: string; // Este es el ID que se usa para editar
   posicion: number;
+  CategoryUnit_unit?: string;
+  CategoryUnit_name?: string;
+  categoryUnitUnit?: string;
+  categoryUnitName?: string;
 }
 
 export interface Assignment {
@@ -37,6 +41,10 @@ export interface Assignment {
   isRecibir: string;
   isPlanificar: string;
   isRepartir: string;
+  CategoryUnit_unit?: string;
+  CategoryUnit_name?: string;
+  categoryUnitUnit?: string;
+  categoryUnitName?: string;
   productos: ProductQuantity[];
 }
 
@@ -152,8 +160,21 @@ const transformApiDataToAssignments = (
           isRecibir: item.Assignment_isRecibir,
           isPlanificar: item.Assignment_isPlanificar,
           isRepartir: item.Assignment_isRepartir,
+          CategoryUnit_unit: item.CategoryUnit_unit,
+          CategoryUnit_name: item.CategoryUnit_name,
+          categoryUnitUnit: item.CategoryUnit_unit,
+          categoryUnitName: item.CategoryUnit_name,
           productos: [],
         };
+      } else {
+        if (!acc[assignmentId].CategoryUnit_unit && item.CategoryUnit_unit) {
+          acc[assignmentId].CategoryUnit_unit = item.CategoryUnit_unit;
+          acc[assignmentId].categoryUnitUnit = item.CategoryUnit_unit;
+        }
+        if (!acc[assignmentId].CategoryUnit_name && item.CategoryUnit_name) {
+          acc[assignmentId].CategoryUnit_name = item.CategoryUnit_name;
+          acc[assignmentId].categoryUnitName = item.CategoryUnit_name;
+        }
       }
 
       // Agregar producto
@@ -169,6 +190,10 @@ const transformApiDataToAssignments = (
         ticketId: item.Ticket_id.toString(),
         productAssignmentId: item.ProductAssignment_id.toString(),
         posicion: item.AssignmentStage_position,
+        CategoryUnit_unit: item.CategoryUnit_unit,
+        CategoryUnit_name: item.CategoryUnit_name,
+        categoryUnitUnit: item.CategoryUnit_unit,
+        categoryUnitName: item.CategoryUnit_name,
       });
 
       return acc;

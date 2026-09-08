@@ -437,6 +437,14 @@ export default function TableResquest() {
                                     item.ProductRequest_units)
                                   : item.ProductRequest_units
                               }
+                              cajasLabel={
+                                item.CategoryUnit_name ||
+                                request.CategoryUnit_name
+                              }
+                              unidadesLabel={
+                                item.CategoryUnit_unit ||
+                                request.CategoryUnit_unit
+                              }
                               menudencia={
                                 isEditing
                                   ? (editedItem?.menudencia ??

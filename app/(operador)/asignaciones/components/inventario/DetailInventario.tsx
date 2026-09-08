@@ -10,7 +10,11 @@ interface DetailInventarioProps {
     unidades: string;
     cajasExcedidas?: boolean;
     unidadesExcedidas?: boolean;
+    cajasLabel?: string;
+    unidadesLabel?: string;
   }>;
+  cajasLabel?: string;
+  unidadesLabel?: string;
   providerOptions: SelectOption[];
   groupOptions: SelectOption[];
   containerOptions: SelectOption[];
@@ -29,6 +33,8 @@ interface DetailInventarioProps {
 
 export default function DetailInventario({
   detalles,
+  cajasLabel,
+  unidadesLabel,
   providerOptions,
   groupOptions,
   containerOptions,
@@ -181,6 +187,8 @@ export default function DetailInventario({
                             cajasExcedidas={d.cajasExcedidas}
                             unidadesExcedidas={d.unidadesExcedidas}
                             readOnly={true}
+                            cajasLabel={d.cajasLabel || cajasLabel}
+                            unidadesLabel={d.unidadesLabel || unidadesLabel}
                             compareReadOnly={{
                               leftLabel: "Plan.",
                               rightLabel: "Inv.",

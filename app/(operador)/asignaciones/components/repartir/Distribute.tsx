@@ -314,6 +314,18 @@ export default function Repartir({
 
   const displayGroups = editableGroups.length > 0 ? editableGroups : groups;
 
+  const cajasLabel =
+    assignment?.CategoryUnit_name ||
+    assignment?.categoryUnitName ||
+    rawData?.find((r) => r.CategoryUnit_name)?.CategoryUnit_name ||
+    repartirData?.data?.find((r) => r.CategoryUnit_name)?.CategoryUnit_name;
+
+  const unidadesLabel =
+    assignment?.CategoryUnit_unit ||
+    assignment?.categoryUnitUnit ||
+    rawData?.find((r) => r.CategoryUnit_unit)?.CategoryUnit_unit ||
+    repartirData?.data?.find((r) => r.CategoryUnit_unit)?.CategoryUnit_unit;
+
   return (
     <div className="w-full bg-gray-50">
       {/* Contenido de Distribute */}
@@ -323,6 +335,8 @@ export default function Repartir({
           proveedor={proveedor}
           costoPorKg={costoPorKg}
           precioDiferido={precioDiferido}
+          cajasLabel={cajasLabel}
+          unidadesLabel={unidadesLabel}
           detalles={detalles}
           isRepartir={assignment?.isRepartir}
           isFinalizando={isFinalizando}
@@ -391,6 +405,8 @@ export default function Repartir({
                 vehiculo={vehiculo}
                 chofer={chofer}
                 proveedor={proveedor}
+                cajasLabel={cajasLabel}
+                unidadesLabel={unidadesLabel}
                 onStarted={(isStarted) => {
                   setActiveGroupIdx(isStarted ? activeGroupIdx : null);
                 }}
@@ -425,6 +441,8 @@ export default function Repartir({
                   vehiculo={vehiculo}
                   chofer={chofer}
                   proveedor={proveedor}
+                  cajasLabel={cajasLabel}
+                  unidadesLabel={unidadesLabel}
                   onStarted={(isStarted) => {
                     setActiveGroupIdx(isStarted ? groupIdx : null);
                   }}

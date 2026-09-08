@@ -698,7 +698,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                         <div className="flex gap-1 items-end">
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-                              CAJAS
+                              {cajasLabel || "CAJAS"}
                             </label>
                             <input
                               id={`cajas-${pesaje.id}`}
@@ -721,7 +721,7 @@ const CardCode = React.forwardRef<HTMLDivElement, CardCodeProps>(
                         <div className="flex gap-1 items-end">
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-                              UNID.
+                              {unidadesLabel || "UNID."}
                             </label>
                             <input
                               type="number"

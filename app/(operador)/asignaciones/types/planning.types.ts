@@ -42,8 +42,16 @@ export interface ProcessedPlanningData {
     label: string;
     cajas: string;
     unidades: string;
+    cajasLabel?: string;
+    unidadesLabel?: string;
+    CategoryUnit_name?: string;
+    CategoryUnit_unit?: string;
   }>;
   processedGroups: GroupData[];
   proveedor: string;
   clienteOrigen: string;
+  cajasLabel?: string;
+  unidadesLabel?: string;
+  CategoryUnit_name?: string;
+  CategoryUnit_unit?: string;
 }

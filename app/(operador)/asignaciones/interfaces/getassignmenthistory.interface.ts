@@ -26,6 +26,8 @@ export interface Datum {
   ProductAssignment_gross_weight: string;
   ProductAssignment_net_weight: string;
   ProductAssignment_active: string;
+  CategoryUnit_unit?: string;
+  CategoryUnit_name?: string;
 }
 
 export interface Metadata {

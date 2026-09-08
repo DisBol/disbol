@@ -68,6 +68,8 @@ interface DistributeGroupProps {
   chofer?: string;
   proveedor?: string;
   onRouteReportChange?: (report: RouteReportData | null) => void;
+  cajasLabel?: string;
+  unidadesLabel?: string;
 }
 
 export default function DistributeGroup({
@@ -86,6 +88,8 @@ export default function DistributeGroup({
   costoPorKg = "10.00",
   proveedor = "",
   onRouteReportChange,
+  cajasLabel,
+  unidadesLabel,
 }: DistributeGroupProps) {
   const { containers, containersData } = useContainer();
   const { addWeighing, loading: savingWeighing } = useAddRequestWeighing();
@@ -818,6 +822,8 @@ export default function DistributeGroup({
                         label={code.label}
                         cajas={code.cajas}
                         unidades={code.unidades}
+                        cajasLabel={cajasLabel}
+                        unidadesLabel={unidadesLabel}
                         readOnly={true}
                       />
                     </div>
@@ -832,7 +838,7 @@ export default function DistributeGroup({
                     <div className="space-y-1.5 flex-1 flex flex-col justify-end">
                       <div>
                         <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                          CAJAS
+                          {cajasLabel || "CAJAS"}
                         </label>
                         <div className="w-full px-1.5 py-0.5 bg-white rounded text-[11px] font-bold text-gray-900 text-center h-6 flex items-center justify-center shadow-inner">
                           {totalCajas}
@@ -840,7 +846,7 @@ export default function DistributeGroup({
                       </div>
                       <div>
                         <label className="block text-[8px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                          UNID.
+                          {unidadesLabel || "UNID."}
                         </label>
                         <div className="w-full px-1.5 py-0.5 bg-white rounded text-[11px] font-bold text-gray-900 text-center h-6 flex items-center justify-center shadow-inner">
                           {totalUnid}
@@ -1006,6 +1012,8 @@ export default function DistributeGroup({
                               }
                               cajas={code.cajas}
                               unidades={code.unidades}
+                              cajasLabel={cajasLabel}
+                              unidadesLabel={unidadesLabel}
                               readOnly={true}
                               showPrecio={
                                 precioDiferidoCliente[clienteIdx] || false

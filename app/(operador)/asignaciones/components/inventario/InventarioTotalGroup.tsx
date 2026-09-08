@@ -36,6 +36,8 @@ interface InventarioTotalGroupProps {
   onSave?: () => void;
   isSaving?: boolean;
   selectedContenedor?: string;
+  cajasLabel?: string;
+  unidadesLabel?: string;
   onUpdateClientCode?: (
     clientIndex: number,
     codeIndex: number,
@@ -56,6 +58,8 @@ export default function InventarioTotalGroup({
   onSave,
   isSaving,
   selectedContenedor,
+  cajasLabel,
+  unidadesLabel,
   onUpdateClientCode,
 }: InventarioTotalGroupProps) {
   const getMultiplier = (productCode: string) => {
@@ -131,7 +135,7 @@ export default function InventarioTotalGroup({
               <div className="space-y-1">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-                    CAJAS
+                    {cajasLabel || "CAJAS"}
                   </label>
                   <div className="w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center bg-white border-gray-200 text-gray-700">
                     {code.cajas}
@@ -139,7 +143,7 @@ export default function InventarioTotalGroup({
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">
-                    UNID.
+                    {unidadesLabel || "UNID."}
                   </label>
                   <div className="w-full px-1.5 py-0.5 border rounded text-xs font-medium text-center h-6 flex items-center justify-center bg-white border-gray-200 text-gray-700">
                     {code.unidades}
@@ -158,7 +162,7 @@ export default function InventarioTotalGroup({
               <div className="space-y-1 flex-1 flex flex-col justify-start pt-1">
                 <div>
                   <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                    CAJAS
+                    {cajasLabel || "CAJAS"}
                   </label>
                   <div className="w-full px-1 py-0.5 bg-white rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner">
                     {totalCajas}
@@ -166,7 +170,7 @@ export default function InventarioTotalGroup({
                 </div>
                 <div>
                   <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                    UNID.
+                    {unidadesLabel || "UNID."}
                   </label>
                   <div className="w-full px-1 py-0.5 bg-white rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner">
                     {totalUnid}
@@ -311,7 +315,7 @@ export default function InventarioTotalGroup({
                         <div className="space-y-1 flex-1 flex flex-col justify-end">
                           <div>
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
-                              CAJAS
+                              {cajasLabel || "CAJAS"}
                             </label>
                             <input
                               type="number"
@@ -330,7 +334,7 @@ export default function InventarioTotalGroup({
                           </div>
                           <div>
                             <label className="block text-[7px] font-bold text-gray-700 uppercase leading-none mb-0.5">
-                              UNID.
+                              {unidadesLabel || "UNID."}
                             </label>
                             <input
                               type="number"
@@ -377,7 +381,7 @@ export default function InventarioTotalGroup({
                       <div className="space-y-1 flex-1 flex flex-col justify-start pt-3">
                         <div>
                           <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                            CAJAS
+                            {cajasLabel || "CAJAS"}
                           </label>
                           <div className="w-full px-1 py-0.5 bg-white rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner">
                             {cliente.totalCajas}
@@ -385,7 +389,7 @@ export default function InventarioTotalGroup({
                         </div>
                         <div>
                           <label className="block text-[7px] font-bold text-white/90 uppercase leading-none mb-0.5">
-                            UNID.
+                            {unidadesLabel || "UNID."}
                           </label>
                           <div className="w-full px-1 py-0.5 bg-white rounded text-[10px] font-bold text-gray-900 text-center h-5 flex items-center justify-center shadow-inner">
                             {cliente.totalUnid}
