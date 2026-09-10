@@ -55,7 +55,7 @@ export default function Repartir({
     data: repartirData,
     loading,
     error,
-  } = useGetRequestForreparting(Number(assignment?.categoryProviderId ?? 0));
+  } = useGetRequestForreparting(Number(assignment?.categoryProviderId ?? 0), 0);
   const { clientTotals } = useDistributeStore();
   const { updateAssignment, loading: isFinalizando } = useUpdateAssignment();
   const { updateAssignmentFlags } = useAssignmentsStore();

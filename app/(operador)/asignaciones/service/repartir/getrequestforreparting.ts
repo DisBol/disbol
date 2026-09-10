@@ -3,6 +3,10 @@ import { GetRequestForrepartingResponse } from "@/app/(operador)/asignaciones/in
 
 export async function GetRequestForreparting(
   CategoryProvider_id: number,
+  Employee_id: number = 0,
 ): Promise<GetRequestForrepartingResponse> {
-  return apiCall("getrequestforreparting", { CategoryProvider_id });
+  return apiCall("getrequestforreparting", {
+    CategoryProvider_id,
+    Employee_id,
+  });
 }

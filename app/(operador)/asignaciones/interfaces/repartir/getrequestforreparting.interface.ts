@@ -1,3 +1,8 @@
+export interface GetRequestForrepartingParams {
+  CategoryProvider_id: number;
+  Employee_id?: number;
+}
+
 export interface GetRequestForrepartingResponse {
   data: Datum[];
   metadata: Metadata;
@@ -27,6 +32,8 @@ export interface Datum {
   ProductRequest_menudencia: string;
   CategoryUnit_unit?: string;
   CategoryUnit_name?: string;
+  Employee_id?: number;
+  Employee_name?: string;
 }
 
 export interface Metadata {

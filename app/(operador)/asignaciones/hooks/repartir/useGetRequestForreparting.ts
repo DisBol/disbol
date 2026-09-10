@@ -11,6 +11,7 @@ interface UseGetRequestForrepartingReturn {
 
 export const useGetRequestForreparting = (
   CategoryProvider_id: number,
+  Employee_id: number = 0,
 ): UseGetRequestForrepartingReturn => {
     const [data, setData] = useState<GetRequestForrepartingResponse | null>(
       null,
@@ -22,7 +23,10 @@ export const useGetRequestForreparting = (
       try {
         setLoading(true);
         setError(null);
-        const response = await GetRequestForreparting(CategoryProvider_id);
+        const response = await GetRequestForreparting(
+          CategoryProvider_id,
+          Employee_id,
+        );
         setData(response);
       } catch (err) {
         setError(
@@ -33,7 +37,7 @@ export const useGetRequestForreparting = (
       } finally {
         setLoading(false);
       }
-    }, [CategoryProvider_id]);
+    }, [CategoryProvider_id, Employee_id]);
 
     useEffect(() => {
       fetchData();
