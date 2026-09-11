@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Datum } from "@/app/(operador)/solicitudes/interfaces/getrequesthistory.interface";
-import { GetRequestHistory } from "@/app/(operador)/solicitudes/service/getrequesthistory";
-
-export interface SolicitudChoferFilters {
-  start_date: string;
-  end_date: string;
-}
+import { useSession } from "next-auth/react";
+import { Datum as RepartirDatum } from "@/app/(operador)/asignaciones/interfaces/repartir/getrequestforreparting.interface";
+import { GetRequestForreparting } from "../service/getrequestforreparting";
 
 export interface ProductoChofer {
   nombre: string;
@@ -15,13 +11,6 @@ export interface ProductoChofer {
   menudencia: string;
   CategoryUnit_unit?: string;
   CategoryUnit_name?: string;
-}
-
-interface DatumExtended extends Datum {
-  RequestState_out_container?: number;
-  RequestState_in_container?: number;
-  ProductRequest_active?: string;
-  RequestStage_id?: number;
 }
 
 export interface SolicitudChofer {
@@ -46,46 +35,26 @@ export interface SolicitudChofer {
   items: ProductoChofer[];
 }
 
-function getTodayFormatted(isEnd = false) {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day} ${isEnd ? "23:59:59" : "00:00:00"}`;
-}
-
 export function useGetSolicitudesChofer() {
-  const [filters, setFilters] = useState<SolicitudChoferFilters>({
-    start_date: getTodayFormatted(false),
-    end_date: getTodayFormatted(true),
-  });
+  const { data: session, status } = useSession();
+  const employeeId = Number(
+    session?.user?.employeeId ?? (session?.user as any)?.Employee_id ?? 0,
+  );
 
   const [data, setData] = useState<SolicitudChofer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSolicitudes = useCallback(async () => {
+    if (status === "loading") return;
     setLoading(true);
     setError(null);
     try {
-      const response = await GetRequestHistory(
-        filters.start_date,
-        filters.end_date,
-        0,
-        0,
-        0,
-      );
+      // CategoryProvider_id quemado con 1, Employee_id del usuario logeado
+      const response = await GetRequestForreparting(1, employeeId);
 
-      const grouped = response.data.reduce((acc, curr: DatumExtended) => {
-        // Solo position 2
-        if (Number(curr.RequestStage_position) !== 2) return acc;
-        // Solo estados ENVIADO y ENTREGADO
-        if (
-          curr.RequestState_name !== "ENVIADO" &&
-          (curr.RequestState_name as string) !== "ENTREGADO"
-        )
-          return acc;
-
+      const items = response?.data || [];
+      const grouped = items.reduce((acc, curr: RepartirDatum) => {
         const existing = acc.find((r) => r.Request_id === curr.Request_id);
         if (existing) {
           existing.items.push({
@@ -115,7 +84,7 @@ export function useGetSolicitudesChofer() {
             PaymentType_name: curr.PaymentType_name,
             RequestStage_id: curr.RequestStage_id ?? 1,
             RequestStage_payment: curr.RequestStage_payment ?? 0,
-            RequestStage_position: curr.RequestStage_position,
+            RequestStage_position: curr.RequestStage_position ?? 2,
             RequestState_out_container: curr.RequestState_out_container ?? 0,
             RequestState_in_container: curr.RequestState_in_container ?? 0,
             ProductRequest_active: curr.ProductRequest_active ?? "true",
@@ -147,21 +116,16 @@ export function useGetSolicitudesChofer() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [status, employeeId]);
 
   useEffect(() => {
     fetchSolicitudes();
   }, [fetchSolicitudes]);
 
-  const updateFilter = (key: keyof SolicitudChoferFilters, value: string) =>
-    setFilters((prev) => ({ ...prev, [key]: value }));
-
   return {
     data,
     loading,
     error,
-    filters,
-    updateFilter,
     refetch: fetchSolicitudes,
   };
 }

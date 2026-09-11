@@ -11,6 +11,7 @@ export interface GetRequestForrepartingResponse {
 export interface Datum {
   Request_id: number;
   Request_created_at: Date;
+  Request_Employee_id?: number;
   RequestStage_id: number;
   RequestStage_position: number;
   Request_CategoryProvider_id: number;
@@ -34,6 +35,10 @@ export interface Datum {
   CategoryUnit_name?: string;
   Employee_id?: number;
   Employee_name?: string;
+  RequestStage_payment?: number;
+  RequestState_out_container?: number;
+  RequestState_in_container?: number;
+  ProductRequest_active?: string;
 }
 
 export interface Metadata {
