@@ -10,6 +10,7 @@ export interface AsientoDetalle {
 export interface CierrePeriodo {
   id: string;
   periodo: string;
+  active: string;
   fechaCierre: Date;
   cerradoPor: string;
   asientos: number;

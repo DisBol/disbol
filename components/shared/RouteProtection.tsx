@@ -27,6 +27,14 @@ export function RouteProtection({
   const router = useRouter();
 
   const isLoading = status === "loading" || loading;
+  const role = session?.user?.role?.toLowerCase() ?? "";
+  const roleFallbackRoute = role.includes("contador")
+    ? "/contabilidad"
+    : role.includes("chofer")
+      ? "/chofer"
+      : role.includes("cliente")
+        ? "/cliente"
+        : fallbackRoute;
 
   useEffect(() => {
     if (isLoading) return;
@@ -37,7 +45,7 @@ export function RouteProtection({
     }
 
     if (!hasAccess(requiredTransaction)) {
-      router.push(fallbackRoute);
+      router.push(roleFallbackRoute);
       return;
     }
   }, [
@@ -45,6 +53,7 @@ export function RouteProtection({
     hasAccess,
     requiredTransaction,
     fallbackRoute,
+    roleFallbackRoute,
     router,
     isLoading,
   ]);

@@ -13,15 +13,16 @@ import Cars from "./components/vehiculos/Car";
 import Containers from "./components/contenedores/Container";
 import Users from "./components/usuarios/Users";
 import Balanza from "./components/balanza/Balanza";
+import { CircleUserRoundIcon, UsersIcon } from "lucide-react";
 
 export default function Configuracion() {
   const tabsConfig = [
     { id: "proveedores", label: "Proveedores", icon: BoxOutlineIcon },
     { id: "productos", label: "Productos", icon: Box1Icon },
-    { id: "clientes", label: "Clientes", icon: User16Icon },
+    { id: "clientes", label: "Clientes", icon: CircleUserRoundIcon },
     { id: "vehiculos", label: "Vehículos", icon: TruckIcon },
     { id: "contenedores", label: "Contenedores", icon: BoxOutline2Icon },
-    { id: "usuarios", label: "Usuarios", icon: User16Icon },
+    { id: "usuarios", label: "Usuarios", icon: UsersIcon },
     { id: "balanza", label: "Balanza", icon: BalanzaIcon },
   ];
 

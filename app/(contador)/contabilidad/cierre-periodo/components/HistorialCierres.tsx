@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   TableWrapper,
@@ -12,18 +12,30 @@ import {
   TableCell,
 } from "@/components/ui/Table";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { Chip } from "@/components/ui/Chip";
 import { CierrePeriodo } from "../interfaces";
 import { useGetAccountingPeriod } from "../hooks/useGetAccountingPeriod";
 import { useGetAsiento } from "../../nuevo-asiento/hooks/getAsiento";
 import { useGetAccount } from "../../plan-cuentas/hooks/useGetAccount";
+import CerrarPeriodoModal from "./CerrarPeriodoModal";
+import type { Datum as AccountingPeriod } from "../interfaces/getaccountingperiod.interface";
 
 interface HistorialCierresProps {
   onSelectCierre?: (cierre: CierrePeriodo) => void;
+  onValidar?: (periodo: string) => Promise<void>;
+  onPeriodChanged?: () => void;
 }
 
 export default function HistorialCierres({
   onSelectCierre,
+  onValidar,
+  onPeriodChanged,
 }: HistorialCierresProps) {
+  const [validatingPeriodId, setValidatingPeriodId] = useState<string | null>(
+    null,
+  );
+  const [periodoParaCerrar, setPeriodoParaCerrar] =
+    useState<AccountingPeriod | null>(null);
   const {
     data: accountingPeriods,
     loading: loadingPeriods,
@@ -39,6 +51,17 @@ export default function HistorialCierres({
     loading: loadingAccounts,
     error: accountsError,
   } = useGetAccount();
+
+  const handleValidar = async (periodoId: string) => {
+    if (!onValidar) return;
+
+    setValidatingPeriodId(periodoId);
+    try {
+      await onValidar(periodoId);
+    } finally {
+      setValidatingPeriodId(null);
+    }
+  };
 
   const currencyByAccountId = useMemo(() => {
     return new Map(
@@ -73,6 +96,7 @@ export default function HistorialCierres({
       return {
         id: String(periodo.id),
         periodo: periodo.name,
+        active: periodo.active,
         fechaCierre: new Date(periodo.updated_at),
         cerradoPor: periodo.User_name,
         asientos: asientosPeriodo.length,
@@ -153,8 +177,17 @@ export default function HistorialCierres({
               <TableBody>
                 {cierres.map((cierre) => (
                   <TableRow key={cierre.id}>
-                    <TableCell className="font-medium">
-                      {cierre.periodo}
+                    <TableCell className="min-w-40 font-medium">
+                      <div>{cierre.periodo}</div>
+                      <Chip
+                        variant="flat"
+                        color={cierre.active === "true" ? "success" : "default"}
+                        size="sm"
+                        radius="full"
+                        className="mt-1 text-[10px]"
+                      >
+                        {cierre.active === "true" ? "ACTIVO" : "INACTIVO"}
+                      </Chip>
                     </TableCell>
                     <TableCell>{formatDate(cierre.fechaCierre)}</TableCell>
                     <TableCell>{cierre.cerradoPor}</TableCell>
@@ -164,18 +197,48 @@ export default function HistorialCierres({
                     <TableCell className="text-right font-semibold text-success">
                       {formatCurrency(cierre.resultado, cierre.currency)}
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        onClick={() => {
-                          if (onSelectCierre) {
-                            onSelectCierre(cierre);
+                    <TableCell className="min-w-md text-center">
+                      <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:flex-nowrap lg:items-center lg:justify-center">
+                        <Button
+                          onClick={() => {
+                            if (onSelectCierre) {
+                              onSelectCierre(cierre);
+                            }
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="w-full whitespace-nowrap lg:w-auto"
+                        >
+                          Ver Detalles
+                        </Button>
+                        <Button
+                          onClick={() => handleValidar(cierre.id)}
+                          variant="warning"
+                          size="sm"
+                          loading={validatingPeriodId === cierre.id}
+                          disabled={
+                            validatingPeriodId !== null ||
+                            cierre.active !== "true"
                           }
-                        }}
-                        variant="danger"
-                        size="sm"
-                      >
-                        Ver Detalles
-                      </Button>
+                          className="w-full whitespace-nowrap lg:w-auto"
+                        >
+                          Validar
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const periodo = accountingPeriods.find(
+                              (item) => String(item.id) === cierre.id,
+                            );
+                            if (periodo) setPeriodoParaCerrar(periodo);
+                          }}
+                          variant="danger"
+                          size="sm"
+                          disabled={cierre.active !== "true"}
+                          className="w-full whitespace-nowrap lg:w-auto"
+                        >
+                          Cerrar período
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -190,6 +253,16 @@ export default function HistorialCierres({
           </div>
         )}
       </CardContent>
+
+      <CerrarPeriodoModal
+        periodo={periodoParaCerrar}
+        isOpen={periodoParaCerrar !== null}
+        onClose={() => setPeriodoParaCerrar(null)}
+        onSuccess={async () => {
+          setPeriodoParaCerrar(null);
+          await onPeriodChanged?.();
+        }}
+      />
     </Card>
   );
 }

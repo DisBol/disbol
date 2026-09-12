@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
@@ -41,7 +41,17 @@ export function LoginForm() {
       if (result?.error) {
         setError("Credenciales inválidas");
       } else if (result?.ok) {
-        router.push("/dashboard");
+        const session = await getSession();
+        const role = session?.user?.role?.toLowerCase() ?? "";
+        const destination = role.includes("contador")
+          ? "/contabilidad"
+          : role.includes("chofer")
+            ? "/chofer"
+            : role.includes("cliente")
+              ? "/cliente"
+              : "/dashboard";
+
+        router.push(destination);
         router.refresh();
       }
     } catch (err) {

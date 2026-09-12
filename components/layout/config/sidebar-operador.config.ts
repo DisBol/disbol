@@ -5,6 +5,12 @@ import { DashboardOutlineRoundedIcon } from "@/components/icons/DashboardOutline
 import { LogoutRoundedIcon } from "@/components/icons/LogoutRounded";
 import { PinOutlineIcon } from "@/components/icons/PinOutlineIcon";
 import { ShoppingCartIcon } from "@/components/icons/ShoppingCart";
+import {
+  CircleUserRoundIcon,
+  ScaleIcon,
+  UsersIcon,
+  VanIcon,
+} from "lucide-react";
 
 interface SidebarMenuItem {
   label: string;
@@ -47,23 +53,23 @@ export const sidebarOperadorMenu: SidebarMenu = {
     {
       label: "App Chofer",
       href: "/chofer",
-      icon: BoxIcon,
+      icon: VanIcon,
     },
     {
       label: "App cliente",
       href: "/cliente",
-      icon: BoxIcon,
+      icon: CircleUserRoundIcon,
     },
     {
       label: "Contabilidad",
       href: "/contabilidad",
-      icon: BoxIcon,
+      icon: ScaleIcon,
     },
     {
-      label: "Planillas",
+      label: "RRHH / Planillas",
       href: "/planillas",
-      icon: BoxIcon,
-    }
+      icon: UsersIcon,
+    },
   ],
   footer: [
     {

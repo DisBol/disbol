@@ -8,6 +8,7 @@ import {
   DetallesCierreModal,
 } from "./components";
 import { ValidacionResponse, CierrePeriodo } from "./interfaces";
+import { useGetAccountingPeriod } from "./hooks/useGetAccountingPeriod";
 
 export default function CierrePeriodoPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -16,27 +17,40 @@ export default function CierrePeriodoPage() {
   const [cierreSeleccionado, setCierreSeleccionado] =
     useState<CierrePeriodo | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const { data: accountingPeriods } = useGetAccountingPeriod();
 
-  const handleValidar = useCallback(async (periodo: string) => {
-    try {
-      // Simulación de validación exitosa
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  const handleValidar = useCallback(
+    async (periodo: string) => {
+      try {
+        // Simulación de validación exitosa
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      setValidationStatus({
-        exito: true,
-        mensaje: `Validaciones completadas exitosamente para el período ${periodo}`,
-      });
+        const periodoNombre =
+          accountingPeriods.find((item) => String(item.id) === periodo)?.name ??
+          periodo;
+        const mensaje = `Validaciones completadas exitosamente para el período ${periodoNombre}`;
 
-      setRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error("Error validating period:", error);
-      setValidationStatus({
-        exito: false,
-        mensaje: "Error al validar período",
-        errores: [error instanceof Error ? error.message : "Error desconocido"],
-      });
-    }
-  }, []);
+        setValidationStatus({
+          exito: true,
+          mensaje,
+        });
+        alert(mensaje);
+
+        setRefreshKey((prev) => prev + 1);
+      } catch (error) {
+        console.error("Error validating period:", error);
+        const mensaje =
+          error instanceof Error ? error.message : "Error al validar período";
+        setValidationStatus({
+          exito: false,
+          mensaje: "Error al validar período",
+          errores: [mensaje],
+        });
+        alert(mensaje);
+      }
+    },
+    [accountingPeriods],
+  );
 
   const handleSelectCierre = (cierre: CierrePeriodo) => {
     setCierreSeleccionado(cierre);
@@ -44,54 +58,72 @@ export default function CierrePeriodoPage() {
   };
 
   return (
-    <div className="bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-red-600">Cierre Contable</h1>
-          <p className="text-gray-600 mt-2">
-            Gestiona el cierre de períodos contables
-          </p>
-        </div>
+    <main className="bg-gray-50/80 px-2 py-4 sm:px-4 lg:px-6">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-6 border-b border-gray-200 pb-6 sm:mb-8">
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-red-600 sm:text-3xl">
+                Cierre contable
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
+                Gestiona el cierre de los períodos contables.
+              </p>
+            </div>
+          </div>
+        </header>
 
         {/* Alert de validación */}
         {validationStatus && (
           <Card
-            className={`mb-6 ${
+            role="alert"
+            className={`mb-6 overflow-hidden border-l-4 ${
               validationStatus.exito
-                ? "border-success bg-success/5"
-                : "border-danger bg-danger/5"
+                ? "border-l-emerald-500 bg-emerald-50/70"
+                : "border-l-red-500 bg-red-50/70"
             }`}
           >
-            <CardContent className="pt-6">
-              <p
-                className={`font-semibold ${
-                  validationStatus.exito ? "text-success" : "text-danger"
+            <CardContent className="flex gap-3 p-4 sm:p-5">
+              <div
+                className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                  validationStatus.exito
+                    ? "bg-emerald-100 text-emerald-600"
+                    : "bg-red-100 text-red-600"
                 }`}
               >
-                {validationStatus.mensaje}
-              </p>
-              {validationStatus.errores &&
-                validationStatus.errores.length > 0 && (
-                  <ul
-                    className={`mt-2 list-disc list-inside ${
-                      validationStatus.exito ? "text-success" : "text-danger"
-                    }`}
-                  >
-                    {validationStatus.errores.map((error, index) => (
-                      <li key={index} className="text-sm">
-                        {error}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {validationStatus.exito ? "✓" : "!"}
+              </div>
+              <div>
+                <p
+                  className={`font-semibold ${
+                    validationStatus.exito ? "text-emerald-800" : "text-red-800"
+                  }`}
+                >
+                  {validationStatus.mensaje}
+                </p>
+                {validationStatus.errores &&
+                  validationStatus.errores.length > 0 && (
+                    <ul
+                      className={`mt-2 list-inside list-disc text-sm ${
+                        validationStatus.exito
+                          ? "text-emerald-700"
+                          : "text-red-700"
+                      }`}
+                    >
+                      {validationStatus.errores.map((error, index) => (
+                        <li key={index} className="text-sm">
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </div>
             </CardContent>
           </Card>
         )}
 
         {/* Selector de período */}
         <SelectorPeriodo
-          onValidar={handleValidar}
           onPeriodAdded={() => setRefreshKey((prev) => prev + 1)}
         />
 
@@ -99,6 +131,8 @@ export default function CierrePeriodoPage() {
         <HistorialCierres
           key={refreshKey}
           onSelectCierre={handleSelectCierre}
+          onValidar={handleValidar}
+          onPeriodChanged={() => setRefreshKey((prev) => prev + 1)}
         />
 
         {/* Modal de detalles */}
@@ -108,6 +142,6 @@ export default function CierrePeriodoPage() {
           onClose={() => setModalAbierto(false)}
         />
       </div>
-    </div>
+    </main>
   );
 }

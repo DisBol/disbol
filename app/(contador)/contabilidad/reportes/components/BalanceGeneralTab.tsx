@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
 import { type Datum as AccountDatum } from "../../plan-cuentas/interfaces/getaccount.interface";
 import { type Datum as ElementDatum } from "../../plan-cuentas/interfaces/getelements.interface";
 import { type Datum as AsientoDatum } from "../interfaces/getasientobyperiod.interface";
@@ -20,6 +22,12 @@ export default function BalanceGeneralTab({
   accounts,
   asientos,
 }: BalanceGeneralTabProps) {
+  const [selectedAccount, setSelectedAccount] = useState<{
+    id: number;
+    name: string;
+    currency?: string;
+  } | null>(null);
+
   const formatCurrency = (value: number, currency?: string) => {
     if (!currency) {
       return "-";
@@ -58,6 +66,29 @@ export default function BalanceGeneralTab({
     },
     {},
   );
+
+  const selectedAccountEntries = selectedAccount
+    ? asientos.filter((asiento) => asiento.Account_id === selectedAccount.id)
+    : [];
+  const selectedAccountTotals = selectedAccountEntries.reduce(
+    (totals, asiento) => ({
+      debit: totals.debit + asiento.amount_debit,
+      credit: totals.credit + asiento.amount_credit,
+    }),
+    { debit: 0, credit: 0 },
+  );
+  const selectedAccountBalance =
+    selectedAccountTotals.credit - selectedAccountTotals.debit;
+
+  const formatDate = (value: Date) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? String(value)
+      : new Intl.DateTimeFormat("es-ES", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(date);
+  };
 
   const groupedElements = ["activo", "pasivo", "patrimonio"].map((group) => {
     const matchedElements = elements.filter((element) =>
@@ -148,9 +179,17 @@ export default function BalanceGeneralTab({
                         <div className="space-y-1.5 border-l-2 border-gray-100 pl-3">
                           {element.accounts.length > 0 ? (
                             element.accounts.map((account) => (
-                              <div
+                              <button
                                 key={account.id}
-                                className="flex items-center justify-between text-sm py-0.5"
+                                type="button"
+                                onClick={() =>
+                                  setSelectedAccount({
+                                    id: account.id,
+                                    name: account.name,
+                                    currency: account.currency,
+                                  })
+                                }
+                                className="flex w-full items-center justify-between text-left text-sm py-0.5 rounded-md px-1 -mx-1 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30"
                               >
                                 <span className="text-gray-500 font-normal truncate max-w-[70%]">
                                   {account.name}
@@ -167,7 +206,7 @@ export default function BalanceGeneralTab({
                                     account.currency,
                                   )}
                                 </span>
-                              </div>
+                              </button>
                             ))
                           ) : (
                             <p className="text-xs italic text-gray-400 py-1">
@@ -267,6 +306,113 @@ export default function BalanceGeneralTab({
           Exportar PDF
         </Button>
       </div>
+
+      <Modal
+        isOpen={selectedAccount !== null}
+        onClose={() => setSelectedAccount(null)}
+        title={selectedAccount ? `Detalle: ${selectedAccount.name}` : ""}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {selectedAccountEntries.length > 0 ? (
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="w-full min-w-155 text-sm">
+                <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th className="px-3 py-2 font-semibold">Fecha</th>
+                    <th className="px-3 py-2 font-semibold">Descripción</th>
+                    <th className="px-3 py-2 text-right font-semibold">Debe</th>
+                    <th className="px-3 py-2 text-right font-semibold">
+                      Haber
+                    </th>
+                    <th className="px-3 py-2 text-right font-semibold">
+                      Saldo
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {selectedAccountEntries.map((asiento) => {
+                    const saldo = asiento.amount_credit - asiento.amount_debit;
+
+                    return (
+                      <tr key={asiento.id} className="text-gray-700">
+                        <td className="whitespace-nowrap px-3 py-2 text-xs text-gray-500">
+                          {formatDate(asiento.created_at)}
+                        </td>
+                        <td className="px-3 py-2">
+                          {asiento.description || "-"}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {formatCurrency(
+                            asiento.amount_debit,
+                            selectedAccount?.currency,
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {formatCurrency(
+                            asiento.amount_credit,
+                            selectedAccount?.currency,
+                          )}
+                        </td>
+                        <td
+                          className={`px-3 py-2 text-right font-semibold tabular-nums ${
+                            saldo < 0 ? "text-rose-600" : "text-gray-900"
+                          }`}
+                        >
+                          {formatCurrency(saldo, selectedAccount?.currency)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="py-6 text-center text-sm text-gray-500">
+              No hay movimientos para esta cuenta en el período seleccionado.
+            </p>
+          )}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-lg border border-gray-100 bg-rose-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">
+                Total Debe
+              </p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-gray-900">
+                {formatCurrency(
+                  selectedAccountTotals.debit,
+                  selectedAccount?.currency,
+                )}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-blue-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                Total Haber
+              </p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-gray-900">
+                {formatCurrency(
+                  selectedAccountTotals.credit,
+                  selectedAccount?.currency,
+                )}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                Saldo
+              </p>
+              <p
+                className={`mt-1 text-lg font-bold tabular-nums ${
+                  selectedAccountBalance < 0 ? "text-rose-600" : "text-gray-900"
+                }`}
+              >
+                {formatCurrency(
+                  selectedAccountBalance,
+                  selectedAccount?.currency,
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
