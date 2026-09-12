@@ -69,7 +69,7 @@ export function useGetSolicitudesChofer() {
     setError(null);
     try {
       // CategoryProvider_id quemado con 0, Employee_id del usuario logeado
-      const response = await GetRequestForreparting(0, employeeId);
+      const response = await GetRequestForreparting(1, employeeId);
 
       const items = response?.data || [];
       const grouped = items.reduce((acc, curr: RepartirDatum) => {

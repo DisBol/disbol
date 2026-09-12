@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { Map as LeafletMap } from "leaflet";
 
 interface Cliente {
   id: string;
@@ -29,12 +30,33 @@ export default function MapaChofer({
   clientes,
 }: MapaChofertProps) {
   const mapRef = useRef<HTMLDivElement>(null);
+  const [isMapLocked, setIsMapLocked] = useState(true);
+  const isMapLockedRef = useRef(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersRef = useRef<{ [key: string]: any }>({});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rutasMarkersRef = useRef<any[]>([]);
+
+  const setMapInteractions = (map: LeafletMap, enabled: boolean) => {
+    const controls = [
+      map.dragging,
+      map.touchZoom,
+      map.scrollWheelZoom,
+      map.doubleClickZoom,
+      map.boxZoom,
+      map.keyboard,
+    ];
+
+    controls.forEach((control) => {
+      if (enabled) {
+        control.enable();
+      } else {
+        control.disable();
+      }
+    });
+  };
 
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current) return;
@@ -75,6 +97,8 @@ export default function MapaChofer({
           zoom: 14,
           zoomControl: true,
         });
+
+        setMapInteractions(map, !isMapLockedRef.current);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution:
@@ -195,6 +219,13 @@ export default function MapaChofer({
     });
   }, [vehiculoLat, vehiculoLng, vehiculoNombre, clientes]);
 
+  useEffect(() => {
+    isMapLockedRef.current = isMapLocked;
+    if (mapInstanceRef.current) {
+      setMapInteractions(mapInstanceRef.current, !isMapLocked);
+    }
+  }, [isMapLocked]);
+
   // Keep Leaflet synced with container size changes
   useEffect(() => {
     if (!mapRef.current || typeof ResizeObserver === "undefined") return;
@@ -219,6 +250,40 @@ export default function MapaChofer({
   }, []);
 
   return (
-    <div ref={mapRef} style={{ width: "100%", height: "100%", zIndex: 0 }} />
+    <div className="relative h-full w-full">
+      <div ref={mapRef} style={{ width: "100%", height: "100%", zIndex: 0 }} />
+      <button
+        type="button"
+        aria-label={isMapLocked ? "Desbloquear mapa" : "Bloquear mapa"}
+        title={isMapLocked ? "Desbloquear mapa" : "Bloquear mapa"}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => setIsMapLocked((locked) => !locked)}
+        className="absolute right-3 top-3 z-1000 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 shadow-md transition-colors hover:bg-gray-50"
+      >
+        {isMapLocked ? (
+          <svg
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <rect x="5" y="10" width="14" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          </svg>
+        ) : (
+          <svg
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <rect x="5" y="10" width="14" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 7-2" />
+          </svg>
+        )}
+      </button>
+    </div>
   );
 }

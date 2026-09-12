@@ -4,6 +4,7 @@ export async function apiCall(
 ) {
   const response = await fetch("/api/proxy", {
     method: "POST",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
     },

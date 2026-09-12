@@ -15,6 +15,7 @@ import { useAddContainerMovements } from "@/app/(operador)/asignaciones/hooks/re
 import { useUpdateRequestStage } from "@/app/(operador)/asignaciones/hooks/repartir/useUpdateRequeststage";
 import { useContainer } from "@/app/(operador)/configuraciones/hooks/contenedores/useContainer";
 import CardCode from "@/components/ui/CardCode";
+import { Modal } from "@/components/ui/Modal";
 import ModalCanastos from "./ModalCanastos";
 
 /* ─────────────── Tipos ─────────────── */
@@ -50,6 +51,7 @@ interface Solicitud {
 
 interface ClientesListProps {
   solicitudes: Solicitud[];
+  refetchSolicitudes: () => Promise<void>;
 }
 
 interface SolicitudAcciones {
@@ -179,7 +181,7 @@ function SolicitudCard({
   );
 
   const totalSolicitado = Number(sol.totalACobrar ?? 0);
-  const montoCubierto = totalPagado >= totalSolicitado;
+  const montoCubierto = totalSolicitado > 0 && totalPagado >= totalSolicitado;
   const tienePago = totalPagado > 0;
   const tieneDeuda = totalDeuda > 0 || paymentDeuda.length > 0;
 
@@ -195,10 +197,11 @@ function SolicitudCard({
 
   const pagoConfirmado =
     montoCubierto ||
-    paymentRecordsActivos.length > 0 ||
+    paymentReal.length > 0 ||
+    paymentDeuda.length > 0 ||
     acc.pagoConfirmado ||
-    sol.paymentTypeName === "Efectivo" ||
-    sol.paymentTypeName === "Qr";
+    (sol.paymentTypeName !== "No Pagado" &&
+      (sol.paymentTypeName === "Efectivo" || sol.paymentTypeName === "Qr"));
 
   const paymentStatusLabel = montoCubierto
     ? "Pagado"
@@ -208,7 +211,9 @@ function SolicitudCard({
         : "Deuda"
       : tienePago
         ? "Pagado"
-        : null;
+        : sol.paymentTypeName === "No Pagado"
+          ? "No Pagado"
+          : null;
 
   const handleConfirmarPago = async (solicitudId: string) => {
     if (!acc.metodoCobro) return;
@@ -485,7 +490,10 @@ function SolicitudCard({
 
 /* ─────────────── Componente principal ─────────────── */
 
-export default function ClientesList({ solicitudes }: ClientesListProps) {
+export default function ClientesList({
+  solicitudes,
+  refetchSolicitudes,
+}: ClientesListProps) {
   const { data: paymentTypes } = useGetPaymentType();
   const { addPaymentType } = useUpdateRequestPaymentType();
   const { addContainerMovements } = useAddContainerMovements();
@@ -493,6 +501,7 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
   const { containers } = useContainer();
   const [savingCanastos, setSavingCanastos] = useState<string | null>(null);
   const [savingPaymentId, setSavingPaymentId] = useState<string | null>(null);
+  const [showEntregaSuccess, setShowEntregaSuccess] = useState(false);
   const [modalOpenSolicitudId, setModalOpenSolicitudId] = useState<
     string | null
   >(null);
@@ -547,6 +556,10 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
     try {
       await entregarSolicitud(Number(id));
       update(id, { entregado: true });
+      setShowEntregaSuccess(true);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setShowEntregaSuccess(false);
+      await refetchSolicitudes();
     } catch {
       // error manejado en el servicio
     }
@@ -696,6 +709,34 @@ export default function ClientesList({ solicitudes }: ClientesListProps) {
         onConfirm={handleConfirmarDevolucionCanastos}
         saving={savingCanastos === modalOpenSolicitudId}
       />
+
+      <Modal
+        isOpen={showEntregaSuccess}
+        onClose={() => setShowEntregaSuccess(false)}
+        showCloseButton={false}
+        size="sm"
+      >
+        <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
+            <svg
+              className="h-9 w-9"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <p className="text-lg font-semibold text-gray-900">
+            Entregado con éxito
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }

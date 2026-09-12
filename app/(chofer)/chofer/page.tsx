@@ -97,7 +97,7 @@ function mapToSolicitudes(grouped: SolicitudChofer[]) {
 }
 
 export default function ChoferPage() {
-  const { data, loading, error, filters, updateFilter } =
+  const { data, loading, error, filters, updateFilter, refetch } =
     useGetSolicitudesChofer();
   const { rawData: clientesRaw } = useClients();
   const [paymentSummary, setPaymentSummary] = React.useState({
@@ -265,46 +265,6 @@ export default function ChoferPage() {
           </TabsList>
 
           <TabsContent value="seguimiento" className="mt-0">
-            {/* Filtro de fechas */}
-            <div className="flex items-center gap-3 mb-4 bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
-                Filtrar por fecha
-              </span>
-              <div className="flex items-center gap-2 flex-wrap">
-                <input
-                  type="date"
-                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300"
-                  value={toDateInputValue(filters.start_date)}
-                  onChange={(e) =>
-                    updateFilter(
-                      "start_date",
-                      fromDateInputValue(e.target.value, false),
-                    )
-                  }
-                />
-                <span className="text-gray-400 text-sm">—</span>
-                <input
-                  type="date"
-                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300"
-                  value={toDateInputValue(filters.end_date)}
-                  onChange={(e) =>
-                    updateFilter(
-                      "end_date",
-                      fromDateInputValue(e.target.value, true),
-                    )
-                  }
-                />
-              </div>
-              {loading && (
-                <span className="text-xs text-gray-400 ml-auto">
-                  Cargando...
-                </span>
-              )}
-              {error && (
-                <span className="text-xs text-red-500 ml-auto">{error}</span>
-              )}
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
               {/* Mapa - 3 columnas */}
               <div className="lg:col-span-3 flex flex-col gap-4 lg:gap-6">
@@ -343,7 +303,10 @@ export default function ChoferPage() {
                     seleccionadas.
                   </p>
                 ) : (
-                  <ClientesList solicitudes={solicitudes} />
+                  <ClientesList
+                    solicitudes={solicitudes}
+                    refetchSolicitudes={refetch}
+                  />
                 )}
               </div>
 
