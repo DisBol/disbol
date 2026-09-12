@@ -3,6 +3,11 @@ import { useSession } from "next-auth/react";
 import { Datum as RepartirDatum } from "@/app/(operador)/asignaciones/interfaces/repartir/getrequestforreparting.interface";
 import { GetRequestForreparting } from "../service/getrequestforreparting";
 
+export interface SolicitudChoferFilters {
+  start_date: string;
+  end_date: string;
+}
+
 export interface ProductoChofer {
   nombre: string;
   categoria: string;
@@ -35,11 +40,24 @@ export interface SolicitudChofer {
   items: ProductoChofer[];
 }
 
+function getTodayFormatted(isEnd = false) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day} ${isEnd ? "23:59:59" : "00:00:00"}`;
+}
+
 export function useGetSolicitudesChofer() {
   const { data: session, status } = useSession();
   const employeeId = Number(
     session?.user?.employeeId ?? (session?.user as any)?.Employee_id ?? 0,
   );
+
+  const [filters, setFilters] = useState<SolicitudChoferFilters>({
+    start_date: getTodayFormatted(false),
+    end_date: getTodayFormatted(true),
+  });
 
   const [data, setData] = useState<SolicitudChofer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,8 +68,8 @@ export function useGetSolicitudesChofer() {
     setLoading(true);
     setError(null);
     try {
-      // CategoryProvider_id quemado con 1, Employee_id del usuario logeado
-      const response = await GetRequestForreparting(1, employeeId);
+      // CategoryProvider_id quemado con 0, Employee_id del usuario logeado
+      const response = await GetRequestForreparting(0, employeeId);
 
       const items = response?.data || [];
       const grouped = items.reduce((acc, curr: RepartirDatum) => {
@@ -122,10 +140,15 @@ export function useGetSolicitudesChofer() {
     fetchSolicitudes();
   }, [fetchSolicitudes]);
 
+  const updateFilter = (key: keyof SolicitudChoferFilters, value: string) =>
+    setFilters((prev) => ({ ...prev, [key]: value }));
+
   return {
     data,
     loading,
     error,
+    filters,
+    updateFilter,
     refetch: fetchSolicitudes,
   };
 }

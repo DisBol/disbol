@@ -59,6 +59,14 @@ const chofertData = {
   totalGastos: 150,
 };
 
+function toDateInputValue(datetime: string) {
+  return datetime.split(" ")[0];
+}
+
+function fromDateInputValue(date: string, isEnd = false) {
+  return `${date} ${isEnd ? "23:59:59" : "00:00:00"}`;
+}
+
 function mapToSolicitudes(grouped: SolicitudChofer[]) {
   return grouped.map((req) => ({
     id: String(req.Request_id),
@@ -89,7 +97,8 @@ function mapToSolicitudes(grouped: SolicitudChofer[]) {
 }
 
 export default function ChoferPage() {
-  const { data, loading, error } = useGetSolicitudesChofer();
+  const { data, loading, error, filters, updateFilter } =
+    useGetSolicitudesChofer();
   const { rawData: clientesRaw } = useClients();
   const [paymentSummary, setPaymentSummary] = React.useState({
     qr: 0,
@@ -256,11 +265,45 @@ export default function ChoferPage() {
           </TabsList>
 
           <TabsContent value="seguimiento" className="mt-0">
-            {error && (
-              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-xl text-sm">
-                Error: {error}
+            {/* Filtro de fechas */}
+            <div className="flex items-center gap-3 mb-4 bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                Filtrar por fecha
+              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  type="date"
+                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+                  value={toDateInputValue(filters.start_date)}
+                  onChange={(e) =>
+                    updateFilter(
+                      "start_date",
+                      fromDateInputValue(e.target.value, false),
+                    )
+                  }
+                />
+                <span className="text-gray-400 text-sm">—</span>
+                <input
+                  type="date"
+                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+                  value={toDateInputValue(filters.end_date)}
+                  onChange={(e) =>
+                    updateFilter(
+                      "end_date",
+                      fromDateInputValue(e.target.value, true),
+                    )
+                  }
+                />
               </div>
-            )}
+              {loading && (
+                <span className="text-xs text-gray-400 ml-auto">
+                  Cargando...
+                </span>
+              )}
+              {error && (
+                <span className="text-xs text-red-500 ml-auto">{error}</span>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
               {/* Mapa - 3 columnas */}
@@ -294,13 +337,10 @@ export default function ChoferPage() {
                 </div>
 
                 {/* Lista de Clientes */}
-                {loading ? (
+                {solicitudes.length === 0 && !loading ? (
                   <p className="text-sm text-gray-400 text-center py-8">
-                    Cargando solicitudes...
-                  </p>
-                ) : solicitudes.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-8">
-                    No hay solicitudes asignadas para entrega.
+                    No hay solicitudes con estado ENVIADO para las fechas
+                    seleccionadas.
                   </p>
                 ) : (
                   <ClientesList solicitudes={solicitudes} />
