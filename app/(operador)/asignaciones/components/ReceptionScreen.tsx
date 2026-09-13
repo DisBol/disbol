@@ -36,6 +36,10 @@ interface ProductReception {
   recibidosUnidades: number;
   productId: string;
   active: boolean; // Agregar estado activo
+  CategoryUnit_name?: string;
+  CategoryUnit_unit?: string;
+  categoryUnitName?: string;
+  categoryUnitUnit?: string;
 }
 
 interface ReceptionScreenProps {
@@ -93,6 +97,10 @@ export default function ReceptionScreen({
         recibidosUnidades: 0,
         productId: p.productId,
         active: p.active,
+        CategoryUnit_name: p.CategoryUnit_name || p.categoryUnitName,
+        CategoryUnit_unit: p.CategoryUnit_unit || p.categoryUnitUnit,
+        categoryUnitName: p.categoryUnitName || p.CategoryUnit_name,
+        categoryUnitUnit: p.categoryUnitUnit || p.CategoryUnit_unit,
       }));
   }, [assignment.productos]);
 

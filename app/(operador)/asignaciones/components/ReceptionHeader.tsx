@@ -176,7 +176,7 @@ export default function ReceptionHeader({
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                  Unidades
+                  {unidadesLabel}
                 </span>
                 <span className="text-sm font-bold text-slate-900">
                   {formatNumber(solicitud.unidades || 0)}
@@ -184,7 +184,7 @@ export default function ReceptionHeader({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                  Cajas
+                  {cajasLabel}
                 </span>
                 <span className="text-sm font-bold text-slate-900">
                   {formatNumber(solicitud.cajas)}
@@ -245,8 +245,13 @@ export default function ReceptionHeader({
                           {producto.nombre}
                         </span>
                         <div className="flex items-center justify-between text-[10px] text-amber-800/80">
-                          <span>{formatNumber(total.unidades)} unidades</span>
-                          <span>{formatNumber(total.cajas)} cajas</span>
+                          <span>
+                            {formatNumber(total.unidades)}{" "}
+                            {unidadesLabel.toLowerCase()}
+                          </span>
+                          <span>
+                            {formatNumber(total.cajas)} {cajasLabel.toLowerCase()}
+                          </span>
                           <span>{formatWeight(total.pesoNeto)}</span>
                         </div>
                       </div>

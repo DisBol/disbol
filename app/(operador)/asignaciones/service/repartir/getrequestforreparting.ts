@@ -6,7 +6,7 @@ export async function GetRequestForreparting(
   Employee_id: number = 0,
 ): Promise<GetRequestForrepartingResponse> {
   return apiCall("getrequestforreparting", {
-    CategoryProvider_id,
-    Employee_id,
+    CategoryProvider_id: Number(CategoryProvider_id) || 0,
+    Employee_id: 0, // Siempre 0 en el módulo de repartir del operador
   });
 }

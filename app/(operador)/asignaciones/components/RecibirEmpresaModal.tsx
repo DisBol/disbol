@@ -35,7 +35,16 @@ interface RecibirEmpresaModalProps {
   entregasList: EntregaEmpresa[];
   setEntregasList: Dispatch<SetStateAction<EntregaEmpresa[]>>;
   assignmentId: number;
-  productos?: { codigo: string; productId?: string | number }[];
+  productos?: {
+    codigo: string;
+    productId?: string | number;
+    CategoryUnit_name?: string;
+    CategoryUnit_unit?: string;
+    categoryUnitName?: string;
+    categoryUnitUnit?: string;
+  }[];
+  cajasLabel?: string;
+  unidadesLabel?: string;
 }
 
 export default function RecibirEmpresaModal({
@@ -45,6 +54,8 @@ export default function RecibirEmpresaModal({
   setEntregasList,
   assignmentId,
   productos = [],
+  cajasLabel,
+  unidadesLabel,
 }: RecibirEmpresaModalProps) {
   const [cajasInput, setCajasInput] = useState("");
   const [unidadesInput, setUnidadesInput] = useState("");
@@ -256,6 +267,39 @@ export default function RecibirEmpresaModal({
     }
   };
 
+  const selectedProduct = useMemo(() => {
+    if (!productoInput) return null;
+    return productos.find((p) => p.codigo === productoInput);
+  }, [productoInput, productos]);
+
+  const defaultProductCajas = productos.find(
+    (p) => p.CategoryUnit_name || p.categoryUnitName,
+  );
+  const fallbackCajas =
+    defaultProductCajas?.CategoryUnit_name ||
+    defaultProductCajas?.categoryUnitName;
+
+  const defaultProductUnit = productos.find(
+    (p) => p.CategoryUnit_unit || p.categoryUnitUnit,
+  );
+  const fallbackUnit =
+    defaultProductUnit?.CategoryUnit_unit ||
+    defaultProductUnit?.categoryUnitUnit;
+
+  const currentCajasLabel =
+    selectedProduct?.CategoryUnit_name ||
+    selectedProduct?.categoryUnitName ||
+    cajasLabel ||
+    fallbackCajas ||
+    "Cajas";
+
+  const currentUnidadesLabel =
+    selectedProduct?.CategoryUnit_unit ||
+    selectedProduct?.categoryUnitUnit ||
+    unidadesLabel ||
+    fallbackUnit ||
+    "Unidades";
+
   return (
     <Modal
       isOpen={isOpen}
@@ -268,7 +312,7 @@ export default function RecibirEmpresaModal({
           <div className="grid grid-cols-5 gap-3 w-full">
             <div className="col-span-1">
               <span className="text-[10px] font-bold text-gray-500 uppercase block mb-1">
-                Cajas
+                {currentCajasLabel}
               </span>
               <InputField
                 ref={cajasInputRef}
@@ -281,7 +325,7 @@ export default function RecibirEmpresaModal({
             </div>
             <div className="col-span-1">
               <span className="text-[10px] font-bold text-gray-500 uppercase block mb-1">
-                Unidades
+                {currentUnidadesLabel}
               </span>
               <InputField
                 placeholder="0"
@@ -351,13 +395,13 @@ export default function RecibirEmpresaModal({
               <>
                 <div className="flex items-center gap-3 px-2 pb-1 border-b border-gray-100">
                   <div className="grid grid-cols-4 gap-3 w-full text-[9px] font-bold text-gray-400 uppercase tracking-wider text-left">
-                    <span>Cajas</span>
-                    <span>Unidades</span>
+                    <span>{cajasLabel || fallbackCajas || "Cajas"}</span>
+                    <span>{unidadesLabel || fallbackUnit || "Unidades"}</span>
                     <span>Peso (kg)</span>
                     <span>Producto</span>
                   </div>
                   <div className="w-16 shrink-0 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-center">
-                    Aciones
+                    Acciones
                   </div>
                 </div>
                 {paginatedEntregas.map((entrega) => (

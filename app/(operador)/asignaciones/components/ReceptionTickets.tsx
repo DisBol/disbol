@@ -22,6 +22,12 @@ interface ProductReception {
   kgBruto: number;
   kgNeto: number;
   kgRecibidos: number;
+  productId?: string | number;
+  active?: boolean;
+  CategoryUnit_name?: string;
+  CategoryUnit_unit?: string;
+  categoryUnitName?: string;
+  categoryUnitUnit?: string;
 }
 
 interface ReceptionTicketsProps {
@@ -894,6 +900,8 @@ export default function ReceptionTickets({
         setEntregasList={setEntregasList}
         assignmentId={assignmentId}
         productos={productos}
+        cajasLabel={cajasLabel}
+        unidadesLabel={unidadesLabel}
       />
     </Card>
   );
