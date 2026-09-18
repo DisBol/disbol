@@ -39,4 +39,5 @@ Abre [http://localhost:3000](http://localhost:3000) en el navegador.
 
 ## Notas
 
+dp
 El proyecto usa autenticación, protección de rutas y módulos separados por roles, por lo que varias vistas dependen de sesión activa y permisos
