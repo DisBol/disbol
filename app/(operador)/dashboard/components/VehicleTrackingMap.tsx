@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useGetTrackingData } from "@/app/(operador)/seguimiento/hook/useGetTrackingData";
+import { useGetVehicleComplete } from "@/app/(operador)/seguimiento/hook/useGetVehicleComplete";
 
 // Fix para los íconos de Leaflet en Next.js
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,57 +19,49 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Mock data for vehicles
-const vehicles = [
-  {
-    id: 1,
-    name: "Camión 01",
-    lat: -16.5,
-    lng: -68.1193,
-    status: "En movimiento",
-    lastUpdate: "Hace 2 min",
-  }, // Near La Paz center
-  {
-    id: 2,
-    name: "Furgoneta 03",
-    lat: -16.51,
-    lng: -68.125,
-    status: "Detenido",
-    lastUpdate: "Hace 15 min",
-  },
-  {
-    id: 3,
-    name: "Moto 05",
-    lat: -16.495,
-    lng: -68.13,
-    status: "En entrega",
-    lastUpdate: "Hace 5 min",
-  },
-  {
-    id: 4,
-    name: "Camión 02",
-    lat: -16.52,
-    lng: -68.11,
-    status: "En ruta",
-    lastUpdate: "Hace 1 min",
-  },
-];
+const DEFAULT_CENTER: [number, number] = [-16.505, -68.12];
+
+function vehicleStatus(speed: number, ignition: boolean) {
+  if (speed > 0) return "En movimiento";
+  return ignition ? "Detenido (encendido)" : "Apagado";
+}
 
 export default function VehicleTrackingMap() {
-  const [mounted, setMounted] = useState(false);
+  // Se carga con dynamic(..., { ssr: false }) desde el dashboard, así que no hay render en servidor.
+  // Misma fuente que la pantalla Seguimiento: posiciones GPS de Monnet cada 30 s
+  const { trackingData, error } = useGetTrackingData(30000);
+  const { vehicles: vehiclesInfo } = useGetVehicleComplete();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const vehicles = useMemo(
+    () =>
+      trackingData
+        .map((gps) => {
+          const info = vehiclesInfo.find(
+            (v) => v.nombre === gps.UnitId || v.patente === gps.UnitPlate,
+          );
+          const speed = Number(gps.GpsSpeed) || 0;
+          return {
+            id: gps.UnitId,
+            name: info?.nombre || gps.UnitPlate || gps.UnitId,
+            lat: parseFloat(gps.Latitude),
+            lng: parseFloat(gps.Longitude),
+            status: vehicleStatus(speed, gps.Ignition === "1"),
+            speed,
+            lastUpdate: gps.ReportDate,
+          };
+        })
+        .filter((v) => Number.isFinite(v.lat) && Number.isFinite(v.lng)),
+    [trackingData, vehiclesInfo],
+  );
 
-  if (!mounted) {
-    return (
-      <div className="h-64 w-full bg-slate-100 animate-pulse rounded-lg"></div>
-    );
-  }
-
-  // Center the map roughly around the vehicles
-  const centerPosition: [number, number] = [-16.505, -68.12];
+  // Centro: promedio de las posiciones de los vehículos
+  const centerPosition: [number, number] =
+    vehicles.length > 0
+      ? [
+          vehicles.reduce((sum, v) => sum + v.lat, 0) / vehicles.length,
+          vehicles.reduce((sum, v) => sum + v.lng, 0) / vehicles.length,
+        ]
+      : DEFAULT_CENTER;
 
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
@@ -76,12 +70,19 @@ export default function VehicleTrackingMap() {
           Seguimiento de Vehículos en Tiempo Real
         </h2>
         <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-          {vehicles.length} Unidades Activas
+          {vehicles.filter((v) => v.speed > 0).length} en movimiento ·{" "}
+          {vehicles.length} unidades
         </span>
       </div>
+      {error && (
+        <p className="mb-2 text-xs text-rose-600">
+          No se pudo obtener la ubicación de los vehículos: {error}
+        </p>
+      )}
 
       <div className="h-[400px] w-full rounded-lg overflow-hidden relative z-0">
         <MapContainer
+          key={vehicles.length > 0 ? "con-vehiculos" : "sin-vehiculos"}
           center={centerPosition}
           zoom={13}
           style={{ height: "100%", width: "100%" }}
@@ -100,6 +101,12 @@ export default function VehicleTrackingMap() {
                     Estado:{" "}
                     <span className="font-medium text-slate-800">
                       {vehicle.status}
+                    </span>
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    Velocidad:{" "}
+                    <span className="font-medium text-slate-800">
+                      {vehicle.speed} km/h
                     </span>
                   </p>
                   <p className="text-xs text-slate-400 mt-1">

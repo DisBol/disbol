@@ -2,6 +2,7 @@
 import dynamic from "next/dynamic";
 import { ReactNode } from "react";
 import { RouteProtection } from "@/components/shared/RouteProtection";
+import { useGetDashboardOperador } from "./hooks/useGetDashboardOperador";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface KpiCardProps {
@@ -196,26 +197,40 @@ const VehicleTrackingMap = dynamic(
   },
 );
 
+// Variación porcentual contra el día anterior (null si no hay base de comparación)
+function deltaVsAyer(hoy: number, ayer: number): string | null {
+  if (ayer === 0) return null;
+  const pct = ((hoy - ayer) / ayer) * 100;
+  return `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%`;
+}
+
+const formatBs = (value: number) =>
+  `Bs ${value.toLocaleString("es-BO", { maximumFractionDigits: 2 })}`;
+
 export default function Dashboard() {
+  const { data, canastosEnClientes, loading, error } =
+    useGetDashboardOperador();
+  const valor = (n: number) => (loading ? "…" : n.toLocaleString("es-BO"));
+
   const kpis = [
     {
       label: "Entregas Hoy",
-      value: "42",
-      delta: "+5%",
+      value: valor(data.entregasHoy),
+      delta: deltaVsAyer(data.entregasHoy, data.entregasAyer),
       icon: <CheckCircleIcon />,
       bgIcon: "bg-emerald-50",
     },
     {
-      label: "Total Solicitudes",
-      value: "158",
-      delta: "+12%",
+      label: "Solicitudes Hoy",
+      value: valor(data.solicitudesHoy),
+      delta: deltaVsAyer(data.solicitudesHoy, data.solicitudesAyer),
       icon: <CartIcon />,
       bgIcon: "bg-sky-50",
     },
     {
       label: "Canastos en Clientes",
-      value: "842",
-      delta: "-18%",
+      value: valor(canastosEnClientes),
+      delta: null,
       icon: <ArchiveIcon />,
       bgIcon: "bg-amber-50",
     },
@@ -256,30 +271,34 @@ export default function Dashboard() {
     },
   ];
 
-  const ventas = [
-    { label: "Pollería El Rey", value: 12500, displayValue: "Bs 12.500" },
-    { label: "Doña Juana", value: 8900, displayValue: "Bs 8.900" },
-    { label: "Feria Sector A", value: 11200, displayValue: "Bs 11.200" },
-    { label: "Mercado Central", value: 7500, displayValue: "Bs 7.500" },
-    { label: "Distribuidor Sucre", value: 9800, displayValue: "Bs 9.800" },
-  ];
+  const ventas = data.ventasPorCliente.map((v) => ({
+    label: v.Client_name,
+    value: Number(v.total),
+    displayValue: formatBs(Number(v.total)),
+  }));
 
-  const pedidos = [
-    { label: "Código 104", value: 80, displayValue: "80 Unid." },
-    { label: "Código 105", value: 70, displayValue: "70 Unid." },
-    { label: "Código 106", value: 60, displayValue: "60 Unid." },
-    { label: "Código 107", value: 50, displayValue: "50 Unid." },
-    { label: "Código 108", value: 40, displayValue: "40 Unid." },
-    { label: "Código 109", value: 30, displayValue: "30 Unid." },
-    { label: "Código 110", value: 20, displayValue: "20 Unid." },
-  ];
+  const pedidos = data.pedidosPorCategoria.map((p) => ({
+    label: p.Category_name,
+    value: Number(p.units),
+    displayValue: `${Number(p.units).toLocaleString("es-BO")} Unid. · ${Number(p.containers).toLocaleString("es-BO")} Cajas`,
+  }));
 
-  const maxVenta = Math.max(...ventas.map((v) => v.value));
-  const maxPedido = Math.max(...pedidos.map((p) => p.value));
+  const maxVenta = Math.max(...ventas.map((v) => v.value), 1);
+  const maxPedido = Math.max(...pedidos.map((p) => p.value), 1);
+  const emptyMessage = (texto: string) => (
+    <p className="py-8 text-center text-sm text-slate-400">
+      {loading ? "Cargando..." : texto}
+    </p>
+  );
 
   return (
     <RouteProtection requiredTransaction="Dashboard">
       <div className="min-h-screen bg-slate-50 p-3 md:p-6 font-sans">
+        {error && (
+          <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">
+            {error}
+          </p>
+        )}
         {/* KPI Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           {kpis.map((kpi, i) => (
@@ -292,18 +311,20 @@ export default function Dashboard() {
           {/* Ventas por Cliente */}
           <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
             <h2 className="text-sm font-bold text-slate-800 mb-3">
-              Ventas por Cliente
+              Ventas por Cliente (Mes)
             </h2>
             <div className="flex flex-col gap-5">
-              {ventas.map((v, i) => (
-                <BarRow
-                  key={i}
-                  label={v.label}
-                  value={v.value}
-                  maxValue={maxVenta}
-                  displayValue={v.displayValue}
-                />
-              ))}
+              {ventas.length > 0
+                ? ventas.map((v, i) => (
+                    <BarRow
+                      key={i}
+                      label={v.label}
+                      value={v.value}
+                      maxValue={maxVenta}
+                      displayValue={v.displayValue}
+                    />
+                  ))
+                : emptyMessage("Sin ventas registradas este mes")}
             </div>
           </div>
 
@@ -313,15 +334,17 @@ export default function Dashboard() {
               Pedidos por Categoría (Hoy)
             </h2>
             <div className="flex flex-col gap-4">
-              {pedidos.map((p, i) => (
-                <BarRow
-                  key={i}
-                  label={p.label}
-                  value={p.value}
-                  maxValue={maxPedido}
-                  displayValue={p.displayValue}
-                />
-              ))}
+              {pedidos.length > 0
+                ? pedidos.map((p, i) => (
+                    <BarRow
+                      key={i}
+                      label={p.label}
+                      value={p.value}
+                      maxValue={maxPedido}
+                      displayValue={p.displayValue}
+                    />
+                  ))
+                : emptyMessage("Sin pedidos registrados hoy")}
             </div>
           </div>
         </div>
