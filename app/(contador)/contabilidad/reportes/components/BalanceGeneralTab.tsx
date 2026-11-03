@@ -2,12 +2,75 @@
 
 import { useMemo } from "react";
 import { useState } from "react";
+import { ChevronRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { type Datum as AccountDatum } from "../../plan-cuentas/interfaces/getaccount.interface";
 import { type Datum as ElementDatum } from "../../plan-cuentas/interfaces/getelements.interface";
 import { type Datum as AsientoDatum } from "../interfaces/getasientobyperiod.interface";
+
+type BalanceAccount = AccountDatum & { total: number; currency?: string };
+
+type AccountRow =
+  | { kind: "account"; account: BalanceAccount }
+  | {
+      kind: "group";
+      code: string;
+      parent?: BalanceAccount;
+      children: BalanceAccount[];
+      total: number;
+      currency?: string;
+    };
+
+// Las subcuentas de cliente tienen código "<padre>-<cliente>" (ej. 0110201-0049):
+// se agrupan bajo su cuenta padre para no listar cientos de filas.
+function buildAccountRows(accounts: BalanceAccount[]): AccountRow[] {
+  const childrenByParent = new Map<string, BalanceAccount[]>();
+  for (const account of accounts) {
+    const [parentCode, suffix] = (account.code ?? "").split("-");
+    if (!suffix) continue;
+    const children = childrenByParent.get(parentCode) ?? [];
+    children.push(account);
+    childrenByParent.set(parentCode, children);
+  }
+
+  const rows: AccountRow[] = [];
+  const addedGroups = new Set<string>();
+  const addGroup = (code: string, parent?: BalanceAccount) => {
+    if (addedGroups.has(code)) return;
+    addedGroups.add(code);
+    const children = childrenByParent.get(code) ?? [];
+    rows.push({
+      kind: "group",
+      code,
+      parent,
+      children,
+      total:
+        (parent?.total ?? 0) +
+        children.reduce((sum, child) => sum + child.total, 0),
+      currency: parent?.currency ?? children[0]?.currency,
+    });
+  };
+
+  for (const account of accounts) {
+    const [parentCode, suffix] = (account.code ?? "").split("-");
+    if (suffix) {
+      addGroup(parentCode, accounts.find((a) => a.code === parentCode));
+    } else if (childrenByParent.has(account.code)) {
+      addGroup(account.code, account);
+    } else {
+      rows.push({ kind: "account", account });
+    }
+  }
+
+  return rows;
+}
+
+const matchesSearch = (account: BalanceAccount | undefined, term: string) =>
+  !!account &&
+  (account.name.toLowerCase().includes(term) ||
+    (account.code ?? "").toLowerCase().includes(term));
 
 interface BalanceGeneralTabProps {
   periodo: string;
@@ -27,6 +90,23 @@ export default function BalanceGeneralTab({
     name: string;
     currency?: string;
   } | null>(null);
+  const [search, setSearch] = useState("");
+  const [showZero, setShowZero] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    new Set(),
+  );
+  const searchTerm = search.trim().toLowerCase();
+
+  const toggleGroup = (key: string) =>
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
 
   const formatCurrency = (value: number, currency?: string) => {
     if (!currency) {
@@ -112,11 +192,13 @@ export default function BalanceGeneralTab({
         ...element,
         total,
         currency: elementCurrency,
-        accounts: elementAccounts.map((account) => ({
-          ...account,
-          total: accountTotals[account.id] ?? 0,
-          currency: accountCurrencyById.get(account.id),
-        })),
+        rows: buildAccountRows(
+          elementAccounts.map((account) => ({
+            ...account,
+            total: accountTotals[account.id] ?? 0,
+            currency: accountCurrencyById.get(account.id),
+          })),
+        ),
       };
     });
 
@@ -136,6 +218,32 @@ export default function BalanceGeneralTab({
   const totalPatrimonio = groupedElements[2]?.total ?? 0;
   const verificacion = totalActivos - totalPasivos - totalPatrimonio;
 
+  const renderAccountButton = (account: BalanceAccount) => (
+    <button
+      key={account.id}
+      type="button"
+      onClick={() =>
+        setSelectedAccount({
+          id: account.id,
+          name: account.name,
+          currency: account.currency,
+        })
+      }
+      className="flex w-full items-center justify-between text-left text-sm py-0.5 rounded-md px-1 -mx-1 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+    >
+      <span className="text-gray-500 font-normal truncate max-w-[70%]">
+        {account.name}
+      </span>
+      <span
+        className={`font-mono tabular-nums ${
+          account.total < 0 ? "text-rose-600 font-semibold" : "text-gray-700"
+        }`}
+      >
+        {formatCurrency(account.total, account.currency)}
+      </span>
+    </button>
+  );
+
   const handleExportPDF = () => {
     console.log("Exportando PDF del balance...");
     alert(`Balance General ${periodo} exportado`);
@@ -148,6 +256,28 @@ export default function BalanceGeneralTab({
         <h2 className="text-xl font-bold text-primary flex items-baseline">
           Balance General - {periodo}
         </h2>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar cuenta o cliente..."
+            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-600 select-none">
+          <input
+            type="checkbox"
+            checked={showZero}
+            onChange={(event) => setShowZero(event.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 accent-rose-600"
+          />
+          Mostrar cuentas con saldo 0
+        </label>
       </div>
 
       {/* Contenedor principal por secciones reales */}
@@ -177,37 +307,90 @@ export default function BalanceGeneralTab({
                         </div>
 
                         <div className="space-y-1.5 border-l-2 border-gray-100 pl-3">
-                          {element.accounts.length > 0 ? (
-                            element.accounts.map((account) => (
-                              <button
-                                key={account.id}
-                                type="button"
-                                onClick={() =>
-                                  setSelectedAccount({
-                                    id: account.id,
-                                    name: account.name,
-                                    currency: account.currency,
-                                  })
+                          {element.rows.length > 0 ? (
+                            element.rows.map((row) => {
+                              if (row.kind === "account") {
+                                if (
+                                  searchTerm &&
+                                  !matchesSearch(row.account, searchTerm)
+                                ) {
+                                  return null;
                                 }
-                                className="flex w-full items-center justify-between text-left text-sm py-0.5 rounded-md px-1 -mx-1 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                              >
-                                <span className="text-gray-500 font-normal truncate max-w-[70%]">
-                                  {account.name}
-                                </span>
-                                <span
-                                  className={`font-mono tabular-nums ${
-                                    account.total < 0
-                                      ? "text-rose-600 font-semibold"
-                                      : "text-gray-700"
-                                  }`}
-                                >
-                                  {formatCurrency(
-                                    account.total,
-                                    account.currency,
+                                return renderAccountButton(row.account);
+                              }
+
+                              const groupKey = `${element.id}-${row.code}`;
+                              const parentMatches =
+                                !!searchTerm &&
+                                matchesSearch(row.parent, searchTerm);
+                              const visibleChildren = row.children.filter(
+                                (child) =>
+                                  searchTerm && !parentMatches
+                                    ? matchesSearch(child, searchTerm)
+                                    : showZero || child.total !== 0,
+                              );
+                              if (
+                                searchTerm &&
+                                !parentMatches &&
+                                visibleChildren.length === 0
+                              ) {
+                                return null;
+                              }
+                              const withBalance = row.children.filter(
+                                (child) => child.total !== 0,
+                              ).length;
+                              const isExpanded =
+                                expandedGroups.has(groupKey) ||
+                                (!!searchTerm && !parentMatches);
+
+                              return (
+                                <div key={groupKey}>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleGroup(groupKey)}
+                                    aria-expanded={isExpanded}
+                                    className="flex w-full items-center justify-between text-left text-sm py-0.5 rounded-md px-1 -mx-1 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                  >
+                                    <span className="flex min-w-0 max-w-[70%] items-center gap-1 text-gray-700 font-medium">
+                                      <ChevronRight
+                                        className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform ${
+                                          isExpanded ? "rotate-90" : ""
+                                        }`}
+                                      />
+                                      <span className="truncate">
+                                        {row.parent?.name ?? row.code}
+                                      </span>
+                                      <span className="shrink-0 text-xs font-normal text-gray-400">
+                                        ({withBalance}/{row.children.length})
+                                      </span>
+                                    </span>
+                                    <span
+                                      className={`font-mono tabular-nums font-semibold ${
+                                        row.total < 0
+                                          ? "text-rose-600"
+                                          : "text-gray-700"
+                                      }`}
+                                    >
+                                      {formatCurrency(row.total, row.currency)}
+                                    </span>
+                                  </button>
+
+                                  {isExpanded && (
+                                    <div className="mt-1 ml-1.5 max-h-72 space-y-1 overflow-y-auto border-l border-dashed border-gray-200 pl-3">
+                                      {visibleChildren.length > 0 ? (
+                                        visibleChildren.map((child) =>
+                                          renderAccountButton(child),
+                                        )
+                                      ) : (
+                                        <p className="text-xs italic text-gray-400 py-1">
+                                          Ninguna cuenta con saldo
+                                        </p>
+                                      )}
+                                    </div>
                                   )}
-                                </span>
-                              </button>
-                            ))
+                                </div>
+                              );
+                            })
                           ) : (
                             <p className="text-xs italic text-gray-400 py-1">
                               No hay cuentas asociadas
