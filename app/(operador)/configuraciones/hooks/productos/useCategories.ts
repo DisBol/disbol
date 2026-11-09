@@ -45,7 +45,8 @@ export function useCategories(): UseCategoriesReturn {
   const categories: CategoryOption[] =
     data?.map((category) => ({
       value: category.id.toString(),
-      label: category.name,
+      // getcategory devuelve el nombre de la categoría en name_0 (name es la unidad)
+      label: category.name_0 ?? category.name,
     })) || [];
 
   return { categories, isLoading, error };

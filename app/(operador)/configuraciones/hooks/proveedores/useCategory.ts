@@ -25,7 +25,10 @@ export function useCategory(): UseCategoryReturn {
     const fetchData = async () => {
       try {
         const result: CategoryResponse = await GetCategory();
-        setData(result.data);
+        // getcategory devuelve el nombre de la categoría en name_0 (name es la unidad)
+        setData(
+          result.data.map((item) => ({ ...item, name: item.name_0 ?? item.name })),
+        );
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Unknown error"));
