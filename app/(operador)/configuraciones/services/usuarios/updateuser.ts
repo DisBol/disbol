@@ -7,6 +7,9 @@ export async function UpdateUser(
   password: string,
   active: string,
   Role_id: number,
+  // Se reenvían los vínculos actuales del usuario para no reasignarlo a otro cliente/empleado
+  Client_id: number | null,
+  Employee_id: number | null,
 ): Promise<UpdateUserResponse> {
   return apiCall("updateuser", {
     id,
@@ -14,7 +17,7 @@ export async function UpdateUser(
     password,
     active,
     Role_id,
-    Client_id: 1,
-    Employee_id: 1,
+    Client_id,
+    Employee_id,
   });
 }

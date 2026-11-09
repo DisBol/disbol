@@ -8,6 +8,7 @@ export interface Datum {
   Request_created_at: Date;
   Request_CategoryProvider_id: number;
   RequestStage_position: number;
+  RequestStage_id?: number;
   RequestState_name: RequestStateName;
   PaymentType_name: PaymentTypeName;
   ClientGroup_name: ClientGroupName;

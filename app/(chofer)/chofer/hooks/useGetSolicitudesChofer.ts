@@ -100,7 +100,7 @@ export function useGetSolicitudesChofer() {
             ClientGroup_name: curr.ClientGroup_name,
             RequestState_name: curr.RequestState_name,
             PaymentType_name: curr.PaymentType_name,
-            RequestStage_id: curr.RequestStage_id ?? 1,
+            RequestStage_id: curr.RequestStage_id ?? 0,
             RequestStage_payment: curr.RequestStage_payment ?? 0,
             RequestStage_position: curr.RequestStage_position ?? 2,
             RequestState_out_container: curr.RequestState_out_container ?? 0,

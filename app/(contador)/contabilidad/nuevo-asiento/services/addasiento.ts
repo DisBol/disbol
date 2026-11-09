@@ -18,6 +18,6 @@ export async function AddAsiento(
         ...payload,
         active: payload.active ?? "true",
         AccountingPeriod_id: payload.AccountingPeriod_id ?? 1,
-        state: payload.state ?? "aprovado",
+        state: payload.state ?? "aprobado",
     });
 }

@@ -295,7 +295,7 @@ export default function DistributeGroup({
           0,
           code.unidades,
           code.cajas,
-          "1",
+          "true",
           code.ProductRequest_id,
         );
         if (!result) {
@@ -307,13 +307,11 @@ export default function DistributeGroup({
           const kg = Number(pesaje.kg) || 0;
           const cajas = Number(pesaje.cajas) || 0;
           const unidades = Number(pesaje.unidades) || 0;
-          const container = Number(pesaje.contenedor) || 1;
-
           const result = await addWeighing(
             kg,
             unidades,
-            cajas || container,
-            "1",
+            cajas,
+            "true",
             code.ProductRequest_id,
           );
           if (!result) {
@@ -326,7 +324,8 @@ export default function DistributeGroup({
 
       // --- UpdateProductRequest y UpdateRequestStage según modo de precio ---
       const menudenciaVal =
-        (menudenciaMap[`${clienteIdx}-${codeIdx}`] ?? true) ? "1" : "0";
+        (menudenciaMap[`${clienteIdx}-${codeIdx}`] ?? true) ? "true" : "false";
+      const requestStageId = clientes[clienteIdx].RequestStage_id;
 
       if (precioDiferido) {
         // MODO PRECIO DIFERIDO: payment = precio específico del código
@@ -340,8 +339,8 @@ export default function DistributeGroup({
           Math.round(totalNeto * 100) / 100,
           Math.round(totalBruto * 100) / 100,
           precioDelCodigo,
-          "1",
-          1,
+          "true",
+          requestStageId,
           code.Product_id,
         );
         if (!result) {
@@ -359,8 +358,8 @@ export default function DistributeGroup({
           Math.round(totalNeto * 100) / 100,
           Math.round(totalBruto * 100) / 100,
           0, // payment = 0
-          "1",
-          1,
+          "true",
+          requestStageId,
           code.Product_id,
         );
         if (!resultPR) {

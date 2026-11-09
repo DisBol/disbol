@@ -22,6 +22,7 @@ interface NuevoAsientoTabProps {
   onAddLine: () => void;
   onSaveDraft: (state: "borrador" | "aprobado") => void;
   savingDraft?: boolean;
+  saveError?: string | null;
   onUpdateLine: (
     id: string,
     field: keyof Omit<JournalLine, "id">,
@@ -67,6 +68,7 @@ export function NuevoAsientoTab({
   onAddLine,
   onSaveDraft,
   savingDraft,
+  saveError,
   onUpdateLine,
   onRemoveLine,
 }: NuevoAsientoTabProps) {
@@ -401,6 +403,9 @@ export function NuevoAsientoTab({
             Débito: Bs {formatAmount(debitTotal)} | Crédito: Bs{" "}
             {formatAmount(creditTotal)}
           </p>
+          {saveError && (
+            <p className="mt-2 text-sm font-medium text-rose-600">{saveError}</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
@@ -410,6 +415,7 @@ export function NuevoAsientoTab({
             className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
             onClick={() => onSaveDraft("borrador")}
             loading={savingDraft}
+            disabled={!balanced || savingDraft}
           >
             Guardar como Borrador
           </Button>
@@ -418,6 +424,7 @@ export function NuevoAsientoTab({
             className="rounded-xl bg-emerald-700 text-white hover:bg-emerald-800"
             onClick={() => onSaveDraft("aprobado")}
             loading={savingDraft}
+            disabled={!balanced || savingDraft}
           >
             Guardar y Aprobar
           </Button>

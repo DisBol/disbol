@@ -11,6 +11,10 @@ import { useAddUser } from "../../hooks/usuarios/useAddUser";
 import { useUser } from "../../hooks/usuarios/useUser";
 import { useUpdateUser } from "../../hooks/usuarios/useUpdateUser";
 
+// getuser devuelve el vínculo del usuario como Client_id/Employee_id (o con sufijo _0)
+const userClientId = (u: Datum) => u.Client_id ?? u.Client_id_0 ?? null;
+const userEmployeeId = (u: Datum) => u.Employee_id ?? u.Employee_id_0 ?? null;
+
 export default function Users() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isRoleFormOpen, setIsRoleFormOpen] = useState(false);
@@ -45,6 +49,8 @@ export default function Users() {
           data.password || "",
           "true",
           parseInt(data.Role_id || "1"),
+          userClientId(editingItem),
+          userEmployeeId(editingItem),
         );
       } else {
         await addUser(
@@ -78,6 +84,8 @@ export default function Users() {
           item.password,
           "false",
           item.Role_id,
+          userClientId(item),
+          userEmployeeId(item),
         );
         alert("Usuario eliminado correctamente");
         refetch();

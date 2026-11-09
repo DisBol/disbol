@@ -22,6 +22,7 @@ export default function Page() {
     journalLines,
     removeJournalLine,
     saveDraft,
+    saveError,
     savingDraft,
     selectedTab,
     setEntryDate,
@@ -108,6 +109,7 @@ export default function Page() {
               onRemoveLine={removeJournalLine}
               onSaveDraft={saveDraft}
               savingDraft={savingDraft}
+              saveError={saveError}
             />
           </TabsContent>
 

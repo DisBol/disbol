@@ -15,6 +15,8 @@ import type {
 
 const initialEntryDate = "2026-05-31";
 
+const toCents = (value: number) => Math.round(value * 100);
+
 export function useNuevoAsiento() {
     const { data: session } = useSession();
     const [journalLines, setJournalLines] = useState<JournalLine[]>([]);
@@ -28,6 +30,7 @@ export function useNuevoAsiento() {
     const [defaultAccountId, setDefaultAccountId] = useState<number | null>(null);
     const [accountOptions, setAccountOptions] = useState<SelectOption[]>([]);
     const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const {
         data: accountingPeriods,
@@ -37,7 +40,9 @@ export function useNuevoAsiento() {
 
     useEffect(() => {
         if (!selectedPeriodId && accountingPeriods.length > 0) {
-            setSelectedPeriodId(String(accountingPeriods[0].id));
+            // Por defecto el período abierto; los cerrados solo se consultan
+            const openPeriod = accountingPeriods.find((p) => p.active === "true");
+            setSelectedPeriodId(String((openPeriod ?? accountingPeriods[0]).id));
         }
     }, [accountingPeriods, selectedPeriodId]);
 
@@ -198,13 +203,14 @@ export function useNuevoAsiento() {
 
     const totals = useMemo(() => {
         const newLines = journalLines.filter((line) => line.isNew);
-        const debit = newLines.reduce((sum, line) => sum + line.debit, 0);
-        const credit = newLines.reduce((sum, line) => sum + line.credit, 0);
+        const debit = newLines.reduce((sum, line) => sum + Number(line.debit || 0), 0);
+        const credit = newLines.reduce((sum, line) => sum + Number(line.credit || 0), 0);
 
         return {
             debit,
             credit,
-            balanced: debit === credit,
+            // Se compara en centavos para evitar errores de coma flotante
+            balanced: debit > 0 && toCents(debit) === toCents(credit),
         };
     }, [journalLines]);
 
@@ -216,7 +222,9 @@ export function useNuevoAsiento() {
     }, [defaultAccountId, journalLines]);
 
     const saveDraft = useCallback(async (state: "borrador" | "aprobado" = "borrador") => {
+        if (savingDraft) return;
         setSavingDraft(true);
+        setSaveError(null);
 
         try {
             const newLines = journalLines.filter((line) => line.isNew);
@@ -224,21 +232,47 @@ export function useNuevoAsiento() {
                 throw new Error("No hay nuevas líneas añadidas para guardar");
             }
 
-            // Verify all new lines have a valid account selected
             for (const line of newLines) {
                 if (line.accountId === null) {
                     throw new Error("Todas las nuevas líneas deben tener una cuenta seleccionada");
                 }
+                const debit = Number(line.debit || 0);
+                const credit = Number(line.credit || 0);
+                if (debit < 0 || credit < 0) {
+                    throw new Error("Los montos no pueden ser negativos");
+                }
+                if ((debit > 0) === (credit > 0)) {
+                    throw new Error("Cada línea debe tener un monto en Debe o en Haber, no en ambos ni en ninguno");
+                }
             }
 
-            // Execute a POST call for each new line
+            if (!totals.balanced) {
+                throw new Error(
+                    `El asiento no cuadra: Debe ${totals.debit.toFixed(2)} y Haber ${totals.credit.toFixed(2)}`,
+                );
+            }
+
+            const period = accountingPeriods.find((p) => String(p.id) === selectedPeriodId);
+            if (!period) {
+                throw new Error("Selecciona un período contable");
+            }
+            if (period.active !== "true") {
+                throw new Error(`El período ${period.name} está cerrado; no se pueden registrar asientos`);
+            }
+
+            // Las líneas de un asiento se agrupan por su descripción, así que todas comparten la glosa
+            const glosa = newLines.map((line) => line.glosa.trim()).find(Boolean);
+            if (!glosa) {
+                throw new Error("Escribe la glosa del asiento");
+            }
+
             for (const line of newLines) {
                 await AddAsiento({
-                    description: line.glosa.trim() || "Por compra a sofia",
-                    amount_credit: line.credit,
-                    amount_debit: line.debit,
+                    description: line.glosa.trim() || glosa,
+                    amount_credit: Number(line.credit || 0),
+                    amount_debit: Number(line.debit || 0),
                     Account_id: line.accountId as number,
-                    AccountingPeriod_id: selectedPeriodId ? Number(selectedPeriodId) : 1,
+                    AccountingPeriod_id: period.id,
                     state: state,
                     employee: session?.user.employeeId ?? 1,
                 });
@@ -246,10 +280,12 @@ export function useNuevoAsiento() {
 
             await loadDrafts();
             setSelectedTab("borrador");
+        } catch (error) {
+            setSaveError(error instanceof Error ? error.message : "Error al guardar el asiento");
         } finally {
             setSavingDraft(false);
         }
-    }, [journalLines, loadDrafts, session?.user.employeeId, selectedPeriodId]);
+    }, [accountingPeriods, journalLines, loadDrafts, savingDraft, session?.user.employeeId, selectedPeriodId, totals]);
 
     return {
         accountOptions,
@@ -265,6 +301,7 @@ export function useNuevoAsiento() {
         journalLines,
         removeJournalLine,
         saveDraft,
+        saveError,
         savingDraft,
         selectedTab,
         setEntryDate,

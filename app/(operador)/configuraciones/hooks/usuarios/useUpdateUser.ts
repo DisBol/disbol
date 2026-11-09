@@ -11,6 +11,8 @@ export function useUpdateUser() {
     password: string,
     active: string,
     Role_id: number,
+    Client_id: number | null,
+    Employee_id: number | null,
   ) => {
     setLoading(true);
     setError(null);
@@ -21,6 +23,8 @@ export function useUpdateUser() {
         password,
         active,
         Role_id,
+        Client_id,
+        Employee_id,
       );
       return response;
     } catch (err) {

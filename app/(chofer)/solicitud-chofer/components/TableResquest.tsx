@@ -116,7 +116,8 @@ export default function TableResquest() {
             0, // gross_weight (default)
             0, // payment (default)
             false, // active: false for soft delete
-            1, // RequestStage_id (default)
+            // 0 = conservar la etapa actual; nunca enviar un id fijo
+            itemToDelete.RequestStage_id ?? 0,
             itemToDelete.Product_id,
           );
         });
@@ -146,7 +147,7 @@ export default function TableResquest() {
             0, // gross_weight (default)
             0, // payment (default)
             isActive, // active
-            1, // RequestStage_id (default)
+            itemToUpdate.RequestStage_id ?? 0,
             itemToUpdate.Product_id,
           );
         });

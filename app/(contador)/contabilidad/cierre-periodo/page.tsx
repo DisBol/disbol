@@ -9,6 +9,7 @@ import {
 } from "./components";
 import { ValidacionResponse, CierrePeriodo } from "./interfaces";
 import { useGetAccountingPeriod } from "./hooks/useGetAccountingPeriod";
+import { validarCierrePeriodo } from "./service/validarCierrePeriodo";
 
 export default function CierrePeriodoPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -22,20 +23,15 @@ export default function CierrePeriodoPage() {
   const handleValidar = useCallback(
     async (periodo: string) => {
       try {
-        // Simulación de validación exitosa
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
         const periodoNombre =
           accountingPeriods.find((item) => String(item.id) === periodo)?.name ??
           periodo;
-        const mensaje = `Validaciones completadas exitosamente para el período ${periodoNombre}`;
+        const resultado = await validarCierrePeriodo(
+          Number(periodo),
+          periodoNombre,
+        );
 
-        setValidationStatus({
-          exito: true,
-          mensaje,
-        });
-        alert(mensaje);
-
+        setValidationStatus(resultado);
         setRefreshKey((prev) => prev + 1);
       } catch (error) {
         console.error("Error validating period:", error);
