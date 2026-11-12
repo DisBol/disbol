@@ -21,6 +21,7 @@ import { useAddContainerMovements } from "../hooks/repartir/useAddContainerMovem
 import { Boleta, BoletaDetail } from "../types/reception.types";
 import { useProductsByCategory } from "../../configuraciones/hooks/productos/useProductsByCategory";
 import type { EntregaEmpresa } from "./RecibirEmpresaModal";
+import { sortByCode } from "../utils/sortByCode";
 
 // Interfaces
 interface ProductReception {
@@ -82,9 +83,10 @@ export default function ReceptionScreen({
   // Transformar productos del assignment a formato de recepción
   const productos = useMemo<ProductReception[]>(() => {
     // Mostrar todos los productos del assignment que tienen posición === 1 (activos e inactivos)
-    return assignment.productos
-      .filter((p) => p.posicion === 1)
-      .map((p) => ({
+    return sortByCode(
+      assignment.productos.filter((p) => p.posicion === 1),
+      (p) => p.codigo,
+    ).map((p) => ({
         codigo: p.codigo,
         cajas: p.cajas,
         unidades: p.unidades,

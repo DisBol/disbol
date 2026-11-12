@@ -6,6 +6,7 @@ import {
   GetRequestForPlanningResponse,
 } from "../../interfaces/planificar/getrequestforplanning.interface";
 import { ProcessedPlanningData, GroupData } from "../../types/planning.types";
+import { sortByCode } from "../../utils/sortByCode";
 
 export const usePlanningData = (
   assignment: Assignment | null,
@@ -58,7 +59,10 @@ export const usePlanningData = (
           product.units += item.ProductRequest_units;
         });
 
-        const groupCodes = Array.from(productMap.entries()).map(
+        const groupCodes = sortByCode(
+          Array.from(productMap.entries()),
+          ([productName]) => productName,
+        ).map(
           ([productName, totals]) => ({
             label: productName,
             cajas: totals.containers,
@@ -85,7 +89,10 @@ export const usePlanningData = (
               product.units += item.ProductRequest_units;
             });
 
-            const clientCodes = Array.from(clientProductMap.entries()).map(
+            const clientCodes = sortByCode(
+              Array.from(clientProductMap.entries()),
+              ([productName]) => productName,
+            ).map(
               ([productName, totals]) => ({
                 label: productName,
                 solicitado: totals.units,
@@ -200,7 +207,7 @@ export const usePlanningData = (
     }
 
     return {
-      detalles: detallesArray,
+      detalles: sortByCode(detallesArray, (d) => d.label),
       processedGroups: groups,
       proveedor: assignment ? assignment.proveedor : proveedorNombre,
       clienteOrigen: assignment ? assignment.proveedor : "",

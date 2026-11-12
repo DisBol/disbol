@@ -347,7 +347,15 @@ const HistoryAssignmentList: React.FC<HistoryAssignmentListProps> = ({
                   // Solo mostrar productos con posición 1 (primera etapa)
                   return Number(producto.posicion) === 1;
                 })
-                .sort((a, b) => Number(b.active) - Number(a.active)) // Activos primero
+                // Activos primero y luego por código (104, 105, …, BONO, menudencia)
+                .sort(
+                  (a, b) =>
+                    Number(b.active) - Number(a.active) ||
+                    String(a.codigo).localeCompare(String(b.codigo), "es", {
+                      numeric: true,
+                      sensitivity: "base",
+                    }),
+                )
                 .map((producto) => {
                   const isEditing = editingAssignments.has(assignment.id);
                   const productKey = `${assignment.id}-${producto.codigo}`;

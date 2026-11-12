@@ -4,6 +4,7 @@ import React from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Assignment } from "../stores/assignments-store";
+import { sortByCode } from "../utils/sortByCode";
 
 interface Totals {
   cajas: number;
@@ -77,16 +78,19 @@ export default function ReceptionHeader({
   const empresaProductos = totalesGlobales.totalEmpresaProductos;
   const recibido = totalesGlobales.totalRecibido;
   const recibidoProductos = totalesGlobales.totalRecibidoProductos;
-  const productosDetalle = [...empresaProductos, ...recibidoProductos].filter(
-    (producto, index, productos) =>
-      productos.findIndex(
-        (item) =>
-          (item.id !== null && item.id === producto.id) ||
-          (item.id === null &&
-            producto.id === null &&
-            item.nombre.trim().toLowerCase() ===
-              producto.nombre.trim().toLowerCase()),
-      ) === index,
+  const productosDetalle = sortByCode(
+    [...empresaProductos, ...recibidoProductos].filter(
+      (producto, index, productos) =>
+        productos.findIndex(
+          (item) =>
+            (item.id !== null && item.id === producto.id) ||
+            (item.id === null &&
+              producto.id === null &&
+              item.nombre.trim().toLowerCase() ===
+                producto.nombre.trim().toLowerCase()),
+        ) === index,
+    ),
+    (producto) => producto.nombre,
   );
   const getProductoTotal = (
     productos: EmpresaProductTotal[],

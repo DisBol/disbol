@@ -18,6 +18,7 @@ import { useAddProductRequest } from "../../../solicitudes/hooks/useAddproductre
 import { EditableGroupData } from "../../types/planning.types";
 import { Datum as RequestDatum } from "../../interfaces/planificar/getrequestforplanning.interface";
 import { RouteReportData } from "../repartir/DistributeAssignmentHeader";
+import { sortByCode } from "../../utils/sortByCode";
 
 interface InventarioPlanningProps {
   onClose?: () => void;
@@ -113,7 +114,10 @@ export default function InventarioPlanning({
         p.units += item.ProductRequest_units;
       });
 
-      const groupCodes = Array.from(productMap.entries()).map(([name, t]) => ({
+      const groupCodes = sortByCode(
+        Array.from(productMap.entries()),
+        ([name]) => name,
+      ).map(([name, t]) => ({
         label: name,
         cajas: t.containers,
         unidades: t.units,
@@ -143,7 +147,10 @@ export default function InventarioPlanning({
             p.units += item.ProductRequest_units;
           });
 
-          const clientCodes = Array.from(clientProductMap.entries()).map(
+          const clientCodes = sortByCode(
+            Array.from(clientProductMap.entries()),
+            ([name]) => name,
+          ).map(
             ([name, t]) => ({
               label: name,
               solicitado: t.units,
@@ -246,7 +253,7 @@ export default function InventarioPlanning({
       ...Array.from(inventoryMap.keys()),
     ]);
 
-    return Array.from(allProducts).map((productName) => {
+    return sortByCode(Array.from(allProducts), (name) => name).map((productName) => {
       const planned = plannedTotals.get(productName) ?? {
         cajas: 0,
         unidades: 0,

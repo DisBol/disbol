@@ -11,6 +11,7 @@ import { useDistributeStore } from "../../stores/distribute-store";
 import { useAssignmentsStore } from "../../stores/assignments-store";
 import { useUpdateAssignment } from "../../hooks/useUpdateAssignment";
 import type { RouteReportData } from "./DistributeAssignmentHeader";
+import { sortByCode } from "../../utils/sortByCode";
 
 interface DistributeProps {
   assignment?: Assignment | null;
@@ -132,7 +133,10 @@ export default function Repartir({
               product.units += item.ProductRequest_units;
             });
 
-            const groupCodes = Array.from(productMap.entries())
+            const groupCodes = sortByCode(
+              Array.from(productMap.entries()),
+              ([productName]) => productName,
+            )
               .filter(([, totals]) => totals.containers > 0 || totals.units > 0)
               .map(([productName, totals]) => ({
                 label: productName,
@@ -169,7 +173,10 @@ export default function Repartir({
                   product.units += item.ProductRequest_units;
                 });
 
-                const clientCodes = Array.from(clientProductMap.entries())
+                const clientCodes = sortByCode(
+                  Array.from(clientProductMap.entries()),
+                  ([productName]) => productName,
+                )
                   .filter(
                     ([, totals]) => totals.containers > 0 || totals.units > 0,
                   )
@@ -295,7 +302,7 @@ export default function Repartir({
       }
 
       return {
-        detalles: detallesArray,
+        detalles: sortByCode(detallesArray, (d) => d.label),
         proveedor: assignment ? assignment.proveedor : proveedorNombre,
         costoPorKg: "10.00",
         precioDiferido: false,
