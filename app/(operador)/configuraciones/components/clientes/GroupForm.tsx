@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { SaveIcon } from "@/components/icons/Save";
 import { InputField } from "@/components/ui/InputField";
-import { SelectField } from "@/components/ui/SelectInput";
 import { Button } from "@/components/ui/Button";
 import {
   GroupFormProps,
@@ -9,7 +8,6 @@ import {
 } from "../../interfaces/clientes/getclientgroup.interface";
 import { useAddClientGroup } from "../../hooks/clientes/useAddClientGroup";
 import { useUpdateClientGroup } from "../../hooks/clientes/useUpdateClientGroup";
-import { useGeofences } from "../../hooks/monnet/useGeofences";
 
 const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
   const formRef = useRef<HTMLDivElement>(null);
@@ -25,12 +23,6 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
     error: updateError,
   } = useUpdateClientGroup();
 
-  const {
-    geofences,
-    loading: geofencesLoading,
-    error: geofencesError,
-  } = useGeofences();
-
   // Estado combinado para loading y error
   const loading = addLoading || updateLoading;
   const error = addError || updateError;
@@ -42,9 +34,11 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
         idCerca: group.idCerca.toString(),
       };
     }
+    // La geocerca (idCerca) ya no se pide en el formulario; la columna es
+    // obligatoria en la BD, así que los grupos nuevos se guardan con 0.
     return {
       nombre: "",
-      idCerca: "",
+      idCerca: "0",
     };
   });
 
@@ -78,12 +72,6 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
 
     if (!formData.nombre.trim()) {
       newErrors.nombre = "El nombre es requerido";
-    }
-
-    if (!formData.idCerca.trim()) {
-      newErrors.idCerca = "Debe seleccionar una ruta";
-    } else if (!/^\d+$/.test(formData.idCerca)) {
-      newErrors.idCerca = "La ruta seleccionada debe ser válida";
     }
 
     setErrors(newErrors);
@@ -142,53 +130,6 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
             error={errors.nombre}
           />
 
-          {geofencesLoading ? (
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pl-0.5 mb-2 block">
-                Ruta *
-              </label>
-              <div className="h-10 bg-gray-100 animate-pulse rounded-md flex items-center px-3">
-                <span className="text-gray-500 text-xs sm:text-sm">Cargando rutas...</span>
-              </div>
-            </div>
-          ) : geofencesError ? (
-            <div>
-              <InputField
-                label="Ruta *"
-                value={formData.idCerca}
-                onChange={handleChange("idCerca")}
-                placeholder="Ingrese ID manualmente"
-                error={errors.idCerca}
-                type="number"
-              />
-              <p className="text-xs text-red-600 mt-1">
-                Error cargando rutas: {geofencesError.message}
-              </p>
-            </div>
-          ) : (
-            <SelectField
-              label="Ruta *"
-              value={formData.idCerca}
-              onChange={(e) => {
-                const value = e.target.value;
-                setFormData((prev) => ({ ...prev, idCerca: value }));
-                if (errors.idCerca) {
-                  setErrors((prev) => ({ ...prev, idCerca: "" }));
-                }
-              }}
-              options={[
-                { value: "", label: "Seleccione una ruta" },
-                ...geofences
-                  .filter((geofence) => geofence.visible === 1) // Solo mostrar geofences visibles
-                  .map((geofence) => ({
-                    value: geofence.idCerca.toString(),
-                    // label: `${geofence.nombre} (${geofence.tipo_cerca}) - ID: ${geofence.idCerca}`,
-                    label: `${geofence.nombre}`,
-                  })),
-              ]}
-              error={errors.idCerca}
-            />
-          )}
         </div>
 
         {/* Error de guardado */}
@@ -216,9 +157,7 @@ const GroupForm: React.FC<GroupFormProps> = ({ onSave, onCancel, group }) => {
             size="sm"
             leftIcon={<SaveIcon className="h-4 w-4" />}
             onClick={handleSave}
-            disabled={
-              loading || !formData.nombre.trim() || !formData.idCerca.trim()
-            }
+            disabled={loading || !formData.nombre.trim()}
             loading={loading}
             className="w-full sm:w-auto text-xs sm:text-sm"
           >
